@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fruit Puzzle</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(160deg, #ff9a56, #ff6a88 55%, #a86bff);
+    overflow: hidden;
+  }
+  #game {
+    position: relative;
+    width: 100%; height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: #fff; text-align: center;
+    padding: 16px;
+  }
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .screen.active { opacity: 1; pointer-events: auto; }
+
+  h1 { font-size: clamp(22px, 6vw, 34px); margin: 0 0 8px; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }
+  p.sub { font-size: clamp(14px, 3.5vw, 18px); margin: 0 0 20px; opacity: 0.95; }
+
+  .btn {
+    background: #fff; color: #ff6a88;
+    border: none; border-radius: 999px;
+    padding: 14px 32px; font-size: 16px; font-weight: 700;
+    cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    transition: transform 0.12s ease;
+  }
+  .btn:active { transform: scale(0.94); }
+
+  #hud {
+    position: absolute; top: 14px; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 16px; font-weight: 700; font-size: 14px;
+    z-index: 5;
+  }
+  #target-banner {
+    background: rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 10px 18px;
+    font-size: clamp(16px, 4.5vw, 22px);
+    margin-bottom: 22px;
+    backdrop-filter: blur(4px);
+  }
+  #target-banner b { font-size: 1.2em; }
+
+  #fruit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 340px;
+    width: 100%;
+  }
+  .fruit {
+    font-size: clamp(36px, 10vw, 52px);
+    background: rgba(255,255,255,0.15);
+    border-radius: 18px;
+    padding: 10px 0;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.12s ease, background 0.2s ease;
+  }
+  .fruit:active { transform: scale(0.9); }
+  .fruit.correct { background: #33d17a; animation: pop 0.35s ease; }
+  .fruit.wrong { background: #ff4d4d; animation: shake 0.35s ease; }
+
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  #timer-bar {
+    position: absolute; top: 0; left: 0; height: 5px;
+    background: #fff; width: 100%;
+    transform-origin: left;
+  }
+
+  .result-emoji { font-size: 64px; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div id="game">
+
+  <div id="timer-bar"></div>
+
+  <div id="hud" style="display:none;">
+    <span id="score-label">Score: 0</span>
+  </div>
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="screen-start">
+    <h1>🍓 Fruit Tap Puzzle</h1>
+    <p class="sub">Tap the fruit you're asked for — fast! Wrong taps end the game.</p>
+    <button class="btn" id="btn-start">Start</button>
+  </div>
+
+  <!-- PLAY SCREEN -->
+  <div class="screen" id="screen-play">
+    <div id="target-banner">Tap the <b id="target-name">🍌</b></div>
+    <div id="fruit-grid"></div>
+  </div>
+
+  <!-- SUCCESS SCREEN -->
+  <div class="screen" id="screen-success">
+    <div class="result-emoji">🎉</div>
+    <h1>You Win!</h1>
+    <p class="sub" id="success-score">Score: 3 / 3</p>
+    <button class="btn" id="btn-again-success">Play Again</button>
+  </div>
+
+  <!-- FAIL SCREEN -->
+  <div class="screen" id="screen-fail">
+    <div class="result-emoji">😬</div>
+    <h1>Game Over</h1>
+    <p class="sub" id="fail-score">You tapped the wrong fruit.</p>
+    <button class="btn" id="btn-again-fail">Play Again</button>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var FRUITS = ["🍌", "🍎", "🍇", "🍊", "🍉", "🍓", "🥝", "🍍", "🍒"];
+  var ROUNDS = 3;
+  var ROUND_TIME_MS = 2200; // her round için süre limiti
+
+  var els = {
+    hud: document.getElementById("hud"),
+    scoreLabel: document.getElementById("score-label"),
+    timerBar: document.getElementById("timer-bar"),
+    screens: {
+      start: document.getElementById("screen-start"),
+      play: document.getElementById("screen-play"),
+      success: document.getElementById("screen-success"),
+      fail: document.getElementById("screen-fail"),
+    },
+    targetName: document.getElementById("target-name"),
+    grid: document.getElementById("fruit-grid"),
+    successScore: document.getElementById("success-score"),
+    failScore: document.getElementById("fail-score"),
+  };
+
+  var state = { round: 0, score: 0, timerHandle: null, timerRAF: null };
+
+  function showScreen(name) {
+    Object.keys(els.screens).forEach(function (key) {
+      els.screens[key].classList.toggle("active", key === name);
+    });
+  }
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function pickRoundFruits() {
+    var pool = shuffle(FRUITS).slice(0, 6);
+    var target = pool[Math.floor(Math.random() * pool.length)];
+    return { pool: shuffle(pool), target: target };
+  }
+
+  function clearTimerAnim() {
+    if (state.timerRAF) cancelAnimationFrame(state.timerRAF);
+  }
+
+  function runRoundTimer(onTimeout) {
+    clearTimerAnim();
+    var start = performance.now();
+    els.timerBar.style.width = "100%";
+    function tick(now) {
+      var elapsed = now - start;
+      var pct = Math.max(0, 1 - elapsed / ROUND_TIME_MS);
+      els.timerBar.style.width = (pct * 100) + "%";
+      if (elapsed >= ROUND_TIME_MS) {
+        onTimeout();
+      } else {
+        state.timerRAF = requestAnimationFrame(tick);
+      }
+    }
+    state.timerRAF = requestAnimationFrame(tick);
+  }
+
+  function startGame() {
+    state.round = 0;
+    state.score = 0;
+    els.hud.style.display = "flex";
+    els.scoreLabel.textContent = "Score: 0";
+    showScreen("play");
+    nextRound();
+  }
+
+  function nextRound() {
+    state.round += 1;
+    if (state.round > ROUNDS) {
+      endGame(true);
+      return;
+    }
+    var roundData = pickRoundFruits();
+    els.targetName.textContent = roundData.target;
+    els.grid.innerHTML = "";
+
+    roundData.pool.forEach(function (fruit) {
+      var cell = document.createElement("div");
+      cell.className = "fruit";
+      cell.textContent = fruit;
+      cell.addEventListener("click", function () {
+        handleTap(fruit === roundData.target, cell);
+      });
+      els.grid.appendChild(cell);
+    });
+
+    runRoundTimer(function () {
+      // süre dolduysa yanlış sayılır
+      handleTap(false, null);
+    });
+  }
+
+  function handleTap(isCorrect, cellEl) {
+    clearTimerAnim();
+    // aynı round içinde tekrar tıklamayı engelle
+    Array.prototype.forEach.call(els.grid.children, function (c) {
+      c.style.pointerEvents = "none";
+    });
+
+    if (isCorrect) {
+      if (cellEl) cellEl.classList.add("correct");
+      state.score += 1;
+      els.scoreLabel.textContent = "Score: " + state.score;
+      setTimeout(nextRound, 320);
+    } else {
+      if (cellEl) cellEl.classList.add("wrong");
+      setTimeout(function () { endGame(false); }, 320);
+    }
+  }
+
+  function endGame(won) {
+    clearTimerAnim();
+    els.hud.style.display = "none";
+    if (won) {
+      els.successScore.textContent = "Score: " + state.score + " / " + ROUNDS;
+      showScreen("success");
+    } else {
+      els.failScore.textContent = "Score: " + state.score + " / " + ROUNDS;
+      showScreen("fail");
+    }
+  }
+
+  document.getElementById("btn-start").addEventListener("click", startGame);
+  document.getElementById("btn-again-success").addEventListener("click", startGame);
+  document.getElementById("btn-again-fail").addEventListener("click", startGame);
+})();
+</script>
+</body>
+</html>

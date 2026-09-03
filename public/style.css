@@ -1,0 +1,2695 @@
+:root {
+  /* ---------- PHASE 6 (UI/UX redesign): Dark cinematic premium game UI ----------
+     PHASE 4'teki açık/ivory sistemin yerini, referans görseldeki "AAA game
+     dashboard" hissini veren koyu lacivert/siyaha yakın bir sistem alıyor.
+     Token İSİMLERİ (--bg, --surface, --border, --text, vb.) kasıtlı olarak
+     AYNI bırakıldı — bu dosyadaki hiçbir kuralın seçicisi/sınıf adı
+     değişmedi, sadece DEĞERLER değişti. Böylece app.js'in className/
+     classList çağrıları (bkz. .hidden/.active/.is-selected/.score-good vb.)
+     hiçbir şekilde etkilenmiyor; bu SADECE bir görsel katman değişikliği.
+
+     Eskiden "AI karar verdi" anlamı taşıyan sınırlı vurgu rengi violet/coral
+     idi; şimdi bu rol gold/amber'a geçti (--gold / --amber) — referans
+     görseldeki ana aksan renk. Nötr chrome hâlâ ayrı bir tondan (sıcak
+     ivory/gri) besleniyor, böylece "her yerde altın" tekdüzeliğine
+     düşülmüyor: altın SADECE CTA / AI seçimi / vurgulanan durumlarda. */
+  /* ROUND 3: Selin'in verdiği kesin hex çapaları — #05070D / #0B1020 /
+     #111827. Muted cream + subtle green for success onun sözünü ettiği
+     ikincil tonlar; gold/amber ana vurgu SADECE önemli anlarda (aşırı
+     kullanılmıyor, bkz. aşağıdaki panel/component kuralları). */
+  --bg: #0b1020;
+  --bg-deep: #05070d;
+  --bg-soft: #080b16;
+  --surface: #111827;
+  --surface-raised: #17203a;
+  --surface-inset: #070a13;
+  --surface-glass: rgba(17, 24, 39, 0.76);
+  --cream: #efe6d3;
+
+  --border: rgba(232, 185, 77, 0.14);
+  --border-soft: rgba(232, 185, 77, 0.08);
+  --border-strong: rgba(232, 185, 77, 0.36);
+
+  --text: #f2ecdd;
+  --text-dim: #b3ab99;
+  --text-faint: #7c7867;
+
+  /* Nötr chrome/hover/navigasyon vurgusu — "AI" anlamı TAŞIMAYAN her yer. */
+  --ink: #f2ecdd;
+  --ink-soft: rgba(242, 236, 221, 0.055);
+  --ink-mid: rgba(242, 236, 221, 0.14);
+
+  /* "AI karar verdi" / birincil CTA anlamı taşıyan yerlerle SINIRLI altın
+     vurgu paleti — referans görseldeki ana aksan sistemi. */
+  --gold: #e8b94d;
+  --gold-soft: #f6d888;
+  --gold-deep: #a9791f;
+  --amber: #ff9d52;
+  --amber-deep: #d97706;
+
+  --success: #48bd82;
+  --success-soft: rgba(72, 189, 130, 0.16);
+  --danger: #e2685a;
+  --danger-soft: rgba(226, 104, 90, 0.16);
+  --warning: #dd9a3d;
+  --warning-soft: rgba(221, 154, 61, 0.16);
+
+  --radius-lg: 20px;
+  --radius-md: 13px;
+  --radius-sm: 9px;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.035) inset, 0 16px 38px rgba(0, 0, 0, 0.48);
+  --shadow-card-hover: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 22px 52px rgba(0, 0, 0, 0.58);
+  --shadow-float: 0 26px 64px rgba(0, 0, 0, 0.6);
+
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ROUND 3: editorial/game-title display fontu — SADECE büyük başlıklarda
+     (.display-font). Google Fonts erişilemezse (offline vb.) zincir
+     doğrudan sistem serif'lerine düşer, hiçbir işlevsellik buna bağlı
+     değil — salt tipografik. */
+  --font-display: "Cinzel", Georgia, "Times New Roman", serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  position: relative;
+  /* ROUND 9: the colored atmosphere blobs are now a light supporting layer
+     under the real photographic background (body::before) rather than
+     the whole atmosphere themselves — dialed back so they blend with the
+     image instead of competing with its own blue/amber palette. */
+  background:
+    radial-gradient(1100px 560px at 10% -8%, rgba(120, 105, 210, 0.05), transparent 58%),
+    radial-gradient(1200px 640px at 14% -10%, rgba(232, 185, 77, 0.06), transparent 60%),
+    radial-gradient(900px 560px at 96% -4%, rgba(255, 157, 82, 0.04), transparent 55%),
+    linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 45%, var(--bg-deep) 100%);
+  color: var(--text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ROUND 9: Selin'in yüklediği görsel (kanyon + gezegenler manzarası),
+   sayfanın gerçek arka planı. public/assets/ui/ altında — game-generation
+   asset manifest'inin (server/config/assetManifest.js, sabit/statik bir
+   liste) okuduğu public/assets/backgrounds/ klasöründen BİLİNÇLİ olarak
+   ayrı tutuldu: bu görsel sadece sayfa çerçevesinin (chrome) bir parçası,
+   gerçek oyun asset'i DEĞİL — 39 gerçek asset'in sayısı/listesi hiç
+   etkilenmiyor. position:fixed + background-size:cover + center ile her
+   ekran boyutunda kırpılmadan/deforme olmadan tam ekranı kaplıyor;
+   üstündeki panellerin tamamı zaten opak arka plana sahip olduğu için
+   metin okunabilirliği etkilenmiyor (bkz. .panel background-color) —
+   sadece panel ARALARINDAKİ boşluklarda ve sidebar'ın arkasında görünür.
+   ROUND 10: yeni görsel (kale + siluet solda, gökdelen şehri sağda,
+   ortada zaten karanlık/boş bir "kod" negatif alan) — kompozisyonu
+   kendi içinde zaten merkez-boş olduğu için önceki roundun geniş
+   soldurma maskesi kaldırıldı, sadece görselin doğal karanlığına
+   güvenen hafif bir alt-gradient bırakıldı; opacity de bu yüzden daha
+   yüksek (görsel zaten kendi kendini "dark UI" ile uyumlu tutuyor). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, rgba(5, 7, 13, 0.22) 0%, rgba(5, 7, 13, 0.1) 35%, rgba(5, 7, 13, 0.45) 100%),
+    url("/assets/ui/ai-game-world-bg.jpg");
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-attachment: fixed, fixed;
+  opacity: 0.88;
+}
+
+/* Round 2 (composition pass): belirgin bir vinyet — kenarlar/köşeler
+   gerçek anlamda koyulaşıyor, "spotlight" alanları (telefon önizleme, Play
+   CTA, quality gauge) buna karşı çok daha güçlü kontrastla parlıyor. Düz/
+   tekdüze koyu SaaS zemininden ayrışan en büyük tek fark bu — Selin geri
+   bildirimi: "hâlâ dark SaaS dashboard gibi". İçeriğin/panellerin ÜZERİNDE
+   ama pointer-events:none olduğu için hiçbir tıklamayı engellemiyor. */
+.app-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: radial-gradient(135% 125% at 50% 8%, transparent 40%, rgba(2, 3, 7, 0.38) 76%, rgba(2, 3, 7, 0.68) 100%);
+}
+
+/* Atmosferik katman 2: çok hafif "yıldız tozu" doku + film grain — içerikten
+   bağımsız, tıklamayı engellemiyor. Eski açık temadaki kağıt-dokusunun
+   koyu/gece temasındaki karşılığı. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.55) 0.6px, transparent 0.9px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  background-size: 120px 120px, 120px 120px;
+  mix-blend-mode: overlay;
+  opacity: 0.05;
+}
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+
+/* ---------- Application shell (sidebar + main column) ---------- */
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: sticky;
+  width: 226px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 22px 14px;
+  border-right: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, rgba(18, 23, 41, 0.92), rgba(10, 13, 24, 0.96));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+  transition: width 0.2s var(--ease-premium), padding 0.2s var(--ease-premium), opacity 0.15s ease;
+}
+.sidebar > * { position: relative; z-index: 1; }
+
+/* ROUND 11: orman silueti + hilal ay (Round 2/8) tamamen kaldırıldı ve
+   referans görseldeki gibi TAMAMEN GEOMETRİK bir süslemeyle değiştirildi —
+   köşe parantezli bir çerçeve, merkezde ince bir daire ("compass/target")
+   ve ondan iki yana uzanan ince altın çizgilerin ucunda küçük elmas
+   işaretler. Doğa/ay imgesi yok. Gerçek, aria-hidden bir wrapper + child
+   span'ler olarak eklendi (index.html, .sidebar-nav'dan hemen sonra) —
+   pseudo-element background-layer hilesiyle "çizgi + ayrı elmas" birleşimi
+   temiz kurulamadığı için. `background_forest.svg` DOSYASI silinmedi;
+   sadece burada artık kullanılmıyor — assetManifest.js'de gerçek bir oyun
+   arkaplanı olarak hâlâ tanımlı ve etkilenmedi. */
+.sidebar-ornament {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 22px;
+  height: 58px;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.ornament-corner { position: absolute; width: 10px; height: 10px; }
+.ornament-corner::before,
+.ornament-corner::after {
+  content: "";
+  position: absolute;
+  background: rgba(232, 185, 77, 0.4);
+}
+.ornament-corner::before { width: 10px; height: 1px; }
+.ornament-corner::after { width: 1px; height: 10px; }
+.ornament-corner-tl { top: 0; left: 0; }
+.ornament-corner-tl::before, .ornament-corner-tl::after { top: 0; left: 0; }
+.ornament-corner-tr { top: 0; right: 0; }
+.ornament-corner-tr::before, .ornament-corner-tr::after { top: 0; right: 0; }
+.ornament-corner-bl { bottom: 0; left: 0; }
+.ornament-corner-bl::before, .ornament-corner-bl::after { bottom: 0; left: 0; }
+.ornament-corner-br { bottom: 0; right: 0; }
+.ornament-corner-br::before, .ornament-corner-br::after { bottom: 0; right: 0; }
+.ornament-line {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, rgba(232, 185, 77, 0.35) 30%, rgba(232, 185, 77, 0.35) 70%, transparent);
+}
+.ornament-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(232, 185, 77, 0.55);
+  background: var(--bg-deep);
+  box-shadow: 0 0 8px rgba(232, 185, 77, 0.25);
+}
+.ornament-diamond {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translateY(-50%) rotate(45deg);
+  background: rgba(232, 185, 77, 0.5);
+  box-shadow: 0 0 5px rgba(232, 185, 77, 0.35);
+}
+.ornament-diamond-left { left: 10px; }
+.ornament-diamond-right { right: 10px; }
+.app-shell.sidebar-collapsed .sidebar {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  overflow: hidden;
+  border-right-color: transparent;
+}
+
+/* ROUND 7: a soft violet-blue nebula glow behind the brand mark, mirroring
+   the warm forest silhouette already at the sidebar's bottom — the
+   sidebar now reads top-to-bottom as one atmospheric "night sky to
+   forest floor" scene instead of a flat panel with a logo on it. Pure
+   CSS gradient, no imported art; kept low-alpha so it stays atmosphere,
+   not a new color language (gold remains the only UI accent). */
+.sidebar-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 18px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+}
+.sidebar-brand::before {
+  content: "";
+  position: absolute;
+  top: -22px;
+  left: -14px;
+  right: -14px;
+  height: 130px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(130px 100px at 22% 15%, rgba(126, 110, 214, 0.32), transparent 72%);
+}
+
+/* ROUND 11: rozet, dolu bir gradyan kareden — referans görseldeki gibi
+   içi koyu/yarı saydam, altın kenarlıklı ve hafif ışıltılı bir SEKİZGEN
+   çerçeveye dönüştürüldü. Şekil clip-path polygon ile (gerçek bir görsel
+   asset olmadan) elde ediliyor; kenarlık clip sınırına yakın durduğu için
+   sekizgenin ana hatlarını çiziyor. */
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: linear-gradient(160deg, rgba(232, 185, 77, 0.16), rgba(10, 13, 24, 0.6) 75%);
+  border: 1.5px solid rgba(232, 185, 77, 0.7);
+  clip-path: polygon(29% 2%, 71% 2%, 98% 29%, 98% 71%, 71% 98%, 29% 98%, 2% 71%, 2% 29%);
+  box-shadow: 0 0 18px rgba(232, 185, 77, 0.32);
+}
+.brand-mark svg { width: 15px; height: 15px; filter: drop-shadow(0 0 5px rgba(232, 185, 77, 0.5)); }
+
+.brand-wordmark { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.brand-name {
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  /* ROUND 11: referanstaki "PLAYABLE AI" küçük büyük harf (small-caps)
+     tipografisiyle eşleşmesi için — küçük harfler küçültülmüş büyük harf
+     olarak render edilir, "AI" zaten büyük harf olduğu için etkilenmez. */
+  font-variant-caps: small-caps;
+  color: var(--gold-soft);
+  text-shadow: 0 0 1px rgba(232, 185, 77, 0.5), 0 0 14px rgba(232, 185, 77, 0.35);
+}
+.brand-tagline { font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 1px; }
+
+/* ROUND 11: bölüm başlığı, referans görseldeki gibi "metin — uzayan altın
+   çizgi — küçük elmas" biçimine dönüştürüldü. Saf ::before/::after ile
+   "metin, sonra çizgi, sonra ayrı bir elmas" kompozisyonu temiz şekilde
+   kurulamadığı için index.html'de gerçek bir .label-text + .label-line
+   sarmalayıcı çift eklendi (metin işlevi/erişilebilirliği değişmedi,
+   sadece iki span'e bölündü); elmas ise .label-line::after ile saf CSS. */
+.sidebar-section-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  padding: 20px 10px 6px;
+  white-space: nowrap;
+}
+.sidebar-section-label:first-of-type { padding-top: 2px; }
+.label-text { flex-shrink: 0; }
+.label-line {
+  flex: 1;
+  height: 1px;
+  min-width: 8px;
+  background: linear-gradient(90deg, rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.08));
+  position: relative;
+}
+.label-line::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translateY(-50%) rotate(45deg);
+  background: rgba(232, 185, 77, 0.55);
+  box-shadow: 0 0 4px rgba(232, 185, 77, 0.4);
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid transparent;
+}
+.sidebar-link:hover { color: var(--text); background: var(--ink-soft); }
+.sidebar-link.active {
+  color: var(--gold-soft);
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(232, 185, 77, 0.19), rgba(232, 185, 77, 0.03) 70%);
+  /* ROUND 11: referanstaki gibi tüm pilin çevresinde belirgin, parlayan
+     altın kenarlık — sadece sol şerit değil. Sol vurgu şeridi de (inset
+     box-shadow) korunuyor, üstüne eklendi, kaldırılmadı. */
+  border-color: rgba(232, 185, 77, 0.55);
+  box-shadow: inset 3px 0 0 var(--gold), 0 0 0 1px rgba(232, 185, 77, 0.28), 0 0 22px rgba(232, 185, 77, 0.22);
+}
+.sidebar-link.active .sidebar-link-icon { text-shadow: 0 0 10px rgba(232, 185, 77, 0.5); }
+.sidebar-link[aria-disabled="true"] { cursor: default; opacity: 0.45; }
+.sidebar-link[aria-disabled="true"]:hover { color: var(--text-dim); background: none; }
+
+.sidebar-link-icon { width: 16px; flex-shrink: 0; text-align: center; font-size: 12.5px; }
+.sidebar-link-text { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+.sidebar-link-count {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+.soon-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+
+.main-column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Page header ---------- */
+
+/* ROUND 5 (spacing/cohesion fix): .page-header/.workflow-steps/.layout used
+   to be centered (max-width + margin:0 auto) INSIDE .main-column, which is
+   itself the full remaining width after the sidebar. On any viewport wider
+   than the old ~1340-1400px cap, that centering put equal empty space on
+   BOTH sides — a visible gap right next to the sidebar AND a matching gap
+   on the right edge, which is exactly why the workspace read as a
+   separate, "floating" block instead of one continuous interface attached
+   to the sidebar. Fix: drop the auto-centering so content hugs the
+   sidebar via ordinary left padding, raise the width cap so typical wide
+   screens (up to ~1720px of content) use the space instead of capping
+   early, and trim the padding itself for a tighter attach point. No
+   change to sidebar width or the 3-column grid definition below. */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px 8px;
+  max-width: 1720px;
+  width: 100%;
+}
+
+.page-header-left { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+
+.sidebar-toggle-btn { flex-shrink: 0; margin-top: 6px; }
+
+/* ROUND 4: hero heading scaled up further and given tighter, more
+   deliberate line-height so the top of the page reads as the entrance to
+   a game-creation studio rather than an app header — bigger scale +
+   tighter spacing = more editorial confidence, not more decoration. */
+.page-heading h1 {
+  margin: 0 0 5px;
+  font-family: var(--font-display);
+  font-size: 38px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 0 1px rgba(246, 216, 136, 0.6), 0 0 22px rgba(232, 185, 77, 0.4), 0 0 46px rgba(255, 157, 82, 0.16);
+}
+.page-heading h1::before {
+  content: "◆ ";
+  font-size: 17px;
+  vertical-align: 6px;
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(232, 185, 77, 0.6);
+}
+
+.page-heading p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  max-width: 44ch;
+}
+
+.page-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.badge.mock { color: var(--warning); border-color: rgba(221, 154, 61, 0.34); background: var(--warning-soft); }
+.badge.live { color: var(--success); border-color: rgba(72, 189, 130, 0.34); background: var(--success-soft); }
+
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+.icon-btn:hover { color: var(--gold-soft); border-color: var(--border-strong); box-shadow: 0 0 14px rgba(232, 185, 77, 0.14); }
+.icon-btn:disabled { cursor: not-allowed; opacity: 0.4; }
+.icon-btn:disabled:hover { color: var(--text-dim); border-color: var(--border); box-shadow: none; }
+
+/* ---------- Workflow stepper ---------- */
+
+/* ROUND 4: the 1→2→3 stepper gets a faint connecting "pipeline track"
+   running behind the numbered nodes (::before on the list) instead of
+   relying only on the arrow glyphs between steps — reads more like a
+   creation pipeline, still restrained (a single 1px line, no extra gold
+   fills). */
+.workflow-steps {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0 28px;
+  max-width: 1720px;
+  width: 100%;
+  list-style: none;
+}
+/* FIX: was pinned at a fixed top:15px, which only happened to line up
+   with the circles at one particular text height — with the real two-line
+   step labels it actually cut across the "Generate"/"Play" text instead.
+   .workflow-steps centers its children on the cross-axis (align-items:
+   center), so top:50% + translateY(-50%) always lands exactly on that
+   shared center line — i.e. through the circles, never the text — no
+   matter the label height. */
+.workflow-steps::before {
+  content: "";
+  position: absolute;
+  left: 43px;
+  right: calc(100% - 340px);
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(232, 185, 77, 0.32), rgba(232, 185, 77, 0.08));
+  z-index: 0;
+}
+
+.workflow-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+}
+
+.workflow-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1c1305;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  box-shadow: 0 0 10px rgba(232, 185, 77, 0.35), 0 0 0 3px var(--bg-deep);
+}
+
+.workflow-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.workflow-text b { font-size: 11.5px; color: var(--text); font-weight: 700; }
+
+.workflow-arrow { color: var(--border-strong); font-size: 12px; }
+
+/* ---------- Layout ---------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(295px, 328px) minmax(0, 1fr) minmax(248px, 284px);
+  grid-template-areas:
+    "generator  preview    controls"
+    "gamelibrary gamelibrary gamelibrary"
+    "library    library     library"
+    "output     output      output";
+  align-items: start;
+  gap: 16px;
+  padding: 10px 28px 26px;
+  max-width: 1720px;
+  width: 100%;
+}
+
+/* Round 2 (composition pass): panel artık düz/tek renk bir "kart" değil —
+   gerçek /assets/backgrounds/background_space.svg yıldız tarlası,
+   background-attachment:fixed ile TÜM panellerin arkasından aynı,
+   kesintisiz "oyun dünyası" olarak sızıyor (sanki her panel o dünyaya açılan
+   bir pencere). Bu, "hâlâ dark SaaS dashboard gibi" geri bildirimindeki asıl
+   nedeni (düz koyu gri kartlar) doğrudan hedefliyor. Ayrıca gerçek bir kasa/
+   çerçeve kabartması için çift box-shadow (üstte ince ışık çizgisi, altta
+   derin gölge) ve dört köşede ince altın köşebent (::after, salt dekoratif). */
+.panel {
+  position: relative;
+  background-color: var(--surface);
+  background-image:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.03), transparent 45%),
+    linear-gradient(180deg, rgba(7, 10, 19, 0.88), rgba(6, 8, 16, 0.95)),
+    url("/assets/backgrounds/background_space.svg");
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-position: 0 0, 0 0, center;
+  background-size: auto, auto, cover;
+  background-attachment: local, local, fixed;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -18px 30px -20px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  transition: border-color 0.25s var(--ease-premium), box-shadow 0.25s var(--ease-premium);
+}
+/* ROUND 4 (refinement pass): corner ornaments + top hairline are no longer
+   a blanket rule on every .panel — Selin's explicit feedback was "gold
+   borders everywhere" / "too many borders". They now appear ONLY on the
+   two console-like panels that are meant to feel framed/instrument-like
+   (Describe Your Game + Preview Controls); Live Preview, Game Library,
+   Asset Library and Generated Output rely on depth/shadow/imagery instead
+   of a repeated gold-corner motif — decoration used selectively, not
+   uniformly. Where it remains, it is also visually quieter (lower alpha,
+   smaller marks) than Round 3. */
+.generator-panel::before,
+.controls-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 6%;
+  right: 6%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 185, 77, 0.3), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+.generator-panel::after,
+.controls-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4)),
+    linear-gradient(rgba(232, 185, 77, 0.4), rgba(232, 185, 77, 0.4));
+  background-size: 13px 1.5px, 1.5px 13px, 13px 1.5px, 1.5px 13px, 13px 1.5px, 1.5px 13px, 13px 1.5px, 1.5px 13px;
+  background-position:
+    12px 12px, 12px 12px,
+    calc(100% - 25px) 12px, calc(100% - 13.5px) 12px,
+    12px calc(100% - 13.5px), 12px calc(100% - 25px),
+    calc(100% - 25px) calc(100% - 13.5px), calc(100% - 13.5px) calc(100% - 25px);
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+}
+.panel:hover { box-shadow: var(--shadow-card-hover), inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 0 -18px 30px -20px rgba(0, 0, 0, 0.6); border-color: var(--border-strong); }
+.generator-panel:hover::after,
+.controls-panel:hover::after { opacity: 0.9; }
+
+@media (max-width: 980px) {
+  /* Mobil Safari/Chrome'da background-attachment:fixed performans/scroll
+     tuhaflıkları yaratabiliyor — dar ekranlarda sabit yıldız katmanı yerine
+     normal (scroll ile hareket eden) bir katmana düşülüyor, görsel etki
+     neredeyse aynı kalıyor. */
+  .panel { background-attachment: local, local, local; }
+}
+
+.panel h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.panel-eyebrow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 14px;
+}
+
+/* Referans görseldeki "01 / 02 / 03" bölüm numaralandırma rozetleri — SALT
+   dekoratif, HTML'e dokunmadan (yeni bir eleman eklemeden) ::before ile
+   eklendi; her ana panelin ayrı bir "game system" hissi vermesine yardımcı
+   oluyor (bkz. istek #10). */
+.generator-panel .panel-eyebrow::before,
+.controls-panel .panel-eyebrow::before,
+.preview-header-left::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--gold-soft);
+  background: linear-gradient(165deg, rgba(232, 185, 77, 0.14), var(--surface-inset) 70%);
+  border: 1px solid rgba(232, 185, 77, 0.4);
+  box-shadow: 0 0 10px rgba(232, 185, 77, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+.generator-panel .panel-eyebrow::before { content: "01"; }
+.controls-panel .panel-eyebrow::before { content: "03"; }
+.preview-header-left { position: relative; }
+.preview-header-left::before { content: "02"; margin-right: 2px; }
+
+.panel-subtitle {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+}
+
+.generator-panel { grid-area: generator; }
+.preview-panel { grid-area: preview; }
+.controls-panel { grid-area: controls; }
+.game-library-panel { grid-area: gamelibrary; }
+.asset-library-panel { grid-area: library; }
+.output-panel { grid-area: output; }
+
+/* ---------- Generator panel ---------- */
+
+.generator-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.field-row label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.char-counter {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+#prompt-input {
+  width: 100%;
+  min-height: 134px;
+  resize: vertical;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.05)), var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text);
+  padding: 16px 17px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  font-family: inherit;
+  transition: border-color 0.25s var(--ease-premium), box-shadow 0.25s var(--ease-premium), background 0.25s ease;
+}
+#prompt-input::placeholder { color: var(--text-faint); }
+#prompt-input:focus {
+  outline: none;
+  border-color: rgba(232, 185, 77, 0.55);
+  box-shadow: 0 0 0 3.5px rgba(232, 185, 77, 0.14), 0 0 26px rgba(232, 185, 77, 0.1);
+}
+
+.examples-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.examples-label {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ---------- AI Selected Assets ---------- */
+
+.ai-assets-block {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.ai-assets-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ai-assets-label {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ai-assets-mode {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.ai-assets-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 4px;
+}
+
+.ai-assets-empty {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  padding: 10px 12px;
+  background: var(--surface-inset);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.ai-asset-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(160deg, rgba(232, 185, 77, 0.09), var(--surface-inset) 65%);
+  border: 1px solid rgba(232, 185, 77, 0.24);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.ai-asset-card:hover { border-color: rgba(232, 185, 77, 0.45); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(232, 185, 77, 0.14); }
+
+.ai-asset-thumb {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--surface-inset);
+  border: 1px solid rgba(232, 185, 77, 0.22);
+  padding: 5px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.ai-asset-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+.ai-asset-copy { display: flex; flex-direction: column; gap: 3px; line-height: 1.25; min-width: 0; flex: 1; }
+.ai-asset-copy-top { display: flex; align-items: center; flex-wrap: wrap; gap: 3px 8px; }
+.ai-asset-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+  min-width: 65%;
+}
+.ai-asset-role-tag {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #17100a;
+  background: var(--gold);
+}
+.ai-asset-role-tag.role-player { background: #f6c667; color: #241705; }
+.ai-asset-role-tag.role-collectible { background: var(--success); color: #0b1f13; }
+.ai-asset-role-tag.role-obstacle { background: var(--danger); color: #250c08; }
+.ai-asset-role-tag.role-environment { background: #8fa0d8; color: #0d1326; }
+.ai-asset-role-tag.role-effect { background: var(--amber); color: #250d02; }
+.ai-asset-role-tag.role-default { background: var(--ink-mid); color: var(--text); }
+
+.ai-asset-meta-line {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-style: italic;
+}
+.ai-asset-compat {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.asset-thumb.is-ai-pick { box-shadow: 0 0 0 2px rgba(232, 185, 77, 0.4); }
+.asset-thumb.is-ai-pick::before {
+  content: "AI";
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #1c1305;
+  background: var(--gold);
+  border-radius: 5px;
+  padding: 1.5px 3.5px;
+  line-height: 1.3;
+  box-shadow: 0 0 0 2px var(--surface-inset);
+  z-index: 1;
+}
+
+/* ---------- Preset / Game Library cards ---------- */
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.preset-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface-inset));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.18s var(--ease-premium), background 0.18s var(--ease-premium),
+    transform 0.18s var(--ease-premium), box-shadow 0.18s var(--ease-premium);
+}
+.preset-card:hover {
+  border-color: rgba(232, 185, 77, 0.5);
+  transform: translateY(-1.5px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4), 0 0 18px rgba(232, 185, 77, 0.12);
+}
+.preset-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.preset-thumb {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-soft);
+}
+
+.preset-thumb-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.95;
+}
+
+.preset-thumb-fg {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  bottom: 3px;
+  left: 3px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+.preset-thumb-fg2 { width: 14px; height: 14px; bottom: 3px; left: auto; right: 3px; }
+
+.preset-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.preset-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preset-desc {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 7px 13px;
+  cursor: pointer;
+  transition: color 0.18s var(--ease-premium), border-color 0.18s var(--ease-premium),
+    background 0.18s var(--ease-premium), transform 0.18s var(--ease-premium);
+}
+.chip:hover { color: var(--gold-soft); border-color: rgba(232, 185, 77, 0.45); background: var(--surface-raised); transform: translateY(-1.5px); }
+
+.primary-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+  background-color: var(--gold);
+  background-image:
+    radial-gradient(120px 60px at 20% -30%, rgba(255, 224, 170, 0.55), transparent 65%),
+    linear-gradient(100deg, var(--gold-deep), var(--gold) 50%, var(--amber));
+  background-size: auto, 180% auto;
+  background-position: 0 0, 0% 50%;
+  color: #241605;
+  border: 1px solid rgba(255, 224, 160, 0.55);
+  border-radius: var(--radius-md);
+  padding: 16.5px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.015em;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -3px 6px rgba(90, 55, 8, 0.35),
+    0 16px 34px rgba(232, 185, 77, 0.36),
+    0 0 38px rgba(255, 157, 82, 0.18);
+  transition: transform 0.22s var(--ease-premium), box-shadow 0.22s var(--ease-premium), background-position 0.45s var(--ease-premium);
+}
+.primary-btn:hover:not(:disabled) {
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -3px 6px rgba(90, 55, 8, 0.32),
+    0 18px 40px rgba(232, 185, 77, 0.42),
+    0 0 48px rgba(255, 157, 82, 0.3);
+  transform: translateY(-2px);
+  background-position: 0 0, 100% 50%;
+}
+.primary-btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 8px 20px rgba(232, 185, 77, 0.32); }
+.primary-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; text-shadow: none; }
+.primary-btn .btn-icon { font-size: 13px; }
+.primary-btn .btn-arrow { font-size: 15px; transition: transform 0.2s var(--ease-premium); }
+.primary-btn:hover:not(:disabled) .btn-arrow { transform: translateX(3px); }
+
+.btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(36, 22, 5, 0.35);
+  border-top-color: #241605;
+  flex-shrink: 0;
+  animation: btn-spin 0.7s linear infinite;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+
+.status-line { min-height: 16px; font-size: 12px; color: var(--text-faint); margin: 0; }
+.status-line.error { color: var(--danger); }
+.status-line.success { color: var(--success); }
+
+.info-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 11px 13px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(221, 154, 61, 0.32);
+  background: var(--warning-soft);
+}
+.info-card.hidden { display: none; }
+.info-icon { font-size: 13px; flex-shrink: 0; }
+.info-text { flex: 1; font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+
+.text-btn {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 4px 6px;
+}
+.text-btn:hover { color: var(--amber); }
+.text-btn:disabled { color: var(--text-faint); cursor: not-allowed; }
+
+/* ---------- Preview panel ---------- */
+
+/* ROUND 3 (composition pass): Live Preview artık üç panelden biri "kart"
+   gibi görünmüyor — kutu/border/arka plan kaldırıldı, panel doğrudan
+   sayfanın kendi atmosferik zemininde AÇIK bir sahne. Telefon, bir kartın
+   İÇİNDEKİ görsel değil, sahnenin kendisi; kompozisyonun asimetrisi
+   (dar-geniş-dar yerine "çerçeveli-açık sahne-çerçeveli") buradan geliyor.
+   Bu, "3 eşit SaaS kartı" hissinin tek en büyük kaynağıydı. */
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 22px 6px;
+  box-shadow: none;
+  overflow: visible;
+}
+.preview-panel::before,
+.preview-panel::after { content: none; }
+
+/* Sahnenin kendi ışıklandırması: iki yumuşak "light beam" + geniş bir
+   zemin parıltısı — telefonun arkasında, sadece bu panelin alanında. */
+.preview-panel::marker { content: none; }
+.preview-stage-light {
+  position: absolute;
+  inset: -40px -20px -60px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(420px 420px at 50% 34%, rgba(232, 185, 77, 0.1), transparent 68%),
+    conic-gradient(from 200deg at 50% -10%, rgba(255, 214, 140, 0.16), transparent 24%, transparent 76%, rgba(255, 214, 140, 0.1) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+}
+.preview-header, .phone-frame-wrap, .game-info-strip, .preview-meta-row, .preview-status { position: relative; z-index: 1; }
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.preview-header-left { display: flex; align-items: center; gap: 10px; }
+.preview-header-left h2 { margin: 0; font-size: 15px; color: var(--text); letter-spacing: -0.005em; }
+.preview-subtitle { margin: 1px 0 0; font-size: 11px; color: var(--text-faint); }
+.live-dot { margin-top: 3px; }
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(72, 189, 130, 0.6);
+  flex-shrink: 0;
+  animation: live-pulse 2.2s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(72, 189, 130, 0.6); }
+  50% { box-shadow: 0 0 14px rgba(72, 189, 130, 0.9); }
+}
+
+.preview-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+.asset-preview-tag.hidden { display: none; }
+.asset-preview-tag { color: var(--gold-soft); border-color: rgba(232, 185, 77, 0.34); background: rgba(232, 185, 77, 0.09); }
+
+.tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.device-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.device-toggle-btn {
+  height: 24px;
+  padding: 0 11px;
+  border: none;
+  background: none;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.device-toggle-btn.active {
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  color: #241605;
+  box-shadow: 0 2px 10px rgba(232, 185, 77, 0.34);
+}
+.device-toggle-btn:hover { color: var(--gold-soft); }
+.device-toggle-btn.active:hover { color: #241605; }
+
+.phone-frame-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 4px;
+  transition: max-width 0.25s ease;
+}
+
+.phone-frame-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -8% -4%;
+  background: radial-gradient(closest-side, rgba(232, 185, 77, 0.2), transparent 72%);
+  filter: blur(14px);
+  z-index: 0;
+  pointer-events: none;
+}
+.phone-frame-wrap.desktop-mode::before { inset: -6% -3%; }
+
+.phone-frame {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 408px;
+  aspect-ratio: 320 / 568;
+  border-radius: 40px;
+  padding: 12px;
+  background: linear-gradient(165deg, #322e27, #17150f 55%, #0e0d0a);
+  border: 1px solid rgba(232, 185, 77, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 30px 68px rgba(0, 0, 0, 0.55),
+    0 0 0 2px rgba(232, 185, 77, 0.22),
+    0 0 34px rgba(232, 185, 77, 0.16);
+  transition: max-width 0.3s var(--ease-premium), aspect-ratio 0.3s var(--ease-premium), border-radius 0.3s var(--ease-premium);
+}
+
+.phone-frame::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 30px;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.1) 0%, transparent 26%, transparent 100%);
+}
+.phone-frame-wrap.desktop-mode .phone-frame::after { border-radius: 14px; }
+
+.phone-side-btn {
+  position: absolute;
+  background: linear-gradient(90deg, #211e19, #3a352c);
+  border-radius: 2px 0 0 2px;
+  z-index: 0;
+}
+.phone-side-btn-power { right: -2px; top: 118px; width: 3px; height: 46px; border-radius: 0 2px 2px 0; }
+.phone-side-btn-vol-up { left: -2px; top: 96px; width: 3px; height: 30px; }
+.phone-side-btn-vol-down { left: -2px; top: 134px; width: 3px; height: 30px; }
+.phone-frame-wrap.desktop-mode .phone-side-btn { display: none; }
+
+.phone-frame-wrap.desktop-mode .phone-frame {
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 20px;
+  padding: 10px;
+}
+.phone-frame-wrap.desktop-mode .phone-notch { display: none; }
+.phone-frame-wrap.desktop-mode .preview-placeholder {
+  border-radius: 14px;
+}
+.phone-frame-wrap.desktop-mode .phone-frame::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #050504;
+  box-shadow: 0 0 0 2px rgba(232, 185, 77, 0.14);
+  z-index: 3;
+}
+
+.phone-notch {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 84px;
+  height: 18px;
+  background: #100f0b;
+  border-radius: 0 0 14px 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.phone-notch-cam {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2a2820;
+  box-shadow: 0 0 0 1px rgba(232, 185, 77, 0.1) inset;
+}
+
+.mock-preview-ribbon {
+  position: absolute;
+  top: 26px;
+  right: -6px;
+  z-index: 5;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #241605;
+  background: linear-gradient(135deg, var(--gold-soft), var(--warning));
+  padding: 3px 9px 3px 11px;
+  border-radius: 5px 0 0 5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.mock-preview-ribbon.hidden { display: none; }
+
+#preview-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  border-radius: 28px;
+  background: #fff;
+}
+.phone-frame-wrap.desktop-mode #preview-frame { border-radius: 14px; }
+
+/* ROUND 17: premium empty-state — Selin'in isteğiyle hero_generic.svg
+   silüeti tamamen kaldırıldı (bkz. index.html'deki not). Artık SADECE:
+   koyu/hafif gradient zemin + yavaşça yükselip alçalan altın toz
+   parçacıkları (::before, saf CSS, hiçbir asset dosyasına referans
+   vermiyor) + ortada zarif, nefes alan bir ✦ glow + iki kademeli
+   tipografi (başlık / açıklama). Üretim sonrası bu tamamen gizleniyor
+   (bkz. app.js renderPreview) — gerçek üretimde ASLA görünmez. */
+.preview-placeholder {
+  position: absolute;
+  inset: 12px;
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 20px;
+  overflow: hidden;
+  background:
+    radial-gradient(260px 220px at 50% 46%, rgba(232, 185, 77, 0.12), transparent 68%),
+    linear-gradient(180deg, rgba(7, 10, 19, 0.94), rgba(5, 7, 13, 0.98)),
+    var(--surface-inset);
+}
+.preview-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.6px 1.6px at 20% 30%, rgba(246, 216, 136, 0.7), transparent),
+    radial-gradient(1.4px 1.4px at 70% 20%, rgba(246, 216, 136, 0.55), transparent),
+    radial-gradient(1.8px 1.8px at 82% 62%, rgba(246, 216, 136, 0.6), transparent),
+    radial-gradient(1.3px 1.3px at 35% 75%, rgba(246, 216, 136, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 55% 48%, rgba(246, 216, 136, 0.4), transparent);
+  animation: preview-particles-float 7s ease-in-out infinite;
+}
+@keyframes preview-particles-float {
+  0%, 100% { transform: translateY(0); opacity: 0.75; }
+  50% { transform: translateY(-9px); opacity: 1; }
+}
+.preview-placeholder.hidden { display: none; }
+.preview-placeholder.error { color: var(--danger); }
+
+/* Merkezi sparkle + nefes alan halo — ✦ glyph'i tasarım sisteminde zaten
+   var (Describe Your Game / Improve with AI / Featured Build başlıkları),
+   burada sadece kendi glow halkasıyla büyütülmüş hali. */
+.preview-placeholder-glow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 2px;
+}
+.preview-placeholder-glow::before {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 185, 77, 0.32), rgba(232, 185, 77, 0.07) 55%, transparent 76%);
+  animation: preview-glow-breathe 3.4s ease-in-out infinite;
+}
+@keyframes preview-glow-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.preview-placeholder-icon {
+  position: relative;
+  z-index: 1;
+  font-size: 27px;
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(232, 185, 77, 0.6), 0 0 36px rgba(232, 185, 77, 0.3);
+}
+.preview-placeholder.error .preview-placeholder-icon { color: var(--danger); }
+
+/* İki kademeli tipografi: başlık nötr metin rengiyle biraz daha güçlü,
+   açıklama daha soluk/küçük — mevcut --text-dim / --text-faint sistemiyle
+   birebir aynı hiyerarşi (bkz. panel-eyebrow / preview-status kullanımı). */
+.preview-placeholder-title {
+  position: relative;
+  z-index: 1;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-dim);
+}
+.preview-placeholder-desc {
+  position: relative;
+  z-index: 1;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+  max-width: 220px;
+}
+.preview-placeholder-desc b { color: var(--text-dim); font-weight: 600; }
+
+/* ---------- Generation Experience pipeline ---------- */
+
+.generation-pipeline {
+  position: absolute;
+  inset: 12px;
+  z-index: 3;
+  border-radius: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(220px 160px at 50% 38%, rgba(232, 185, 77, 0.12), transparent 70%),
+    var(--surface-inset);
+}
+.generation-pipeline.hidden { display: none; }
+
+.pipeline-stages {
+  list-style: none;
+  margin: 0;
+  padding: 0 22px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pipeline-stage {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  transition: color 0.25s ease;
+}
+
+.pipeline-stage-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  flex-shrink: 0;
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pipeline-stage.is-active { color: var(--text); }
+.pipeline-stage.is-active .pipeline-stage-dot {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(232, 185, 77, 0.55);
+  animation: pipeline-pulse 1s ease-in-out infinite;
+}
+.pipeline-stage.is-done { color: var(--success); }
+.pipeline-stage.is-done .pipeline-stage-dot { background: var(--success); box-shadow: none; animation: none; }
+
+@keyframes pipeline-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+}
+
+/* ---------- Game Information strip ---------- */
+
+.game-info-strip { display: flex; justify-content: center; flex-wrap: wrap; gap: 13px; }
+
+.game-info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.game-info-icon { color: var(--gold); font-size: 11px; }
+
+.info-hint {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  font-size: 8.5px;
+  color: var(--text-faint);
+  cursor: help;
+  flex-shrink: 0;
+}
+
+/* ---------- Preview meta badges ---------- */
+
+.preview-meta-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; opacity: 0.92; }
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 3px 9px 3px 3px;
+}
+
+.meta-pill-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  background: var(--surface-raised);
+  border-radius: 999px;
+  padding: 2px 6px;
+}
+
+.meta-pill.ok { color: var(--success); border-color: rgba(72, 189, 130, 0.3); }
+.meta-pill.warn { color: var(--warning); border-color: rgba(221, 154, 61, 0.3); }
+.meta-pill.fail { color: var(--danger); border-color: rgba(226, 104, 90, 0.3); }
+
+.preview-status { margin: -4px 0 0; font-size: 11px; color: var(--text-faint); text-align: center; min-height: 14px; }
+
+/* ---------- Controls panel ---------- */
+
+.controls-panel { display: flex; flex-direction: column; gap: 16px; }
+.controls-btn-col { display: flex; flex-direction: column; gap: 9px; }
+
+.controls-btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+/* ROUND 4: PLAY is the dominant control in this panel — slightly larger
+   than the shared .primary-btn baseline. Restart/Fullscreen below are
+   deliberately quieter (smaller text, dimmer border) so the hierarchy
+   reads at a glance: one big action, two small secondary ones. */
+.controls-play-btn { padding: 14.5px 16px; font-size: 14.5px; letter-spacing: 0.02em; }
+
+.controls-btn-row .secondary-btn { font-size: 11.5px; padding: 9px 10px; opacity: 0.88; }
+.controls-btn-row .secondary-btn:hover:not(:disabled) { opacity: 1; }
+
+.secondary-btn {
+  width: 100%;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface-inset));
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s var(--ease-premium), border-color 0.2s var(--ease-premium), background 0.2s var(--ease-premium), transform 0.2s var(--ease-premium), box-shadow 0.2s var(--ease-premium), opacity 0.2s ease;
+}
+.secondary-btn:hover:not(:disabled) {
+  color: var(--gold-soft);
+  border-color: var(--border-strong);
+  box-shadow: 0 0 16px rgba(232, 185, 77, 0.1);
+  transform: translateY(-1px);
+}
+.secondary-btn:active:not(:disabled) { transform: translateY(0); }
+.secondary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+#improve-toggle-btn {
+  background: linear-gradient(160deg, rgba(232, 185, 77, 0.12), rgba(255, 157, 82, 0.05));
+  border-color: rgba(232, 185, 77, 0.28);
+  color: var(--text-dim);
+}
+#improve-toggle-btn:hover:not(:disabled) {
+  border-color: rgba(232, 185, 77, 0.5);
+  color: var(--gold-soft);
+  background: linear-gradient(160deg, rgba(232, 185, 77, 0.2), rgba(255, 157, 82, 0.09));
+}
+
+/* ---------- Quality Score card ---------- */
+
+/* "Control deck" gauge housing — deliberately sharp-cornered (clipped
+   top-right + bottom-left corners) instead of the uniform rounded-card
+   language used everywhere else, so the quality gauge reads as an
+   instrument panel bolted into the sidebar rather than another SaaS card. */
+.quality-card {
+  position: relative;
+  border: 1px solid rgba(232, 185, 77, 0.22);
+  border-radius: 4px;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.03), transparent 50%), var(--surface-inset);
+  padding: 18px 16px 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), inset 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+.quality-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.7;
+}
+
+.quality-card-header { display: flex; align-items: center; justify-content: space-between; }
+.quality-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.quality-details-toggle {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.quality-details-toggle:hover { color: var(--gold-soft); }
+.quality-details-toggle.hidden { display: none; }
+.quality-details-arrow { display: inline-block; transition: transform 0.18s ease; font-size: 9px; }
+.quality-details-toggle.is-open .quality-details-arrow { transform: rotate(180deg); }
+
+.quality-score-row { margin-top: 6px; display: flex; justify-content: center; }
+
+.quality-ring {
+  --score-pct: 0;
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--gold) calc(var(--score-pct) * 1%), rgba(255, 255, 255, 0.06) 0);
+  box-shadow:
+    0 0 0 1px rgba(232, 185, 77, 0.2),
+    0 0 22px rgba(232, 185, 77, 0.28),
+    0 0 52px rgba(255, 157, 82, 0.16);
+  transition: background 0.6s var(--ease-premium), box-shadow 0.6s var(--ease-premium);
+}
+.quality-ring.score-good { background: conic-gradient(var(--success) calc(var(--score-pct) * 1%), rgba(255, 255, 255, 0.06) 0); box-shadow: 0 0 0 1px rgba(72, 189, 130, 0.24), 0 0 22px rgba(72, 189, 130, 0.3), 0 0 52px rgba(72, 189, 130, 0.16); }
+.quality-ring.score-mid { background: conic-gradient(var(--warning) calc(var(--score-pct) * 1%), rgba(255, 255, 255, 0.06) 0); box-shadow: 0 0 0 1px rgba(221, 154, 61, 0.24), 0 0 22px rgba(221, 154, 61, 0.3), 0 0 52px rgba(221, 154, 61, 0.16); }
+.quality-ring.score-bad { background: conic-gradient(var(--danger) calc(var(--score-pct) * 1%), rgba(255, 255, 255, 0.06) 0); box-shadow: 0 0 0 1px rgba(226, 104, 90, 0.24), 0 0 22px rgba(226, 104, 90, 0.3), 0 0 52px rgba(226, 104, 90, 0.16); }
+.quality-ring::before { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--surface-inset); box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.04); }
+/* ROUND 4: small HUD tick marks around the gauge — a mechanical/instrument
+   detail (repeating-conic-gradient, no extra markup) so the score reads
+   as a diagnostic dial rather than a plain circular stat. */
+.quality-score-row { position: relative; }
+.quality-score-row::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 116px;
+  height: 116px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: repeating-conic-gradient(rgba(232, 185, 77, 0.38) 0deg 1.2deg, transparent 1.2deg 9deg);
+  -webkit-mask-image: radial-gradient(closest-side, transparent 96%, #000 97.5%, #000 100%, transparent 100%);
+  mask-image: radial-gradient(closest-side, transparent 96%, #000 97.5%, #000 100%, transparent 100%);
+}
+
+.quality-score {
+  position: relative;
+  z-index: 1;
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  transition: color 0.3s ease;
+}
+.quality-score.score-good { color: var(--success); }
+.quality-score.score-mid { color: var(--warning); }
+.quality-score.score-bad { color: var(--danger); }
+
+.quality-score.score-reveal { animation: score-reveal 0.5s var(--ease-premium); }
+@keyframes score-reveal {
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.quality-score-bar-track { margin-top: 10px; height: 6px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.quality-score-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--amber));
+  transition: width 0.6s var(--ease-premium);
+}
+.quality-score-bar-fill.score-good { background: linear-gradient(90deg, #2f9163, var(--success)); }
+.quality-score-bar-fill.score-mid { background: linear-gradient(90deg, #a9781f, var(--warning)); }
+.quality-score-bar-fill.score-bad { background: linear-gradient(90deg, #ac4a3a, var(--danger)); }
+
+.quality-placeholder { margin: 10px 0 0; font-size: 12px; color: var(--text-faint); }
+.quality-placeholder.hidden { display: none; }
+
+.quality-summary { margin: 10px 0 0; font-size: 12.5px; font-weight: 700; color: var(--text-dim); }
+.quality-summary.ok { color: var(--success); }
+.quality-summary.warn { color: var(--warning); }
+.quality-summary.hidden { display: none; }
+
+/* ROUND 7: laid out as a clean 2-column checklist (closer to the
+   reference's diagnostic-instrument look) instead of wrapped pills —
+   still the exact same real .status-pill items app.js renders for the
+   real validation.checks data, only the container layout + pill chrome
+   changed. Default hidden/"Details" toggle behavior is untouched. */
+.quality-checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin-top: 12px; }
+.quality-checks.hidden { display: none; }
+.quality-checks .status-pill {
+  justify-content: flex-start;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 2px 0;
+  font-weight: 600;
+}
+
+.quality-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.quality-actions:not(:empty) { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-soft); }
+
+.quality-warning { font-size: 11.5px; color: var(--warning); font-weight: 600; }
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: default;
+}
+.status-pill.ok { color: var(--success); border-color: rgba(72, 189, 130, 0.3); }
+.status-pill.warn { color: var(--warning); border-color: rgba(221, 154, 61, 0.3); }
+.status-pill.fail { color: var(--danger); border-color: rgba(226, 104, 90, 0.3); }
+
+/* ---------- Improve with AI ---------- */
+
+.improve-block { display: flex; flex-direction: column; gap: 10px; }
+.secondary-btn.full { width: 100%; }
+
+.improve-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.improve-panel.hidden { display: none; }
+
+#improve-input {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+#improve-input::placeholder { color: var(--text-faint); }
+#improve-input:focus {
+  outline: none;
+  border-color: rgba(232, 185, 77, 0.5);
+  box-shadow: 0 0 0 3px rgba(232, 185, 77, 0.14);
+}
+
+.primary-btn.small { padding: 9px 14px; font-size: 12.5px; box-shadow: none; }
+
+/* ---------- Asset Library ---------- */
+
+.asset-library-panel { display: flex; flex-direction: column; gap: 14px; }
+
+/* ROUND 3: "admin panel" hissinden çıkaran asıl değişiklik — kütüphane
+   artık salt bir ikon ızgarası değil, sağında gerçek bir "game asset
+   vault" artwork'u olan iki kolonlu bir kompozisyon. Sanat kolonu tamamen
+   dekoratif (tıklanamaz), gerçek işlevsellik SADECE .asset-library-main
+   içinde, hiç değişmedi. */
+/* ROUND 4: the artwork column was flagged as too large — it was stretching
+   to the full height of the grid (~400px+) and reading as the section's
+   main content. It is now a small, fixed-size supporting panel pinned to
+   the top of the layout (align-items: flex-start, no stretch) so the
+   asset categories are unmistakably the functional focus. */
+/* ROUND 12: referanstaki gibi sanat karosu artık tüm ana kolonun yanında
+   dikey olarak uzayan bir şerit değil — grid'e dönüştürüldü ve karo sadece
+   üstteki "Featured Assets" sırasının yanında duran, kendi boyutunda sabit
+   bir kare (align-items:start sayesinde tüm satırın yüksekliğine gerilmiyor). */
+.asset-library-layout { display: grid; grid-template-columns: 1fr 208px; gap: 16px; align-items: start; }
+.asset-library-main { min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+.asset-library-art {
+  position: relative;
+  width: 208px;
+  height: 208px;
+  margin-top: 34px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(232, 185, 77, 0.22);
+  background: #060811;
+}
+.asset-library-art img:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.95) brightness(0.82);
+}
+.asset-library-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(200deg, rgba(6, 8, 17, 0.15) 10%, rgba(6, 8, 17, 0.68) 60%, rgba(6, 8, 17, 0.95) 100%);
+}
+.asset-library-art-fg {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  width: 42px;
+  height: 42px;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+}
+.asset-library-art-fg img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.asset-library-art-label {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  z-index: 1;
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  color: var(--gold-soft);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+/* ROUND 13: eski demo-asset "vault artwork"ının (background_forest.svg +
+   hero_generic.svg) yerini alan, hiçbir gerçek asset dosyasına referans
+   vermeyen nötr "yakında" durumu. */
+.asset-library-art-pending {
+  background: linear-gradient(160deg, rgba(232, 185, 77, 0.1), #0a0d18 72%);
+}
+.asset-library-art-pending .asset-library-art-fg-glyph {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  bottom: auto;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%);
+  display: block;
+  font-size: 28px;
+  line-height: 1;
+  color: rgba(232, 185, 77, 0.4);
+  filter: drop-shadow(0 0 14px rgba(232, 185, 77, 0.22));
+}
+.asset-library-art-pending .asset-library-art-label {
+  text-align: center;
+  color: var(--text-faint);
+  font-weight: 600;
+  text-shadow: none;
+}
+
+@media (max-width: 980px) {
+  .asset-library-layout { grid-template-columns: 1fr; }
+  .asset-library-art { display: none; }
+}
+
+.asset-library-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.asset-library-header .panel-eyebrow { margin-bottom: 0; flex-shrink: 0; }
+
+/* ROUND 12: gerçek, çalışan arama kutusu — bkz. app.js assetSearchInput. */
+.asset-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+  max-width: 340px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.asset-search:focus-within { border-color: rgba(232, 185, 77, 0.5); box-shadow: 0 0 0 3px rgba(232, 185, 77, 0.1); }
+.asset-search-icon { font-size: 11px; opacity: 0.55; flex-shrink: 0; }
+.asset-search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+.asset-search-input::placeholder { color: var(--text-faint); }
+.asset-search-input::-webkit-search-cancel-button { -webkit-appearance: none; }
+/* ROUND 13: kütüphane bilerek boşken (yeni asset paketi eklenene kadar)
+   arama kutusu devre dışı — aranacak hiçbir şey yok, varsayılan tarayıcı
+   grisi yerine tema ile tutarlı, kasıtlı görünen bir sönük hal. */
+.asset-search-input:disabled { cursor: not-allowed; opacity: 0.5; }
+.asset-search:has(.asset-search-input:disabled) { opacity: 0.6; }
+
+.asset-search-empty { padding: 26px 12px; text-align: center; font-size: 12.5px; color: var(--text-faint); grid-column: 1 / -1; }
+
+.asset-count { font-size: 11.5px; color: var(--text-faint); font-weight: 600; flex-shrink: 0; }
+
+.asset-selection-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.asset-selection-summary.hidden { display: none; }
+
+.asset-selection-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.asset-selection-empty { font-size: 11.5px; color: var(--text-faint); }
+
+.asset-selection-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: rgba(232, 185, 77, 0.1);
+  border: 1px solid rgba(232, 185, 77, 0.32);
+  border-radius: 999px;
+  padding: 4px 4px 4px 10px;
+}
+.asset-selection-chip button {
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 999px;
+  transition: color 0.12s ease, background 0.12s ease;
+}
+.asset-selection-chip button:hover { color: var(--danger); background: var(--danger-soft); }
+
+/* ROUND 12: 4 gerçek kategori (character/object/effect/background) artık
+   referanstaki gibi tek bir sırada 4 eşit kolon — Featured Assets kartı
+   grid-column:1/-1 ile üstte tam genişlikte kalıyor (bkz. .asset-category-featured). */
+.asset-library-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 1180px) {
+  .asset-library-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .asset-library-grid { grid-template-columns: 1fr; }
+}
+
+.asset-category {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  padding: 13px 14px 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.asset-category-featured {
+  border-color: rgba(72, 189, 130, 0.3);
+  background: linear-gradient(160deg, rgba(72, 189, 130, 0.07), var(--surface-inset) 55%);
+  grid-column: 1 / -1;
+}
+.asset-category-featured .asset-category-title { color: var(--success); }
+
+.asset-category-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+}
+
+.asset-category-count {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  background: var(--surface-raised);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.asset-thumb-row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ROUND 12: referanstaki gibi daha büyük, daha "tıklanabilir" ikon
+   karoları — 40px'den 52px'e. */
+.asset-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  cursor: pointer;
+  position: relative;
+  font-family: inherit;
+  outline: none;
+  transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.asset-thumb:hover { transform: translateY(-2px); border-color: rgba(232, 185, 77, 0.45); box-shadow: 0 8px 18px rgba(232, 185, 77, 0.16); }
+.asset-thumb:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.asset-thumb.is-new { border-color: rgba(72, 189, 130, 0.4); box-shadow: 0 0 0 1px rgba(72, 189, 130, 0.14) inset; }
+
+.asset-thumb.is-selected {
+  border-color: var(--gold);
+  background: rgba(232, 185, 77, 0.12);
+  box-shadow: 0 0 0 1px rgba(232, 185, 77, 0.4) inset, 0 8px 18px rgba(232, 185, 77, 0.2);
+}
+.asset-thumb.is-selected::after {
+  content: "✓";
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #241605;
+  font-size: 9px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--surface-inset);
+}
+/* ROUND 14: SunnyLand Forest pack'i gerçek, düşük çözünürlüklü pixel-art PNG
+   sprite'lar (bkz. public/assets/packs/sunnyland-forest/) — 52px'lik karoya
+   büyütülürken tarayıcının varsayılan bulanık (bilinear) ölçeklemesi yerine
+   keskin/pixelated ölçekleme, orijinal sanat yönünü bozmadan gösterir. Eski
+   SVG assetler zaten vektör olduğu için bu satır onları etkilemez. */
+.asset-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; image-rendering: pixelated; }
+
+.asset-thumb-more {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px dashed var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
+}
+.asset-thumb-more:hover { border-color: rgba(232, 185, 77, 0.55); color: var(--gold-soft); transform: translateY(-2px); }
+.asset-thumb-more:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ROUND 12: her kategorinin altındaki gerçek "View All" bağlantısı — aynı
+   .asset-thumb-more işlevselliğini (gerçek modal) kullanıyor ama kare bir
+   ikon yerine referanstaki gibi küçük bir metin linki olarak görünüyor. */
+.asset-thumb-more.asset-category-viewall {
+  width: auto;
+  height: auto;
+  margin-top: 11px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 0;
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-faint);
+}
+.asset-thumb-more.asset-category-viewall:hover { border-color: transparent; color: var(--gold-soft); transform: none; text-decoration: underline; }
+
+/* ---------- Asset picker modal ---------- */
+
+.asset-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(4, 5, 11, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.asset-modal-overlay.hidden { display: none; }
+
+@keyframes asset-modal-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.asset-modal {
+  width: 100%;
+  max-width: 420px;
+  max-height: 72vh;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6);
+  padding: 18px;
+  animation: asset-modal-in 0.18s var(--ease-premium);
+}
+
+.asset-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+.asset-modal-close {
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: var(--radius-sm);
+  width: 26px;
+  height: 26px;
+  flex: none;
+  cursor: pointer;
+  font-size: 11px;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.asset-modal-close:hover { color: var(--gold-soft); border-color: var(--border-strong); }
+
+.asset-modal-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ---------- Game Library (istek #6) ----------
+   Yeni, saf UI/UX bölümü: gerçek public/assets görsellerinden kompoze
+   edilmiş büyük "showcase" kartları. Login/hesap sistemi YOK. Her kartın
+   "Use This Template" butonu, mevcut #example-chips ile AYNI, halihazırda
+   var olan mekanizmayı (prompt'u gerçek data-prompt metniyle doldurma)
+   kullanır — yeni bir backend/veri kaynağı DEĞİL (bkz. app.js). */
+
+.game-library-panel { display: flex; flex-direction: column; gap: 14px; }
+
+.game-library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.game-library-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  overflow: hidden;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  padding: 0;
+  transition: border-color 0.22s var(--ease-premium), transform 0.22s var(--ease-premium), box-shadow 0.22s var(--ease-premium);
+}
+.game-library-card:hover {
+  border-color: rgba(232, 185, 77, 0.55);
+  transform: translateY(-3px);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5), 0 0 26px rgba(232, 185, 77, 0.16);
+}
+.game-library-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* Featured tile — one real hero showcase, not a 4th equal card. Spans the
+   full grid width, sits first visually (order: -1) and switches to a
+   landscape (art-beside-copy) composition so the library reads as an
+   asymmetric bento layout rather than a uniform card wall. */
+.game-library-card-featured {
+  grid-column: 1 / -1;
+  order: -2;
+  flex-direction: row;
+  border-color: rgba(232, 185, 77, 0.34);
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0, 0, 0, 0.4);
+  margin-bottom: 4px;
+}
+.game-library-card-featured:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 64px rgba(0, 0, 0, 0.6), 0 0 44px rgba(232, 185, 77, 0.22);
+}
+
+/* ROUND 4: an explicit divider between the showcase tile and the
+   supporting templates below it — this is what actually breaks the
+   "one big card holding smaller cards" reading, not just spacing. A
+   short label on a fading rule, matching the sidebar's ornament language
+   at a much quieter volume. */
+.game-library-more-label {
+  order: -1;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.game-library-more-label::before,
+.game-library-more-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 185, 77, 0.22), transparent);
+}
+.game-library-more-label::before { background: linear-gradient(90deg, rgba(232, 185, 77, 0.22), transparent); max-width: 28px; }
+.game-library-card-featured .game-library-art { flex: 1 1 58%; height: auto; min-height: 254px; }
+.game-library-card-featured .game-library-art img.gl-fg { width: 68px; height: 68px; }
+.game-library-card-featured .game-library-art img.gl-fg2 { width: 42px; height: 42px; }
+.game-library-card-featured .game-library-genre { font-size: 10px; padding: 4px 11px; }
+.game-library-card-featured .game-library-copy {
+  flex: 1 1 42%;
+  justify-content: center;
+  padding: 22px 26px;
+  gap: 10px;
+  position: relative;
+  background:
+    radial-gradient(320px 220px at 100% 0%, rgba(232, 185, 77, 0.08), transparent 70%),
+    var(--surface-inset);
+}
+/* ROUND 12: rozet artık .game-library-art'ın içinde (.game-library-copy
+   değil) — referanstaki gibi doğrudan artwork'ün sol üstünde, yarı saydam
+   koyu bir kapsül üzerinde duruyor. */
+.game-library-featured-tag {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  background: rgba(9, 12, 22, 0.55);
+  border: 1px solid rgba(232, 185, 77, 0.4);
+  padding: 5px 11px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  text-shadow: 0 0 12px rgba(232, 185, 77, 0.4);
+}
+.game-library-card-featured .game-library-title { font-family: var(--font-display); font-size: 21px; font-weight: 700; }
+.game-library-card-featured .game-library-desc { font-size: 12.5px; min-height: 0; max-width: 34ch; }
+.game-library-card-featured .game-library-cta {
+  align-self: flex-start;
+  margin-top: 6px;
+  padding: 9px 16px;
+  border-color: rgba(232, 185, 77, 0.5);
+}
+@media (max-width: 860px) {
+  .game-library-card-featured { flex-direction: column; }
+  .game-library-card-featured .game-library-art { min-height: 172px; }
+}
+
+.game-library-art {
+  position: relative;
+  height: 172px;
+  overflow: hidden;
+  background: #0b0f1d;
+}
+.game-library-art img.gl-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.08);
+  transition: transform 0.4s var(--ease-premium);
+  /* ROUND 12: referanstaki gibi daha canlı/atmosferik bir görünüm için —
+     gerçek SVG asset değişmedi, sadece render'ı zenginleştirildi. */
+  filter: saturate(1.15) contrast(1.05) brightness(0.95);
+}
+.game-library-card:hover .gl-bg { transform: scale(1.16); }
+.game-library-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 10, 19, 0) 22%, rgba(7, 10, 19, 0.52) 62%, rgba(7, 10, 19, 0.95) 100%);
+}
+.game-library-art img.gl-fg {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  bottom: 10px;
+  left: 12px;
+  z-index: 1;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6));
+}
+.game-library-art img.gl-fg2 {
+  width: 30px;
+  height: 30px;
+  bottom: 12px;
+  left: auto;
+  right: 14px;
+}
+.game-library-genre {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #241605;
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  padding: 3px 9px;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.game-library-copy { padding: 11px 13px 13px; display: flex; flex-direction: column; gap: 6px; }
+.game-library-title { font-size: 13px; font-weight: 800; color: var(--text); letter-spacing: 0.005em; }
+.game-library-desc { font-size: 10.5px; color: var(--text-faint); line-height: 1.35; min-height: 0; }
+
+.game-library-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(232, 185, 77, 0.32);
+  background: rgba(232, 185, 77, 0.08);
+  color: var(--gold-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.game-library-card:hover .game-library-cta {
+  background: linear-gradient(135deg, var(--gold-soft), var(--gold));
+  border-color: transparent;
+  color: #241605;
+}
+
+/* ---------- Output panel ---------- */
+
+.output-title-row { margin-bottom: 12px; }
+
+.output-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+
+.output-tabs { display: flex; gap: 4px; background: var(--surface-inset); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+
+.tab-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color 0.2s var(--ease-premium), background 0.2s var(--ease-premium), border-color 0.2s var(--ease-premium);
+}
+.tab-btn:hover { color: var(--text-dim); }
+.tab-btn.active {
+  color: var(--gold-soft);
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.output-header-right { display: flex; align-items: center; gap: 14px; }
+
+.code-surface {
+  position: relative;
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  max-height: 336px;
+  overflow: auto;
+}
+
+.code-window-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  background: #0d1120;
+  border-bottom: 1px solid rgba(232, 185, 77, 0.1);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.code-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.code-dot-red { background: #e0645a; }
+.code-dot-yellow { background: #e0b34f; }
+.code-dot-green { background: #5fb87f; }
+.code-window-filename {
+  margin-left: 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8b8770;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+}
+
+.code-lines {
+  margin: 0;
+  padding: 14px 0;
+  list-style: none;
+  counter-reset: line;
+  font-size: 12px;
+  line-height: 1.6;
+  font-family: "SF Mono", "Fira Code", Consolas, monospace;
+  background: #0a0e1b;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.code-lines li {
+  counter-increment: line;
+  display: flex;
+  padding: 0 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #dcd6c6;
+}
+
+.code-lines li::before {
+  content: counter(line);
+  flex: 0 0 34px;
+  margin-right: 14px;
+  text-align: right;
+  color: #6b664f;
+  user-select: none;
+}
+
+.code-lines li:hover { background: rgba(232, 185, 77, 0.05); }
+
+.code-empty-note {
+  padding: 16px;
+  font-size: 12px;
+  color: #8f8878;
+  font-family: inherit;
+  background: #0a0e1b;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.output-game-wrap {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 212px;
+  padding: 20px;
+  background:
+    radial-gradient(320px 200px at 50% 20%, rgba(232, 185, 77, 0.08), transparent 70%),
+    var(--surface-inset);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+.output-game-wrap.is-active { display: flex; }
+
+.output-game-frame {
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 320 / 568;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(232, 185, 77, 0.12);
+}
+
+.output-game-placeholder {
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: center;
+  max-width: 32ch;
+  line-height: 1.5;
+}
+
+.output-validation-summary { margin: 12px 2px 0; font-size: 12px; font-weight: 600; color: var(--text-faint); min-height: 14px; }
+.output-validation-summary.ok { color: var(--success); }
+.output-validation-summary.fail { color: var(--danger); }
+
+/* ---------- Bottom status bar ---------- */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  max-width: 1340px;
+  margin: 0 auto 28px;
+  padding: 12px 22px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.status-bar-item { font-weight: 600; color: var(--text-faint); transition: color 0.2s ease; }
+.status-bar-item.ok { color: var(--success); }
+.status-bar-item.fail { color: var(--danger); }
+.status-bar-item.neutral { color: var(--text-faint); }
+
+.status-bar-sep { color: var(--border-strong); }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 1180px) {
+  .layout {
+    grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+    grid-template-areas:
+      "generator   preview"
+      "controls    controls"
+      "gamelibrary gamelibrary"
+      "library     library"
+      "output      output";
+  }
+}
+
+@media (max-width: 980px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "generator"
+      "preview"
+      "controls"
+      "gamelibrary"
+      "library"
+      "output";
+    padding: 14px 20px 24px;
+  }
+
+  .page-header { padding: 20px 20px 4px; }
+  .workflow-steps { padding: 0 20px; }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 40;
+    width: 226px;
+    padding: 22px 14px;
+    opacity: 1;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+    transition: transform 0.2s var(--ease-premium);
+  }
+  .app-shell.sidebar-collapsed .sidebar {
+    width: 226px;
+    padding: 22px 14px;
+    opacity: 1;
+    overflow: hidden;
+    transform: translateX(-100%);
+  }
+
+  .workflow-text { display: none; }
+  .workflow-steps { justify-content: space-between; }
+
+  .game-library-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .page-header { padding: 16px 14px 2px; gap: 10px; }
+  .page-heading h1 { font-size: 19px; }
+  .workflow-steps { display: none; }
+  .layout { padding: 12px 14px 20px; gap: 14px; }
+  .panel { padding: 16px; }
+  .status-bar { margin: 0 12px 20px; padding: 10px 14px; gap: 7px; font-size: 10.5px; }
+  .asset-library-grid { grid-template-columns: 1fr; }
+  .preset-grid { grid-template-columns: 1fr; }
+  .game-library-grid { grid-template-columns: 1fr; }
+}

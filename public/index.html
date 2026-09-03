@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Playable AI — Playable Ad Generator</title>
+<!-- ROUND 7: yeni özgün marka sembolü — bir "meşale alevi" glifi (basit,
+     parametrik bir damla/alev silüeti; hiçbir referans görselden izlenmedi
+     veya kopyalanmadı, tamamen orijinal). brand.js'teki PLAYABLE_BRAND.markSvg
+     ile aynı glifin favicon için gömülü, statik kopyası (favicon <link>
+     tarayıcı tarafından JS çalışmadan önce okunduğu için burada tekrar
+     edilmesi gerekiyor); favicon boyutunda okunabilirlik için kıvılcım
+     noktaları olmadan sade alev şekli kullanılıyor (bkz. brand.js'teki tam
+     sürüm). -->
+<!-- ROUND 11: favicon, brand.js'teki yeni octagon-rozet + sparkle glifiyle
+     eşleşecek şekilde güncellendi (dolu gradyan kare yerine koyu dolgulu +
+     altın çerçeveli sekizgen, alev yerine dört uçlu sparkle). --><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M9 2H23L30 9V23L23 30H9L2 23V9Z' fill='%230a0d18' fill-opacity='0.92' stroke='%23e8b94d' stroke-width='1.5'/%3E%3Cpath d='M16 2.93L18.87 13.13L29.07 16L18.87 18.87L16 29.07L13.13 18.87L2.93 16L13.13 13.13L16 2.93Z' fill='%23f6d888'/%3E%3C/svg%3E" />
+<!-- PHASE 6 ROUND 3 (composition pass): tek bir "editorial/game title" display
+     fontu — SADECE büyük başlıklar için (.display-font ile işaretlenen
+     yerler: sayfa H1, Game Library başlığı, marka adı). Gövde/UI metni hâlâ
+     tamamen sistem/Inter yığınında kalıyor. Google Fonts'a erişilemezse
+     (offline vb.) style.css'teki font-family fallback zinciri devreye
+     girer — işlevsellik hiçbir şekilde buna bağlı değil, salt tipografik
+     bir geliştirme. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="app-shell" id="app-shell">
+
+    <!-- SIDEBAR — marka + navigasyon. PHASE 4: gerçek bir kullanıcı hesabı/plan
+         sistemi olmadığı için hesap/avatar/plan UI'ı TAMAMEN kaldırıldı.
+         Templates/History/Sounds/Preferences/API/Billing gibi gerçekte
+         olmayan SaaS bölümleri de kaldırıldı — sadece kullanıcının istediği,
+         gerçek karşılığı olan yapı kaldı. Asset Inspector / Game Settings
+         gerçek bir özelliğe sahip değil, bu yüzden (mevcut kod tabanındaki
+         dürüst "Soon" konvansiyonuyla) devre dışı + etiketli bırakıldı. -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark" id="brand-mark-sidebar" aria-hidden="true"></div>
+        <div class="brand-wordmark">
+          <span class="brand-name">Playable AI</span>
+          <span class="brand-tagline">Playable Ad Generator</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label"><span class="label-text">Create</span><span class="label-line" aria-hidden="true"></span></div>
+        <a class="sidebar-link active" href="#">
+          <span class="sidebar-link-icon">▣</span><span class="sidebar-link-text">Generator</span>
+        </a>
+        <a class="sidebar-link" href="#game-library-panel">
+          <span class="sidebar-link-icon">🎮</span><span class="sidebar-link-text">Game Library</span>
+        </a>
+
+        <!-- Kategori linkleri gerçek: tıklanınca sayfadaki mevcut Asset
+             Library'e kaydırır (bkz. app.js). Sayılar ASSET_LIBRARY'den
+             (tek doğruluk kaynağı) gelir, burada hardcode edilmedi. -->
+        <div class="sidebar-section-label"><span class="label-text">Assets</span><span class="label-line" aria-hidden="true"></span></div>
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="character">
+          <span class="sidebar-link-icon">🧑</span><span class="sidebar-link-text">Characters</span>
+          <span class="sidebar-link-count" id="sidebar-count-character">—</span>
+        </a>
+        <!-- ROUND 14: SunnyLand Forest pack ile eklendi — eskiden düşmanlar
+             Characters kovasına toplanıyordu, artık kendi kategorisi var. -->
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="enemy">
+          <span class="sidebar-link-icon">👾</span><span class="sidebar-link-text">Enemies</span>
+          <span class="sidebar-link-count" id="sidebar-count-enemy">—</span>
+        </a>
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="object">
+          <span class="sidebar-link-icon">◆</span><span class="sidebar-link-text">Objects</span>
+          <span class="sidebar-link-count" id="sidebar-count-object">—</span>
+        </a>
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="effect">
+          <span class="sidebar-link-icon">✺</span><span class="sidebar-link-text">Effects</span>
+          <span class="sidebar-link-count" id="sidebar-count-effect">—</span>
+        </a>
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="background">
+          <span class="sidebar-link-icon">▧</span><span class="sidebar-link-text">Backgrounds</span>
+          <span class="sidebar-link-count" id="sidebar-count-background">—</span>
+        </a>
+        <!-- ROUND 20: "ui" category'si backend'de gerçek ilk assetini (HUD
+             life bar) aldı — AYNI kart şablonu, yeni tasarım/CSS YOK. -->
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="ui">
+          <span class="sidebar-link-icon">⌗</span><span class="sidebar-link-text">UI</span>
+          <span class="sidebar-link-count" id="sidebar-count-ui">—</span>
+        </a>
+
+        <!-- OUTPUT — gerçek, çalışan bağlantılar: sayfa içi ilgili panele
+             kaydırır (native anchor scroll, ekstra JS gerekmiyor). Uydurma
+             bir "route" değil, aynı sayfadaki gerçek Live Preview / Generated
+             Output bölümlerine kısayol. -->
+        <div class="sidebar-section-label"><span class="label-text">Output</span><span class="label-line" aria-hidden="true"></span></div>
+        <a class="sidebar-link" href="#live-preview-panel">
+          <span class="sidebar-link-icon">▶</span><span class="sidebar-link-text">My Game</span>
+        </a>
+        <a class="sidebar-link" href="#generated-output-panel">
+          <span class="sidebar-link-icon">&lt;/&gt;</span><span class="sidebar-link-text">Code</span>
+        </a>
+
+        <div class="sidebar-section-label"><span class="label-text">Tools</span><span class="label-line" aria-hidden="true"></span></div>
+        <a class="sidebar-link" href="#" tabindex="-1" aria-disabled="true" title="Coming soon">
+          <span class="sidebar-link-icon">🔍</span><span class="sidebar-link-text">Asset Inspector</span><span class="soon-tag">Soon</span>
+        </a>
+        <a class="sidebar-link" href="#" tabindex="-1" aria-disabled="true" title="Coming soon">
+          <span class="sidebar-link-icon">⚙</span><span class="sidebar-link-text">Game Settings</span><span class="soon-tag">Soon</span>
+        </a>
+      </nav>
+
+      <!-- ROUND 11: orman/ay siluetinin yerini alan tamamen geometrik
+           süsleme — bkz. style.css .sidebar-ornament yorum bloğu. Salt
+           dekoratif (aria-hidden), fonksiyonel/erişilebilirlik açısından
+           hiçbir etkisi yok. -->
+      <div class="sidebar-ornament" aria-hidden="true">
+        <span class="ornament-corner ornament-corner-tl"></span>
+        <span class="ornament-corner ornament-corner-tr"></span>
+        <span class="ornament-corner ornament-corner-bl"></span>
+        <span class="ornament-corner ornament-corner-br"></span>
+        <span class="ornament-line"></span>
+        <span class="ornament-circle"></span>
+        <span class="ornament-diamond ornament-diamond-left"></span>
+        <span class="ornament-diamond ornament-diamond-right"></span>
+      </div>
+    </aside>
+
+    <div class="main-column">
+
+      <!-- PHASE 4: eski koyu topbar'ın yerini alan, sade/açık page header.
+           Kullanıcı hesabı/avatar YOK — sadece gerçek mod rozeti (MOCK/LIVE)
+           ve bir yardım butonu. -->
+      <header class="page-header">
+        <div class="page-header-left">
+          <button class="icon-btn sidebar-toggle-btn" id="sidebar-toggle-btn" type="button" title="Toggle sidebar" aria-expanded="true" aria-controls="sidebar">☰</button>
+          <div class="page-heading">
+            <h1>Create Playable</h1>
+            <p>Turn an idea into a playable game experience.</p>
+          </div>
+        </div>
+        <div class="page-header-right">
+          <span class="badge" id="mode-badge">…</span>
+          <button class="icon-btn" type="button" title="Help">?</button>
+        </div>
+      </header>
+
+      <ol class="workflow-steps" aria-label="How it works">
+        <li class="workflow-step">
+          <span class="workflow-num">1</span>
+          <span class="workflow-text"><b>Describe</b>Your idea</span>
+        </li>
+        <li class="workflow-arrow" aria-hidden="true">→</li>
+        <li class="workflow-step">
+          <span class="workflow-num">2</span>
+          <span class="workflow-text"><b>Generate</b>AI creates it</span>
+        </li>
+        <li class="workflow-arrow" aria-hidden="true">→</li>
+        <li class="workflow-step">
+          <span class="workflow-num">3</span>
+          <span class="workflow-text"><b>Play</b>Test &amp; share</span>
+        </li>
+      </ol>
+
+  <main class="layout">
+
+    <!-- LEFT COLUMN: Describe Your Game -->
+    <section class="panel generator-panel">
+      <div class="panel-eyebrow">✦ Describe Your Game</div>
+
+      <div class="field-row">
+        <label for="prompt-input">What should the player experience?</label>
+        <span class="char-counter" id="char-counter">0 / 1000</span>
+      </div>
+      <textarea
+        id="prompt-input"
+        maxlength="1000"
+        placeholder="A fast-paced runner through a futuristic city. Collect energy cores, dodge drones and reach the portal before time runs out."
+      ></textarea>
+
+      <!-- PHASE 4: "AI Selected Assets" — üretim ÖNCESİ gerçek, istemci
+           taraflı bir anahtar kelime taramasının (app.js detectGameplayBlocks)
+           promptu gerçek ASSET_LIBRARY'ye eşlediği; üretim SONRASI ise
+           /api/generate'in gerçek meta.assetKit + üretilen HTML'de fiilen
+           geçen asset path'lerinin (app.js getUsedAssetsWithRoles) kesin
+           sonucu. İkisi de AYNI görsel dilde (thumbnail + isim + rol)
+           gösteriliyor — uydurma bir asset/rol YOK. -->
+      <div class="ai-assets-block" id="ai-assets-block">
+        <div class="ai-assets-label-row">
+          <span class="ai-assets-label">AI Selected Assets</span>
+          <span class="ai-assets-mode" id="ai-assets-mode">matched from your prompt</span>
+        </div>
+        <div class="ai-assets-row" id="ai-assets-row">
+          <!-- app.js -> renderAiSelectedAssets() ile dolduruluyor -->
+        </div>
+      </div>
+
+      <div class="examples-row">
+        <span class="examples-label">Try an example</span>
+        <!-- Her kart, gerçek public/assets/... SVG dosyalarından kompoze
+             edilmiş küçük bir "sahne" thumbnail'ı kullanır — uydurma bir
+             "game art" görseli YOK. -->
+        <div class="preset-grid" id="example-chips">
+          <button class="preset-card" type="button" data-prompt="Create a 5-second endless runner game set in a city-like environment. A hero runs automatically and the player taps to jump over barriers in the way. Collecting coins increases the score. Hitting a barrier ends the game. End with a short success/failure screen and a Play Again button.">
+            <span class="preset-thumb" aria-hidden="true">
+              <img class="preset-thumb-bg" src="/assets/backgrounds/background_dungeon.svg" alt="" />
+              <img class="preset-thumb-fg" src="/assets/characters/hero_generic.svg" alt="" />
+              <img class="preset-thumb-fg preset-thumb-fg2" src="/assets/objects/coin_gold.svg" alt="" />
+            </span>
+            <span class="preset-copy">
+              <span class="preset-title">City Runner</span>
+              <span class="preset-desc">Collect coins and avoid barriers</span>
+            </span>
+          </button>
+          <!-- ROUND 16: Space Shooter artık gerçek, entegre edilmiş Kenney
+               Space Shooter (Remastered) pack'inden kompoze — eski
+               flat-primitive background_space/red_enemy/fireball SVG'leri
+               yerine gerçek deep-space.png (arka plan) + player-falcon.png
+               (gemi) + enemy-red.png (düşman) kullanılıyor. -->
+          <button class="preset-card" type="button" data-prompt="Create a 5-second space shooter game. A small spaceship sits at the bottom of the screen and asteroids drift down from the top. Tapping an asteroid destroys it and increases the score. Letting an asteroid reach the bottom ends the game. End with a short success/failure screen and a Play Again button.">
+            <span class="preset-thumb" aria-hidden="true">
+              <img class="preset-thumb-bg" src="/assets/packs/kenney-space-shooter/backgrounds/deep-space.png" alt="" />
+              <img class="preset-thumb-fg" src="/assets/packs/kenney-space-shooter/characters/player-falcon.png" alt="" />
+              <img class="preset-thumb-fg preset-thumb-fg2" src="/assets/packs/kenney-space-shooter/enemies/enemy-red.png" alt="" />
+            </span>
+            <span class="preset-copy">
+              <span class="preset-title">Space Shooter</span>
+              <span class="preset-desc">Destroy asteroids and survive</span>
+            </span>
+          </button>
+          <!-- ROUND 15: Forest Jump artık gerçek, entegre edilmiş SunnyLand
+               Forest pack'inden kompoze — eski flat-primitive background_forest/
+               platform/star SVG'leri yerine gerçek forest.png (arka plan) +
+               player.png (karakter) + star.png (toplanabilir) kullanılıyor.
+               Diğer 3 kartın hiçbiri değişmedi (henüz kendi gerçek asset
+               kitleri yok). -->
+          <button class="preset-card" type="button" data-prompt="Create a 5-second platform jumping game set in a forest. A character jumps across a series of platforms. Tapping makes the character jump to the next platform. Collecting stars increases the score. Missing a platform ends the game. End with a short success/failure screen and a Play Again button.">
+            <span class="preset-thumb" aria-hidden="true">
+              <img class="preset-thumb-bg" src="/assets/packs/sunnyland-forest/backgrounds/forest.png" alt="" />
+              <img class="preset-thumb-fg" src="/assets/packs/sunnyland-forest/characters/player.png" alt="" />
+              <img class="preset-thumb-fg preset-thumb-fg2" src="/assets/packs/sunnyland-forest/objects/star.png" alt="" />
+            </span>
+            <span class="preset-copy">
+              <span class="preset-title">Forest Jump</span>
+              <span class="preset-desc">Jump across platforms and collect stars</span>
+            </span>
+          </button>
+          <button class="preset-card" type="button" data-prompt="Create a 5-second fruit matching game. Show several colorful fruits on screen and briefly highlight the target fruit. Tapping the correct fruit increases the score. Tapping the wrong fruit ends the game. End with a short success/failure screen and a Play Again button.">
+            <span class="preset-thumb" aria-hidden="true">
+              <img class="preset-thumb-fg" src="/assets/objects/apple.svg" alt="" style="left:4px; bottom:auto; top:4px;" />
+              <img class="preset-thumb-fg preset-thumb-fg2" src="/assets/objects/strawberry.svg" alt="" style="bottom:auto; top:4px;" />
+              <img class="preset-thumb-fg" src="/assets/objects/basket_red.svg" alt="" style="width:22px; height:22px; left:10px; bottom:2px;" />
+            </span>
+            <span class="preset-copy">
+              <span class="preset-title">Fruit Puzzle</span>
+              <span class="preset-desc">Match the correct fruits before time runs out</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <button id="generate-btn" class="primary-btn">
+        <span class="btn-icon">✦</span>
+        <span>Generate Playable Ad</span>
+        <span class="btn-arrow">→</span>
+      </button>
+      <p class="status-line" id="status-line"></p>
+
+      <!-- Başlangıçta gizli: gerçek durumu (LIVE mi mock mu) sadece sunucudan
+           gelen bir yanıtın meta.mock alanı bilir (bkz. app.js setBadge /
+           updateMockInfoCard). Bu kart artık bir yanıt gelmeden asla
+           gösterilmiyor, ve gerçek bir LIVE üretimde hiç görünmüyor. -->
+      <div class="info-card hidden" id="mock-info-card">
+        <span class="info-icon">⚡</span>
+        <span class="info-text">Mock mode is active. Connect an OpenRouter API key to generate with AI.</span>
+        <button class="text-btn" id="configure-api-btn" type="button">Configure API</button>
+      </div>
+    </section>
+
+    <!-- MIDDLE COLUMN: Live Preview -->
+    <section class="panel preview-panel" id="live-preview-panel">
+      <div class="preview-stage-light" aria-hidden="true"></div>
+      <div class="preview-header">
+        <div class="preview-header-left">
+          <span class="live-dot" aria-hidden="true"></span>
+          <div>
+            <h2>Live Preview</h2>
+            <p class="preview-subtitle">The actual playable your prompt generates — not a mockup.</p>
+          </div>
+        </div>
+        <div class="preview-badges">
+          <span class="tag">5.0s</span>
+          <span class="tag">320 × 568</span>
+          <!-- Sadece frontend'deki gerçek selectedAssets state'ini yansıtır (bkz.
+               app.js updatePreviewAssetTag) — seçim yokken gizli. -->
+          <span class="tag asset-preview-tag hidden" id="preview-asset-tag"></span>
+          <div class="device-toggle" id="device-toggle" role="group" aria-label="Preview orientation">
+            <button class="device-toggle-btn active" id="device-toggle-mobile" type="button" title="Portrait preview">Portrait</button>
+            <button class="device-toggle-btn" id="device-toggle-desktop" type="button" title="Landscape preview">Landscape</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-frame-wrap" id="phone-frame-wrap">
+        <div class="phone-frame" id="phone-frame">
+          <div class="phone-notch"><span class="phone-notch-cam"></span></div>
+          <div class="phone-side-btn phone-side-btn-power" aria-hidden="true"></div>
+          <div class="phone-side-btn phone-side-btn-vol-up" aria-hidden="true"></div>
+          <div class="phone-side-btn phone-side-btn-vol-down" aria-hidden="true"></div>
+          <!-- Gerçek meta.mock === true olduğunda (bkz. app.js setBadge) görünür —
+               mock modda gösterilen oyunun içeriğinin, algılanan game type / prompt
+               ile birebir eşleşmesi garanti EDİLMEDİĞİNİ dürüstçe işaretler (bkz.
+               server/services/openrouter.js getMockResponse — sabit bir örnek
+               döner). Yanlış/yanıltıcı metadata sunmamak için eklendi. -->
+          <span class="mock-preview-ribbon hidden" id="mock-preview-ribbon">Mock Preview</span>
+          <iframe
+            id="preview-frame"
+            title="Playable Ad Preview"
+            sandbox="allow-scripts"
+          ></iframe>
+          <!-- ROUND 17: Selin'in isteğiyle bilinçli bir sadeleştirme —
+               eskiden burada dekoratif arka plan olarak hero_generic.svg'nin
+               (kısık opaklıkta olması gereken ama pratikte tam boy/canlı
+               görünen) bir silüeti vardı; bu premium arayüzle uyuşmayan
+               "sahte karakter" hissi veriyordu. Artık HİÇBİR emoji, SVG
+               primitive karakter veya uydurma asset YOK — sadece koyu
+               gradient zemin + tasarım sistemindeki ✦ glyph'iyle (bkz.
+               "Describe Your Game" / "Improve with AI" / "Featured Build"
+               başlıkları — aynı glyph, burada yeni icat edilmedi) zarif bir
+               glow. Üretim sonrası bu placeholder tamamen gizleniyor
+               (bkz. app.js renderPreview) — gerçek üretimde HİÇBİR zaman
+               görünmez, sadece boş/başlangıç durumunda. -->
+          <div class="preview-placeholder" id="preview-placeholder">
+            <span class="preview-placeholder-glow" aria-hidden="true">
+              <span class="preview-placeholder-icon" aria-hidden="true">✦</span>
+            </span>
+            <span class="preview-placeholder-title">No playable ad generated yet.</span>
+            <span class="preview-placeholder-desc">Write a prompt and hit <b>Generate Playable Ad</b>.</span>
+          </div>
+
+          <!-- Generation Experience pipeline: SADECE istemci taraflı,
+               zamanlamalı bir UX temposu — /api/generate tek, senkron bir
+               yanıt döndürüyor, backend'den gerçek bir "progress" event'i YOK
+               (bkz. app.js startGenerationPipeline). -->
+          <div class="generation-pipeline hidden" id="generation-pipeline">
+            <ol class="pipeline-stages" id="pipeline-stages">
+              <li class="pipeline-stage" data-stage="understand"><span class="pipeline-stage-dot"></span><span class="pipeline-stage-label">Understanding idea</span></li>
+              <li class="pipeline-stage" data-stage="assets"><span class="pipeline-stage-dot"></span><span class="pipeline-stage-label">Selecting assets</span></li>
+              <li class="pipeline-stage" data-stage="gameplay"><span class="pipeline-stage-dot"></span><span class="pipeline-stage-label">Building gameplay</span></li>
+              <li class="pipeline-stage" data-stage="generate"><span class="pipeline-stage-dot"></span><span class="pipeline-stage-label">Generating playable</span></li>
+              <li class="pipeline-stage" data-stage="validate"><span class="pipeline-stage-dot"></span><span class="pipeline-stage-label">Validating</span></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5.0s / 320×568 sabitleri ürünün her zaman ürettiği gerçek format,
+           uydurma değil. "Assets: N" app.js -> countUsedAssets() ile gerçek
+           HTML çıktısında bulunan ASSET_LIBRARY path'lerinin SAYISI —
+           üretim öncesi "—" gösterir. "Game type" backend'in gerçek,
+           deterministik gameTypeDetection sonucundan (meta.gameType) gelir. -->
+      <div class="game-info-strip" id="game-info-strip">
+        <span class="game-info-item"><span class="game-info-icon">◷</span>5.0s</span>
+        <span class="game-info-item"><span class="game-info-icon">▦</span>320×568</span>
+        <span class="game-info-item" id="game-info-assets"><span class="game-info-icon">◆</span>Assets: —</span>
+        <span class="game-info-item" id="game-info-gametype"><span class="game-info-icon">▣</span>Game type: —</span>
+      </div>
+
+      <!-- Gerçek /api/generate yanıtının meta alanlarından dolduruluyor
+           (bkz. app.js updatePreviewMetaBadges) — hiçbir değer hardcode
+           edilmiyor, üretim öncesi placeholder ("—") gösterilir. -->
+      <div class="preview-meta-row" id="preview-meta-row">
+        <span class="meta-pill" id="meta-model"><span class="meta-pill-label">Model</span>—</span>
+        <span class="meta-pill" id="meta-finish-reason"><span class="meta-pill-label">Finish Reason</span>—</span>
+        <span class="meta-pill" id="meta-asset-retry"><span class="meta-pill-label">Asset Retry</span>—</span>
+        <span class="meta-pill" id="meta-validation-badge"><span class="meta-pill-label">Validation</span>—</span>
+      </div>
+
+      <p class="preview-status" id="preview-status"></p>
+    </section>
+
+    <!-- RIGHT COLUMN: Preview Controls + AI Quality Score -->
+    <aside class="panel controls-panel">
+      <div class="panel-eyebrow">Preview Controls</div>
+      <div class="controls-btn-col">
+        <button class="primary-btn controls-play-btn" id="play-btn" type="button" disabled>
+          <span class="btn-icon">▶</span><span>Play</span>
+        </button>
+        <div class="controls-btn-row">
+          <button class="secondary-btn" id="restart-btn" type="button" disabled>↻ Restart</button>
+          <button class="secondary-btn" id="fullscreen-btn" type="button" disabled>⛶ Fullscreen</button>
+        </div>
+        <button class="secondary-btn" id="open-tab-btn" type="button" disabled>Open in New Tab ↗</button>
+      </div>
+
+      <!-- AI Validation Pipeline + Quality Score (gerçek skor). quality-ring,
+           SADECE aynı gerçek validation.score değerinin görsel bir
+           conic-gradient halkası — yeni/uydurma bir veri değil. PHASE 4
+           polish: 16 check pill'i artık varsayılan gizli — tek satır gerçek
+           özet (ör. "14/16 checks passed") ön planda, tam liste "Details"
+           ile açılıyor (bkz. app.js quality-details-toggle). Veri DEĞİŞMEDİ,
+           sadece varsayılan yoğunluk azaltıldı. -->
+      <div class="quality-card" id="quality-card">
+        <div class="quality-card-header">
+          <span class="quality-title">AI Quality Score</span>
+          <button class="quality-details-toggle hidden" id="quality-details-toggle" type="button" aria-expanded="false">
+            Details <span class="quality-details-arrow">▾</span>
+          </button>
+        </div>
+        <div class="quality-score-row">
+          <div class="quality-ring" id="quality-ring" style="--score-pct: 0">
+            <span class="quality-score" id="quality-score">— / 100</span>
+          </div>
+        </div>
+        <div class="quality-score-bar-track">
+          <div class="quality-score-bar-fill" id="quality-score-bar"></div>
+        </div>
+        <p class="quality-placeholder" id="quality-placeholder">Generate a playable ad to see its quality score.</p>
+        <p class="quality-summary hidden" id="quality-summary"></p>
+        <div class="quality-checks hidden" id="quality-checks"></div>
+        <div class="quality-actions" id="quality-actions"></div>
+      </div>
+
+      <!-- Improve with AI -->
+      <div class="improve-block">
+        <button class="secondary-btn full" id="improve-toggle-btn" type="button" disabled>✦ Improve with AI</button>
+        <div class="improve-panel hidden" id="improve-panel">
+          <div class="chip-row" id="improve-chips">
+            <button class="chip" type="button" data-instruction="Make it faster">Make it faster</button>
+            <button class="chip" type="button" data-instruction="Add a stronger CTA">Add a stronger CTA</button>
+            <button class="chip" type="button" data-instruction="Make the interaction easier">Make the interaction easier</button>
+            <button class="chip" type="button" data-instruction="Make the game more engaging">Make the game more engaging</button>
+          </div>
+          <textarea id="improve-input" maxlength="300" placeholder="Describe how to improve this playable ad…"></textarea>
+          <button class="primary-btn small" id="improve-submit-btn" type="button">Apply</button>
+          <p class="status-line" id="improve-status"></p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- GAME LIBRARY — üye/giriş sistemi YOK. Hazır oyun örneklerinin
+         keşfedildiği bir showcase. Her kart, mevcut "Try an example"
+         sistemiyle AYNI, gerçek data-prompt metnini ve gerçek
+         public/assets/... görsellerini kullanır (bkz. app.js -> yeni
+         #game-library-grid delegasyonu, #example-chips ile birebir aynı
+         mantık) — yeni bir backend/veri kaynağı DEĞİL, sadece daha büyük/
+         görsel bir sunum. -->
+    <section class="panel game-library-panel" id="game-library-panel">
+      <div class="panel-eyebrow">🎮 Game Library</div>
+      <div class="game-library-grid" id="game-library-grid">
+        <!-- Purely decorative divider label — visually placed between the
+             featured showcase tile and the 3 supporting templates via CSS
+             order (see .game-library-more-label). No functional role. -->
+        <div class="game-library-more-label" aria-hidden="true"><span>More Playable Templates</span></div>
+        <button class="game-library-card" type="button" data-prompt="Create a 5-second endless runner game set in a city-like environment. A hero runs automatically and the player taps to jump over barriers in the way. Collecting coins increases the score. Hitting a barrier ends the game. End with a short success/failure screen and a Play Again button.">
+          <span class="game-library-art">
+            <img class="gl-bg" src="/assets/backgrounds/background_dungeon.svg" alt="" />
+            <img class="gl-fg" src="/assets/characters/hero_generic.svg" alt="" />
+            <img class="gl-fg gl-fg2" src="/assets/objects/coin_gold.svg" alt="" />
+            <span class="game-library-genre">Endless Runner</span>
+          </span>
+          <span class="game-library-copy">
+            <span class="game-library-title">City Runner</span>
+            <span class="game-library-desc">A hero runs forward, collects coins and dodges barriers.</span>
+            <span class="game-library-cta">▶ Use This Template</span>
+          </span>
+        </button>
+
+        <!-- ROUND 16: Space Shooter artık gerçek, entegre edilmiş Kenney
+             Space Shooter (Remastered) pack'inden kompoze — background_space/
+             red_enemy/fireball SVG'leri yerine gerçek deep-space.png (arka
+             plan) + player-falcon.png (gemi) + enemy-red.png (düşman)
+             kullanılıyor. -->
+        <button class="game-library-card" type="button" data-prompt="Create a 5-second space shooter game. A small spaceship sits at the bottom of the screen and asteroids drift down from the top. Tapping an asteroid destroys it and increases the score. Letting an asteroid reach the bottom ends the game. End with a short success/failure screen and a Play Again button.">
+          <span class="game-library-art">
+            <img class="gl-bg" src="/assets/packs/kenney-space-shooter/backgrounds/deep-space.png" alt="" />
+            <img class="gl-fg" src="/assets/packs/kenney-space-shooter/characters/player-falcon.png" alt="" />
+            <img class="gl-fg gl-fg2" src="/assets/packs/kenney-space-shooter/enemies/enemy-red.png" alt="" />
+            <span class="game-library-genre">Space Shooter</span>
+          </span>
+          <span class="game-library-copy">
+            <span class="game-library-title">Space Shooter</span>
+            <span class="game-library-desc">Destroy incoming asteroids before they reach the ship.</span>
+            <span class="game-library-cta">▶ Use This Template</span>
+          </span>
+        </button>
+
+        <!-- ROUND 15: Featured Build artık gerçek, entegre edilmiş SunnyLand
+             Forest pack'inden kompoze — background/platform/star SVG'leri
+             yerine gerçek forest.png (arka plan) + player.png (karakter) +
+             bee.png (düşman) kullanılıyor. Diğer 3 kartın hiçbiri
+             değişmedi (henüz kendi gerçek asset kitleri yok). -->
+        <button class="game-library-card game-library-card-featured" type="button" data-prompt="Create a 5-second platform jumping game set in a forest. A character jumps across a series of platforms. Tapping makes the character jump to the next platform. Collecting stars increases the score. Missing a platform ends the game. End with a short success/failure screen and a Play Again button.">
+          <span class="game-library-art">
+            <!-- ROUND 12: referans görseldeki gibi rozet artık kopya
+                 alanında değil, doğrudan artwork'ün üstünde (sol üst) —
+                 sadece konum değişti, aynı gerçek dekoratif span. -->
+            <span class="game-library-featured-tag">✦ Featured Build</span>
+            <img class="gl-bg" src="/assets/packs/sunnyland-forest/backgrounds/forest.png" alt="" />
+            <img class="gl-fg" src="/assets/packs/sunnyland-forest/characters/player.png" alt="" />
+            <img class="gl-fg gl-fg2" src="/assets/packs/sunnyland-forest/enemies/bee.png" alt="" />
+            <span class="game-library-genre">Platformer</span>
+          </span>
+          <span class="game-library-copy">
+            <span class="game-library-title">Forest Platformer</span>
+            <span class="game-library-desc">Jump across platforms in an enchanted forest, collect stars and reach the end before you fall.</span>
+            <span class="game-library-cta">▶ Use This Template</span>
+          </span>
+        </button>
+
+        <button class="game-library-card" type="button" data-prompt="Create a 5-second fruit matching game. Show several colorful fruits on screen and briefly highlight the target fruit. Tapping the correct fruit increases the score. Tapping the wrong fruit ends the game. End with a short success/failure screen and a Play Again button.">
+          <span class="game-library-art">
+            <img class="gl-bg" src="/assets/backgrounds/background_desert.svg" alt="" />
+            <img class="gl-fg" src="/assets/objects/apple.svg" alt="" />
+            <img class="gl-fg gl-fg2" src="/assets/objects/basket_red.svg" alt="" />
+            <span class="game-library-genre">Puzzle</span>
+          </span>
+          <span class="game-library-copy">
+            <span class="game-library-title">Fruit Puzzle</span>
+            <span class="game-library-desc">Tap the correct fruit and place it in the basket in time.</span>
+            <span class="game-library-cta">▶ Use This Template</span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ASSET LIBRARY (gerçek public/assets SVG'lerinden; seçilebilir —
+         bkz. app.js selectedAssets / renderAssetLibrary / renderAssetSelectionSummary) -->
+    <section class="panel asset-library-panel" id="asset-library-panel">
+      <div class="asset-library-layout">
+        <div class="asset-library-main">
+          <div class="asset-library-header">
+            <div class="panel-eyebrow">🎨 Asset Library</div>
+            <!-- ROUND 12: gerçek, çalışan arama — bkz. app.js
+                 assetSearchInput/renderAssetLibrary. Sahte/dekoratif bir
+                 kutu değil, ASSET_LIBRARY üzerinde gerçekten filtreliyor. -->
+            <label class="asset-search" for="asset-search-input">
+              <span class="asset-search-icon" aria-hidden="true">🔍</span>
+              <input type="search" id="asset-search-input" class="asset-search-input" placeholder="Search assets…" aria-label="Search assets" />
+            </label>
+            <span class="asset-count" id="asset-count">— assets available</span>
+          </div>
+          <div class="asset-selection-summary" id="asset-selection-summary"></div>
+          <div class="asset-library-grid" id="asset-library-grid">
+            <!-- app.js -> renderAssetLibrary() ile dolduruluyor -->
+          </div>
+        </div>
+        <!-- ROUND 14: ROUND 13'teki nötr "yakında" durumu, artık gerçekten
+             entegre edilmiş SunnyLand Forest pack'inden GERÇEK iki dosyayla
+             değiştirildi (background: backgrounds/forest.png, foreground:
+             characters/player.png) — salt dekoratif, tıklanamaz, JS'e bağlı
+             değil, ama artık uydurma/placeholder değil. -->
+        <aside class="asset-library-art" aria-hidden="true">
+          <img src="/assets/packs/sunnyland-forest/backgrounds/forest.png" alt="" />
+          <span class="asset-library-art-fg"><img src="/assets/packs/sunnyland-forest/characters/player.png" alt="" /></span>
+          <span class="asset-library-art-label">SunnyLand Forest<br />Pilot Asset Kit</span>
+        </aside>
+      </div>
+    </section>
+
+    <!-- GENERATED OUTPUT -->
+    <section class="panel output-panel" id="generated-output-panel">
+      <div class="output-title-row">
+        <h2>Generated Output</h2>
+      </div>
+
+      <div class="output-header">
+        <!-- PHASE 4: "Game" sekmesi eklendi — AYNI gerçek lastResult.html'i
+             (Live Preview'daki ile birebir aynı veri) küçük bir iframe'de
+             gösterir; yeni bir üretim/veri kaynağı DEĞİL (bkz. app.js
+             renderActiveTab). -->
+        <div class="output-tabs" id="output-tabs" role="tablist">
+          <button class="tab-btn active" type="button" data-tab="game" role="tab" aria-selected="true">▶ Game</button>
+          <button class="tab-btn" type="button" data-tab="html" role="tab" aria-selected="false">&lt;/&gt; HTML</button>
+          <button class="tab-btn" type="button" data-tab="css" role="tab" aria-selected="false">{ } CSS</button>
+          <button class="tab-btn" type="button" data-tab="js" role="tab" aria-selected="false">JS</button>
+        </div>
+        <div class="output-header-right">
+          <button class="text-btn" id="download-btn" type="button" disabled>⬇ Download</button>
+          <button class="text-btn" id="copy-code-btn" type="button" disabled>⧉ Copy Code</button>
+        </div>
+      </div>
+
+      <div class="code-surface">
+        <div class="code-window-bar" aria-hidden="true">
+          <span class="code-dot code-dot-red"></span>
+          <span class="code-dot code-dot-yellow"></span>
+          <span class="code-dot code-dot-green"></span>
+          <span class="code-window-filename" id="code-window-filename">playable-ad.html</span>
+        </div>
+        <ol class="code-lines" id="code-output"><li>—</li></ol>
+        <div class="output-game-wrap" id="output-game-wrap">
+          <iframe class="output-game-frame" id="output-game-frame" title="Generated game preview" sandbox="allow-scripts"></iframe>
+          <p class="output-game-placeholder" id="output-game-placeholder">No playable ad generated yet. Write a prompt and hit Generate Playable Ad.</p>
+        </div>
+      </div>
+      <p class="output-validation-summary" id="output-validation-summary"></p>
+    </section>
+
+  </main>
+
+      <!-- Gerçek validation.checks içindeki spesifik kontrollerden dolduruluyor
+           (no-external-resources, no-infinite-loop, asset-paths-valid, valid).
+           Bir üretim yapılmadan önce nötr/placeholder durumda kalır. -->
+      <footer class="status-bar" id="status-bar">
+        <span class="status-bar-item" id="statusbar-safe">🛡 Safe &amp; Valid</span>
+        <span class="status-bar-sep">•</span>
+        <span class="status-bar-item" id="statusbar-checks">— Validation Checks</span>
+        <span class="status-bar-sep">•</span>
+        <span class="status-bar-item" id="statusbar-external">No External Requests</span>
+        <span class="status-bar-sep">•</span>
+        <span class="status-bar-item" id="statusbar-loop">No Infinite Loop Risk</span>
+        <span class="status-bar-sep">•</span>
+        <span class="status-bar-item" id="statusbar-asset">Asset Verified</span>
+      </footer>
+    </div>
+    <!-- /main-column -->
+  </div>
+  <!-- /app-shell -->
+
+  <!-- Asset picker popover: "+N" (kalan asset) kontrolüne tıklandığında açılır.
+       app.js -> openAssetModal()/closeAssetModal() ile kontrol edilir. -->
+  <div class="asset-modal-overlay hidden" id="asset-modal-overlay">
+    <div class="asset-modal" id="asset-modal" role="dialog" aria-modal="true" aria-labelledby="asset-modal-title">
+      <div class="asset-modal-header">
+        <span id="asset-modal-title">Assets</span>
+        <button class="asset-modal-close" id="asset-modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="asset-modal-grid" id="asset-modal-grid"></div>
+    </div>
+  </div>
+
+  <script src="brand.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
