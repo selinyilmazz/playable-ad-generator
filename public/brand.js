@@ -19,20 +19,27 @@
 // tekrar güncellendi — artık dört uçlu bir "sparkle/yıldız" glifi (elle
 // çizilmiş basit bir path, referans görselden izlenmedi/kopyalanmadı;
 // sadece "ışıltı/AI" temasından ilham alındı, kadeh/orman amblemi hiçbir
-// zaman kopyalanmadı). Rozetin kendisi artık dolu bir kare değil, CSS
-// tarafında (.brand-mark, style.css) clip-path ile sekizgen/octagon
-// çerçeveli, içi koyu/yarı saydam altın kenarlıklı bir rozet — glif bu
-// çerçevenin içine oturuyor.
-// Favicon'daki (index.html <head>) statik SVG, JS çalışmadan önce
-// tarayıcı tarafından okunduğu için bu glifin ayrı, gömülü bir kopyasını
-// taşımak zorunda — ikisi kasıtlı olarak aynı tasarımı paylaşıyor.
+// zaman kopyalanmadı).
+//
+// ROUND G: markSvg, artık index.html <head>'teki favicon <link>'in AYNI
+// SVG'si (octagon-rozet path'i + sparkle path'i, aynı koordinatlar/aynı
+// renkler) — birebir kopya, yeniden tasarlanmadı. Amaç: browser tab'ındaki
+// ikonla sidebar'daki marka ikonunun TEK, tutarlı bir kaynaktan gelmesi.
+// Önceden bu iki path CSS tarafında (.brand-mark clip-path + border, artı
+// ayrı renkli/tek path'lik bir sparkle SVG) İKİ FARKLI TEKNİKLE ayrı ayrı
+// yeniden üretiliyordu — bu artık gereksiz bir "duplicate icon" idi, bu
+// yüzden kaldırıldı (bkz. style.css .brand-mark). Favicon'un statik kopyası
+// index.html'de KENDİ HALİNE dokunulmadan bırakıldı (ikisi kasıtlı olarak
+// aynı SVG'yi paylaşıyor, biri favicon için gömülü/statik, diğeri bu
+// dosyadan JS ile enjekte ediliyor).
 (function () {
   window.PLAYABLE_BRAND = {
     name: "Playable AI",
     tagline: "Playable Ad Generator",
     markSvg:
-      '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-      '<path d="M12 2.2L14.15 9.85L21.8 12L14.15 14.15L12 21.8L9.85 14.15L2.2 12L9.85 9.85L12 2.2Z" fill="#fff"/>' +
+      '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+      '<path d="M9 2H23L30 9V23L23 30H9L2 23V9Z" fill="#0a0d18" fill-opacity="0.92" stroke="#e8b94d" stroke-width="1.5"/>' +
+      '<path d="M16 2.93L18.87 13.13L29.07 16L18.87 18.87L16 29.07L13.13 18.87L2.93 16L13.13 13.13L16 2.93Z" fill="#f6d888"/>' +
       "</svg>",
   };
 })();

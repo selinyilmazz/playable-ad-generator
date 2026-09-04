@@ -10,11 +10,15 @@ const { ASSET_MANIFEST } = require("../config/assetManifest");
 const { listGameTypeKeys } = require("../config/assetKits");
 const { GAME_TYPE_KEYWORDS } = require("../services/gameTypeDetection");
 
-test("tam olarak 3 aktif pack var: legacy-core, sunnyland-forest, kenney-space-shooter", function () {
+test("tam olarak 12 aktif pack var: legacy-core, sunnyland-forest, kenney-space-shooter, racing (ROUND 23), tiny-dungeon (ROUND 24), ROUND 25: car-kit/city-kit-roads/city-kit-industrial/food-kit/retro-fantasy/retro-textures-fantasy/particle-pack", function () {
   var active = getActivePacks();
   assert.deepEqual(
     active.map(function (p) { return p.key; }).sort(),
-    ["kenney-space-shooter", "legacy-core", "sunnyland-forest"]
+    [
+      "car-kit", "city-kit-industrial", "city-kit-roads", "food-kit",
+      "kenney-space-shooter", "legacy-core", "particle-pack", "racing",
+      "retro-fantasy", "retro-textures-fantasy", "sunnyland-forest", "tiny-dungeon",
+    ]
   );
 });
 
@@ -35,9 +39,9 @@ test("her aktif pack'in gerçek bir lisansı ve kaynağı var (planned paketleri
   });
 });
 
-test("tam olarak 8 planned pack var (Selin'in istediği 8 yeni tür), hepsi assetCount:0 ve folderPath:null", function () {
+test("tam olarak 6 planned pack var (Selin'in istediği 8 yeni türden 'racing' ROUND 23'te, 'dungeon' ROUND 24'te 'tiny-dungeon' adıyla aktifleşti), hepsi assetCount:0 ve folderPath:null", function () {
   var planned = getPlannedPacks();
-  assert.equal(planned.length, 8);
+  assert.equal(planned.length, 6);
   planned.forEach(function (p) {
     assert.equal(p.status, "planned");
     assert.equal(p.assetCount, 0);
@@ -46,11 +50,11 @@ test("tam olarak 8 planned pack var (Selin'in istediği 8 yeni tür), hepsi asse
   });
 });
 
-test("planned pack key'leri Selin'in verdiği 8 klasör adıyla birebir aynı", function () {
+test("planned pack key'leri Selin'in verdiği 8 klasör adından 'racing' ve 'dungeon' çıkarılmış geriye kalan 6'sıyla birebir aynı", function () {
   var planned = getPlannedPacks().map(function (p) { return p.key; }).sort();
   assert.deepEqual(planned, [
-    "dungeon", "farming", "fantasy", "medieval-rpg", "ninja-platformer",
-    "racing", "underwater", "zombie-survival",
+    "farming", "fantasy", "medieval-rpg", "ninja-platformer",
+    "underwater", "zombie-survival",
   ].sort());
 });
 
@@ -63,14 +67,14 @@ test("her planned pack'in roleBreakdown'u var, en az 1 rol içeriyor, ve estimat
   });
 });
 
-test("hiçbir planned pack key'i, mevcut 3 aktif pack key'iyle ÇAKIŞMIYOR", function () {
+test("hiçbir planned pack key'i, mevcut 5 aktif pack key'iyle ÇAKIŞMIYOR", function () {
   var activeKeys = getActivePacks().map(function (p) { return p.key; });
   getPlannedPacks().forEach(function (p) {
     assert.equal(activeKeys.indexOf(p.key), -1, p.key + ": aktif bir pack'le çakışıyor");
   });
 });
 
-test("hiçbir planned pack'in suggestedGameTypeKey'i, mevcut 4 AKTİF GAME_KITS key'iyle ÇAKIŞMIYOR (henüz aktifleştirilmedi)", function () {
+test("hiçbir planned pack'in suggestedGameTypeKey'i, mevcut 6 AKTİF GAME_KITS key'iyle ÇAKIŞMIYOR (henüz aktifleştirilmedi)", function () {
   var activeGameTypes = listGameTypeKeys();
   getPlannedPacks().forEach(function (p) {
     assert.equal(activeGameTypes.indexOf(p.suggestedGameTypeKey), -1, p.suggestedGameTypeKey + ": zaten aktif bir GAME_KITS key'i");
@@ -84,12 +88,57 @@ test("hiçbir planned pack'in suggestedGameTypeKey'i, gameTypeDetection.js'in AK
   });
 });
 
+test("ROUND 23: racing pack'i active, license CC0, source Kenney Vleugels, assetCount 15, poweredGameTypes ['racing']", function () {
+  var p = getPack("racing");
+  assert.ok(p);
+  assert.equal(p.status, "active");
+  assert.equal(p.license, "CC0");
+  assert.equal(p.source, "Kenney Vleugels (kenney.nl)");
+  assert.equal(p.assetCount, 15);
+  assert.deepEqual(p.poweredGameTypes, ["racing"]);
+  assert.equal(p.folderPath, "public/assets/packs/racing/");
+});
+
+test("ROUND 24: tiny-dungeon pack'i active, license CC0, source Kenney, assetCount 21, poweredGameTypes ['dungeon-rpg']", function () {
+  var p = getPack("tiny-dungeon");
+  assert.ok(p);
+  assert.equal(p.status, "active");
+  assert.equal(p.license, "CC0");
+  assert.equal(p.source, "Kenney (kenney.nl)");
+  assert.equal(p.assetCount, 21);
+  assert.deepEqual(p.poweredGameTypes, ["dungeon-rpg"]);
+  assert.equal(p.folderPath, "public/assets/packs/tiny-dungeon/");
+});
+
 test("getPack(): bilinen bir key için gerçek pack objesi, bilinmeyen bir key için null döner", function () {
   assert.ok(getPack("sunnyland-forest"));
-  assert.ok(getPack("dungeon"));
+  assert.ok(getPack("medieval-rpg"));
   assert.equal(getPack("does-not-exist"), null);
 });
 
-test("ASSET_PACKS toplamı aktif + planned sayısına eşit (11 = 3 + 8)", function () {
-  assert.equal(ASSET_PACKS.length, 11);
+test("ASSET_PACKS toplamı aktif + planned sayısına eşit (18 = 12 + 6)", function () {
+  assert.equal(ASSET_PACKS.length, 18);
+});
+
+test("ROUND 25: yeni 7 pack'in her biri active, license CC0, source Kenney, doğru assetCount ve poweredGameTypes", function () {
+  var expected = [
+    ["car-kit", 6, ["city"]],
+    ["city-kit-roads", 9, ["city"]],
+    ["city-kit-industrial", 4, ["city"]],
+    ["food-kit", 17, ["cooking"]],
+    ["retro-fantasy", 6, ["dungeon-rpg"]],
+    ["retro-textures-fantasy", 3, ["dungeon-rpg"]],
+    ["particle-pack", 5, ["dungeon-rpg", "city", "cooking"]],
+  ];
+  expected.forEach(function (row) {
+    var key = row[0], assetCount = row[1], poweredGameTypes = row[2];
+    var p = getPack(key);
+    assert.ok(p, key + ": pack bulunamadı");
+    assert.equal(p.status, "active");
+    assert.equal(p.license, "CC0");
+    assert.match(p.source, /Kenney/);
+    assert.equal(p.assetCount, assetCount, key + ": beklenmedik assetCount");
+    assert.deepEqual(p.poweredGameTypes, poweredGameTypes, key + ": beklenmedik poweredGameTypes");
+    assert.equal(p.folderPath, "public/assets/packs/" + key + "/");
+  });
 });

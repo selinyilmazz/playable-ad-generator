@@ -36,6 +36,12 @@ test("asset-integrity: manifestte olmayan bir path için hiçbir şey raporlamaz
 
 test("Quality Score: yeni asset-integrity check'i sayıma dahil oluyor (16 -> 17 kontrol)", function () {
   var result = validatePlayable(htmlWithAsset("/assets/objects/star.svg"), "");
-  assert.equal(result.checks.length, 17);
+  // ROUND 21: gameplay consistency check'i eklenmesiyle toplam 17 -> 18 oldu
+  // (bkz. checks.js "platformer-gameplay-consistency"). ROUND F: yeni
+  // "level-length-consistency" check'i eklenmesiyle 18 -> 19 oldu — bu
+  // testin amacı asset-integrity'nin sayıma dahil olduğunu doğrulamak,
+  // mutlak sayı değil; sayı buradan güncellendi ki gerçek CHECKS
+  // uzunluğuyla senkron kalsın.
+  assert.equal(result.checks.length, 19);
   assert.ok(result.checks.some(function (c) { return c.key === "asset-integrity"; }));
 });

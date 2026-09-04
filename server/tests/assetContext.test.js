@@ -70,6 +70,53 @@ test("bilinmeyen kit key'i için null döner, hata fırlatmaz", function () {
   assert.equal(buildAssetContextMessageForKit("no-such-kit"), null);
 });
 
+test("ROUND 24/25: buildAssetContextMessageForKit('dungeon-rpg') sadece Tiny Dungeon + Retro Fantasy + Retro Textures Fantasy + Particle Pack assetlerini içeriyor, tam manifesti DEĞİL — 'gameObject' rolü de (mock tüketmese bile) LLM'e sunuluyor", function () {
+  var msg = buildAssetContextMessageForKit("dungeon-rpg");
+  assert.ok(msg);
+  assert.ok(msg.indexOf("tinydungeon_player_knight") !== -1);
+  assert.ok(msg.indexOf("tinydungeon_tile_floor") !== -1);
+  // gameObject/decoration/tile rolleri mock tarafından tüketilmiyor ama
+  // LLM'e AKTARILIYOR (racing'in tile/decoration rolleriyle aynı desen).
+  assert.ok(msg.indexOf("- gameObject: tinydungeon_chest ->") !== -1);
+  assert.ok(msg.indexOf("- gameObject: tinydungeon_door ->") !== -1);
+  assert.ok(msg.indexOf("tinydungeon_decoration_torch") !== -1);
+  // ROUND 25: Retro Fantasy Kit + Retro Textures Fantasy'nin tile/decoration/
+  // gameObject zenginleştirmesi de burada görünüyor.
+  assert.ok(msg.indexOf("retrofantasy_stairs_stone") !== -1);
+  assert.ok(msg.indexOf("retrofantasy_tower") !== -1);
+  assert.ok(msg.indexOf("retrotex_wall_brick") !== -1);
+  assert.ok(msg.indexOf("- gameObject: retrotex_door_wood ->") !== -1);
+  // ROUND 25: effect artık null DEĞİL — Particle Pack'in 2 partikülü var.
+  assert.ok(msg.indexOf("- effect: particle_hit_impact ->") !== -1);
+  assert.ok(msg.indexOf("- effect: particle_magic_glow ->") !== -1);
+  // Kitte background/ui hâlâ null — bu satırlar hiç yazılmamalı.
+  assert.equal(/- background:/.test(msg), false);
+  assert.equal(/- ui:/.test(msg), false);
+  // Başka bir kite özel bir asset burada OLMAMALI (kit daraltması çalışıyor).
+  assert.equal(msg.indexOf("sunnyland_player"), -1);
+  assert.equal(msg.indexOf("racing_car_player"), -1);
+});
+
+test("ROUND 23: buildAssetContextMessageForKit('racing') sadece Racing pack assetlerini içeriyor, tam manifesti DEĞİL — decoration/tile rolleri de (mock tüketmese bile) LLM'e sunuluyor", function () {
+  var msg = buildAssetContextMessageForKit("racing");
+  assert.ok(msg);
+  assert.ok(msg.indexOf("racing_car_player_red") !== -1);
+  assert.ok(msg.indexOf("racing_tile_road_straight") !== -1);
+  // decoration/tile rolleri mock tarafından tüketilmiyor ama LLM'e AKTARILIYOR
+  // (forest-platformer'ın "decoration" rolüyle aynı desen).
+  assert.ok(msg.indexOf("racing_tile_road_curve") !== -1);
+  assert.ok(msg.indexOf("racing_tree_large") !== -1);
+  // Racing kitinde collectible/background/powerup/ui null — bu satırlar
+  // hiç yazılmamalı (uydurma satır yok).
+  assert.equal(/- collectible:/.test(msg), false);
+  assert.equal(/- background:/.test(msg), false);
+  assert.equal(/- powerup:/.test(msg), false);
+  assert.equal(/- ui:/.test(msg), false);
+  // Başka bir kite özel bir asset burada OLMAMALI (kit daraltması çalışıyor).
+  assert.equal(msg.indexOf("sunnyland_player"), -1);
+  assert.equal(msg.indexOf("spaceshooter_"), -1);
+});
+
 test("fruit-puzzle kitinin mesajı 10 meyve/sebzenin tamamını 'collectible:' rolüyle içeriyor", function () {
   var msg = buildAssetContextMessageForKit("fruit-puzzle");
   ["apple", "banana", "orange", "strawberry", "carrot", "broccoli", "tomato", "corn", "grapes", "potato"].forEach(

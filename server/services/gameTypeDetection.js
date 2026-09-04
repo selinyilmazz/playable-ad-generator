@@ -31,6 +31,41 @@ var GAME_TYPE_KEYWORDS = {
     "fruit", "fruits", "match", "matching", "puzzle", "basket", "sort",
     "sorting", "vegetable", "vegetables",
   ],
+  // ROUND 23 — assetPacks.js'teki racing paketinin (artık aktif)
+  // suggestedKeywords'ü ile birebir aynı liste, saf keyword-veri eklemesi
+  // (hiçbir yeni branching/if(gameType==="racing") mantığı YOK — diğer
+  // türlerle aynı skorlama mekanizmasından geçiyor).
+  racing: [
+    "race", "racing", "car", "cars", "track", "drift", "speed", "finish line",
+    "yarış", "araba",
+  ],
+  // ROUND 24 — assetPacks.js'teki eski "dungeon" planned kaydının
+  // suggestedKeywords'üne dayanıyor (+ görevin kendi örnek kelimeleri:
+  // rpg/warrior/knight/mage/monster), saf keyword-veri eklemesi (hiçbir
+  // yeni branching/if(gameType==="dungeon-rpg") mantığı YOK).
+  "dungeon-rpg": [
+    "dungeon", "dungeons", "crawler", "rpg", "warrior", "knight", "mage",
+    "wizard", "torch", "trap", "underground", "labyrinth", "maze", "monster",
+    "zindan", "mahzen",
+  ],
+  // ROUND 25 — assetPacks.js'teki car-kit/city-kit-roads/city-kit-industrial
+  // paketlerinin beslediği "city" kitine karşılık gelen saf keyword-veri
+  // eklemesi (hiçbir yeni branching/if(gameType==="city") mantığı YOK).
+  // "car"/"cars"/"araba" BİLİNÇLİ OLARAK dahil edilmedi — racing kitinin
+  // keyword listesinde zaten var, ikisinde birden olsaydı "a car game"
+  // gibi bir promptta skor eşitliği (tie) oluşup gameType null'a
+  // düşebilirdi; city'nin kendine özgü (racing'de olmayan) kelimeleriyle
+  // ayrıştırıldı.
+  city: [
+    "city", "cities", "urban", "town", "street", "streets", "traffic",
+    "building", "buildings", "şehir", "kasaba", "trafik",
+  ],
+  // ROUND 25 — food-kit paketinin beslediği "cooking" kitine karşılık gelen
+  // saf keyword-veri eklemesi (hiçbir yeni branching mantığı YOK).
+  cooking: [
+    "cooking", "cook", "kitchen", "chef", "recipe", "food", "restaurant",
+    "meal", "yemek", "mutfak", "aşçı",
+  ],
 };
 
 /**

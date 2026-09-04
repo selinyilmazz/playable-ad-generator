@@ -14,7 +14,9 @@
  *    sayılıyor (bkz. countAssetsForPack), yani asla gerçek veriyle
  *    çelişemez/eskiyemez.
  *
- *  - status: "planned" — Selin'in istediği 8 yeni tür için HENÜZ HİÇBİR
+ *  - status: "planned" — Selin'in istediği 8 yeni türden, "racing" ROUND 23'te
+ *    ve "dungeon" (gerçek karşılığı "tiny-dungeon" adıyla) ROUND 24'te
+ *    aktifleştiği için geriye kalan 6'sı için HENÜZ HİÇBİR
  *    dosya indirilmedi/entegre edilmedi (assetCount: 0, folderPath: null).
  *    Sadece roadmap/rapor amaçlı: hangi rollerin, yaklaşık kaç assetle
  *    doldurulması gerektiğinin planı. Buradaki hiçbir kayıt GAME_KITS'e
@@ -91,6 +93,125 @@ var ACTIVE_PACKS_RAW = [
     folderPath: "public/assets/packs/kenney-space-shooter/",
     isFlat: false,
   },
+  {
+    key: "racing",
+    name: "Racing",
+    status: "active",
+    license: "CC0",
+    source: "Kenney Vleugels (kenney.nl)",
+    theme: "racing",
+    activatedRound: 23,
+    poweredGameTypes: ["racing"],
+    folderPath: "public/assets/packs/racing/",
+    isFlat: false,
+  },
+  {
+    key: "tiny-dungeon",
+    name: "Kenney Tiny Dungeon",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "dungeon",
+    activatedRound: 24,
+    poweredGameTypes: ["dungeon-rpg"],
+    folderPath: "public/assets/packs/tiny-dungeon/",
+    isFlat: false,
+  },
+  // ---- ROUND 25 — 7 yeni pack birden aktifleşti (bkz. server/config/packs/
+  // car-kit.js, city-kit-roads.js, city-kit-industrial.js, food-kit.js,
+  // retro-fantasy.js, retro-textures-fantasy.js, particle-pack.js). Bunlardan
+  // 3'ü ("city" kitini besleyen car-kit/city-kit-roads/city-kit-industrial)
+  // ve food-kit ("cooking" kitini besliyor) YENİ game type'lar açtı; retro-fantasy
+  // ve retro-textures-fantasy hiçbir YENİ kit açmadı — mevcut, zaten aktif
+  // "dungeon-rpg" kitinin tile/decoration/gameObject rollerini zenginleştirdi
+  // (poweredGameTypes yine "dungeon-rpg" — bu iki pack YENİ bir game type'ın
+  // TEK kaynağı değil, mevcut birine katkı). particle-pack ise BİRDEN FAZLA
+  // kite (dungeon-rpg + city + cooking) katkı sağlıyor — bkz. legacy-core.js
+  // "sparkle" ile aynı çok-kitli desen.
+  {
+    key: "car-kit",
+    name: "Kenney Car Kit",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "city",
+    activatedRound: 25,
+    poweredGameTypes: ["city"],
+    folderPath: "public/assets/packs/car-kit/",
+    isFlat: false,
+  },
+  {
+    key: "city-kit-roads",
+    name: "Kenney City Kit Roads",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "city",
+    activatedRound: 25,
+    poweredGameTypes: ["city"],
+    folderPath: "public/assets/packs/city-kit-roads/",
+    isFlat: false,
+  },
+  {
+    key: "city-kit-industrial",
+    name: "Kenney City Kit Industrial 2.0",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "city",
+    activatedRound: 25,
+    poweredGameTypes: ["city"],
+    folderPath: "public/assets/packs/city-kit-industrial/",
+    isFlat: false,
+  },
+  {
+    key: "food-kit",
+    name: "Kenney Food Kit",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "cooking",
+    activatedRound: 25,
+    poweredGameTypes: ["cooking"],
+    folderPath: "public/assets/packs/food-kit/",
+    isFlat: false,
+  },
+  {
+    key: "retro-fantasy",
+    name: "Kenney Retro Fantasy Kit",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "dungeon",
+    activatedRound: 25,
+    poweredGameTypes: ["dungeon-rpg"],
+    folderPath: "public/assets/packs/retro-fantasy/",
+    isFlat: false,
+  },
+  {
+    key: "retro-textures-fantasy",
+    name: "Kenney Retro Textures Fantasy Pack",
+    status: "active",
+    license: "CC0",
+    source: "Kenney (kenney.nl)",
+    theme: "dungeon",
+    activatedRound: 25,
+    poweredGameTypes: ["dungeon-rpg"],
+    folderPath: "public/assets/packs/retro-textures-fantasy/",
+    isFlat: false,
+  },
+  {
+    key: "particle-pack",
+    name: "Kenney Particle Pack",
+    status: "active",
+    license: "CC0",
+    source: "Kenney Vleugels (kenney.nl)",
+    theme: "effects",
+    activatedRound: 25,
+    poweredGameTypes: ["dungeon-rpg", "city", "cooking"],
+    folderPath: "public/assets/packs/particle-pack/",
+    isFlat: false,
+  },
 ];
 
 var ACTIVE_PACKS = ACTIVE_PACKS_RAW.map(function (p) {
@@ -102,7 +223,9 @@ var ACTIVE_PACKS = ACTIVE_PACKS_RAW.map(function (p) {
 });
 
 // ============================= PLANNED PACKS ===============================
-// Selin'in istediği 8 yeni tür. Her satır bir ROL TAHMİNİ — gerçek asset
+// Selin'in istediği 8 yeni türden geriye kalan 6'sı ("racing" ROUND 23'te,
+// "dungeon" ROUND 24'te "tiny-dungeon" adıyla aktifleşti, yukarı taşındı).
+// Her satır bir ROL TAHMİNİ — gerçek asset
 // seçimi/indirmesi henüz YAPILMADI (bilinçli olarak, "rastgele yüzlerce
 // dosya indirme" kısıtı gereği bir sonraki round'da BİRLİKTE yapılacak).
 // estimatedCount'lar mevcut 2 aktif pakette (17 ve 22 asset) izlenen
@@ -133,26 +256,6 @@ var PLANNED_PACKS_RAW = [
       "\"Dungeon\" ile TEMASI benzer ama kapsamı farklı: medieval-rpg AÇIK ALAN/köy/kale " +
       "odaklı, dungeon ise kapalı/karanlık koridor-oda odaklı — iki ayrı pakete bilerek " +
       "bölündü (Selin'in kendi klasör listesinde de ikisi ayrı).",
-  },
-  {
-    key: "dungeon",
-    name: "Dungeon Crawler",
-    theme: "karanlık zindan/mahzen",
-    suggestedGameTypeKey: "dungeon-rpg",
-    suggestedKeywords: [
-      "dungeon", "crawler", "torch", "trap", "underground", "labyrinth",
-      "zindan", "mahzen", "maze",
-    ],
-    roleBreakdown: [
-      { role: "character", estimatedCount: 2, notes: "kaşif/paladin varyantı" },
-      { role: "enemy", estimatedCount: 4, notes: "iskelet, yarasa, slime, zindan boss'u" },
-      { role: "tile", estimatedCount: 5, notes: "duvar, zemin, kapı, merdiven, meşale-duvar" },
-      { role: "object", estimatedCount: 3, notes: "sandık, anahtar, tuzak (diken/ok)" },
-      { role: "collectible", estimatedCount: 2, notes: "altın, mücevher" },
-      { role: "effect", estimatedCount: 3, notes: "meşale titreşimi, büyü parıltısı, vuruş" },
-      { role: "background", estimatedCount: 2, notes: "zindan koridoru, mahzen odası" },
-    ],
-    notes: "Ağırlıklı olarak TILE-tabanlı bir kit — yeni 'tile' category'sinin ilk gerçek kullanım alanı.",
   },
   {
     key: "zombie-survival",
@@ -215,26 +318,6 @@ var PLANNED_PACKS_RAW = [
       { role: "background", estimatedCount: 3, notes: "resif, açık derin deniz, mağara" },
     ],
     notes: "İlk 'vehicle' rolünün karakter YERİNE alternatif olarak denendiği pakete aday.",
-  },
-  {
-    key: "racing",
-    name: "Racing",
-    theme: "yarış pisti",
-    suggestedGameTypeKey: "racing",
-    suggestedKeywords: [
-      "race", "racing", "car", "cars", "track", "drift", "speed", "finish line",
-      "yarış", "araba",
-    ],
-    roleBreakdown: [
-      { role: "vehicle", estimatedCount: 3, notes: "3 renk/model oyuncu arabası" },
-      { role: "obstacle", estimatedCount: 3, notes: "trafik arabası, koni, yağ lekesi" },
-      { role: "tile", estimatedCount: 3, notes: "düz yol, viraj, bitiş çizgisi" },
-      { role: "powerup", estimatedCount: 2, notes: "nitro/hız artışı, kalkan" },
-      { role: "effect", estimatedCount: 3, notes: "lastik dumanı, nitro alevi, çarpışma kıvılcımı" },
-      { role: "background", estimatedCount: 2, notes: "çöl pisti, şehir pisti" },
-      { role: "ui", estimatedCount: 1, notes: "hız göstergesi ikonu (HUD)" },
-    ],
-    notes: "'vehicle' rolünün asıl/birincil player-role olduğu ilk pakete aday; 'ui' category'sinin de ilk gerçek kullanım alanı.",
   },
   {
     key: "fantasy",

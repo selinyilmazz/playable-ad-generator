@@ -74,15 +74,39 @@
 const { LEGACY_CORE_ASSETS } = require("./packs/legacy-core");
 const { SUNNYLAND_FOREST_ASSETS } = require("./packs/sunnyland-forest");
 const { KENNEY_SPACE_SHOOTER_ASSETS } = require("./packs/kenney-space-shooter");
+const { RACING_ASSETS } = require("./packs/racing");
+const { TINY_DUNGEON_ASSETS } = require("./packs/tiny-dungeon");
+const { CAR_KIT_ASSETS } = require("./packs/car-kit");
+const { CITY_KIT_ROADS_ASSETS } = require("./packs/city-kit-roads");
+const { CITY_KIT_INDUSTRIAL_ASSETS } = require("./packs/city-kit-industrial");
+const { FOOD_KIT_ASSETS } = require("./packs/food-kit");
+const { RETRO_FANTASY_ASSETS } = require("./packs/retro-fantasy");
+const { RETRO_TEXTURES_FANTASY_ASSETS } = require("./packs/retro-textures-fantasy");
+const { PARTICLE_PACK_ASSETS } = require("./packs/particle-pack");
 
 // Aktif paket modüllerinin TEK listesi — yeni bir pack eklerken sadece
 // yukarıya bir require() ve buraya bir satır eklenir, başka HİÇBİR YER
 // değişmez (assetPacks.js registry'si bu diziyi build zamanında değil,
 // kendi başına, aynı kaynaktan türetir — bkz. o dosya).
+// ROUND 23 — RACING_ASSETS eklendi (bkz. packs/racing.js). ROUND 24 —
+// TINY_DUNGEON_ASSETS eklendi (bkz. packs/tiny-dungeon.js). ROUND 25 — 7
+// yeni pack birden eklendi (bkz. packs/car-kit.js, city-kit-roads.js,
+// city-kit-industrial.js, food-kit.js, retro-fantasy.js,
+// retro-textures-fantasy.js, particle-pack.js). Önceki paketler ve
+// sıraları HİÇ değişmedi, sadece sona eklendi.
 var ASSET_MANIFEST = [].concat(
   LEGACY_CORE_ASSETS,
   SUNNYLAND_FOREST_ASSETS,
-  KENNEY_SPACE_SHOOTER_ASSETS
+  KENNEY_SPACE_SHOOTER_ASSETS,
+  RACING_ASSETS,
+  TINY_DUNGEON_ASSETS,
+  CAR_KIT_ASSETS,
+  CITY_KIT_ROADS_ASSETS,
+  CITY_KIT_INDUSTRIAL_ASSETS,
+  FOOD_KIT_ASSETS,
+  RETRO_FANTASY_ASSETS,
+  RETRO_TEXTURES_FANTASY_ASSETS,
+  PARTICLE_PACK_ASSETS
 );
 
 /**

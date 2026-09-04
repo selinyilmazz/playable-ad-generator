@@ -7,14 +7,17 @@ const assert = require("node:assert/strict");
 const { GAME_KITS, getKit, listGameTypeKeys, resolveKitRoles } = require("../config/assetKits");
 const { ASSET_MANIFEST } = require("../config/assetManifest");
 
-var EXPECTED_KIT_KEYS = ["endless-runner", "space-shooter", "forest-platformer", "fruit-puzzle"];
+var EXPECTED_KIT_KEYS = [
+  "endless-runner", "space-shooter", "forest-platformer", "fruit-puzzle",
+  "racing", "dungeon-rpg", "city", "cooking",
+];
 
 function assetIds() {
   return ASSET_MANIFEST.map(function (a) { return a.id; });
 }
 
-test("tam olarak 4 kit tanımlı, beklenen key'lerle", function () {
-  assert.equal(GAME_KITS.length, 4);
+test("tam olarak 8 kit tanımlı, beklenen key'lerle (ROUND 23: racing, ROUND 24: dungeon-rpg, ROUND 25: city+cooking eklendi)", function () {
+  assert.equal(GAME_KITS.length, 8);
   assert.deepEqual(listGameTypeKeys().sort(), EXPECTED_KIT_KEYS.sort());
 });
 
@@ -114,6 +117,172 @@ test("ROUND 14+20: forest-platformer.obstacle hem SunnyLand engellerini hem dü�
 
 test("resolveKitRoles: bilinmeyen kit key için null döner", function () {
   assert.equal(resolveKitRoles("not-a-real-kit"), null);
+});
+
+test("ROUND 23: racing kitinin missingRoles listesi collectible/background/powerup/ui'ı içeriyor (Kenney Racing Pack'te bu 4 rol için gerçek asset yok, uydurulmadı)", function () {
+  var kit = getKit("racing");
+  assert.equal(kit.missingRoles.length, 4);
+  assert.equal(kit.roles.collectible, null);
+  assert.equal(kit.roles.background, null);
+  assert.equal(kit.roles.powerup, null);
+  assert.equal(kit.roles.ui, null);
+});
+
+test("ROUND 23: racing kitinin player rolü 2 oyuncu arabası, obstacle rolü trafik+motosiklet+koni+yağ+bariyer (6), platform straight tile, tile curve+finish-line, decoration tree+tribune+tent", function () {
+  var resolved = resolveKitRoles("racing");
+  assert.deepEqual(
+    resolved.roles.player.map(function (a) { return a.id; }).sort(),
+    ["racing_car_player_blue", "racing_car_player_red"]
+  );
+  assert.deepEqual(
+    resolved.roles.obstacle.map(function (a) { return a.id; }).sort(),
+    [
+      "racing_barrier", "racing_cone", "racing_motorcycle_black",
+      "racing_oil_slick", "racing_traffic_car_green", "racing_traffic_car_yellow",
+    ].sort()
+  );
+  assert.equal(resolved.roles.platform.id, "racing_tile_road_straight");
+  assert.deepEqual(
+    resolved.roles.tile.map(function (a) { return a.id; }).sort(),
+    ["racing_tile_finish_line", "racing_tile_road_curve"]
+  );
+  assert.equal(resolved.roles.effect.id, "racing_skidmark");
+  assert.deepEqual(
+    resolved.roles.decoration.map(function (a) { return a.id; }).sort(),
+    ["racing_tent", "racing_tree_large", "racing_tribune"]
+  );
+  assert.deepEqual(resolved.unresolved, []);
+});
+
+test("ROUND 25: dungeon-rpg kitinin missingRoles listesi artık SADECE background/ui'ı içeriyor (ROUND 25: Particle Pack ile effect artık gerçek asset kazandı, missingRoles'ten çıkarıldı)", function () {
+  var kit = getKit("dungeon-rpg");
+  assert.equal(kit.missingRoles.length, 2);
+  assert.equal(kit.roles.background, null);
+  assert.equal(kit.roles.ui, null);
+  assert.notEqual(kit.roles.effect, null);
+});
+
+test("ROUND 24+25: dungeon-rpg kitinin player rolü 3 kahraman, obstacle rolü 7 canavar (hazard sprite'ı olmadığı için enemy+trap tek pool'da), platform floor, tile wall+threshold+ROUND25:4 retro tile, gameObject chest+door+ROUND25:retrotex door, decoration 4 tinydungeon+ROUND25:4 retrofantasy prop, effect ROUND25:2 particle", function () {
+  var resolved = resolveKitRoles("dungeon-rpg");
+  assert.deepEqual(
+    resolved.roles.player.map(function (a) { return a.id; }).sort(),
+    ["tinydungeon_player_adventurer", "tinydungeon_player_knight", "tinydungeon_player_wizard"]
+  );
+  assert.deepEqual(
+    resolved.roles.obstacle.map(function (a) { return a.id; }).sort(),
+    [
+      "tinydungeon_enemy_bat", "tinydungeon_enemy_crab", "tinydungeon_enemy_ghost",
+      "tinydungeon_enemy_mimic", "tinydungeon_enemy_orc", "tinydungeon_enemy_slime",
+      "tinydungeon_enemy_spider",
+    ].sort()
+  );
+  assert.equal(resolved.roles.platform.id, "tinydungeon_tile_floor");
+  assert.deepEqual(
+    resolved.roles.tile.map(function (a) { return a.id; }).sort(),
+    [
+      "tinydungeon_tile_door_threshold", "tinydungeon_tile_wall",
+      "retrofantasy_stairs_stone", "retrofantasy_ladder",
+      "retrotex_wall_brick", "retrotex_floor_wood",
+    ].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.collectible.map(function (a) { return a.id; }).sort(),
+    ["tinydungeon_potion_blue", "tinydungeon_potion_red"]
+  );
+  assert.deepEqual(
+    resolved.roles.gameObject.map(function (a) { return a.id; }).sort(),
+    ["tinydungeon_chest", "tinydungeon_door", "retrotex_door_wood"].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.decoration.map(function (a) { return a.id; }).sort(),
+    [
+      "tinydungeon_decoration_barrel", "tinydungeon_decoration_crate",
+      "tinydungeon_decoration_tombstone", "tinydungeon_decoration_torch",
+      "retrofantasy_wall_fortified", "retrofantasy_tower",
+      "retrofantasy_barrels", "retrofantasy_column",
+    ].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.effect.map(function (a) { return a.id; }).sort(),
+    ["particle_hit_impact", "particle_magic_glow"].sort()
+  );
+  assert.deepEqual(resolved.unresolved, []);
+});
+
+test("ROUND 25: city kitinin missingRoles listesi collectible/background/ui'ı içeriyor, player sedan, obstacle 5 trafik aracı+2 engel, platform straight, tile curve+intersection, gameObject trafficLight+stopSign, decoration 6, effect 3 particle", function () {
+  var kit = getKit("city");
+  assert.equal(kit.missingRoles.length, 3);
+  assert.equal(kit.roles.collectible, null);
+  assert.equal(kit.roles.background, null);
+  assert.equal(kit.roles.ui, null);
+
+  var resolved = resolveKitRoles("city");
+  assert.equal(resolved.roles.player.id, "carkit_vehicle_sedan");
+  assert.deepEqual(
+    resolved.roles.obstacle.map(function (a) { return a.id; }).sort(),
+    [
+      "carkit_vehicle_taxi", "carkit_vehicle_police", "carkit_vehicle_ambulance",
+      "carkit_vehicle_van", "carkit_vehicle_garbage_truck",
+      "cityroads_cone", "cityroads_barrier",
+    ].sort()
+  );
+  assert.equal(resolved.roles.platform.id, "cityroads_tile_road_straight");
+  assert.deepEqual(
+    resolved.roles.tile.map(function (a) { return a.id; }).sort(),
+    ["cityroads_tile_road_curve", "cityroads_tile_road_intersection"].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.gameObject.map(function (a) { return a.id; }).sort(),
+    ["cityroads_traffic_light", "cityroads_sign_stop"].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.decoration.map(function (a) { return a.id; }).sort(),
+    [
+      "cityroads_dumpster", "cityroads_electricity_pole",
+      "cityindustrial_building_office", "cityindustrial_building_factory",
+      "cityindustrial_water_tower", "cityindustrial_shipping_container",
+    ].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.effect.map(function (a) { return a.id; }).sort(),
+    ["particle_hit_impact", "particle_smoke_puff", "particle_spark_burst"].sort()
+  );
+  assert.deepEqual(resolved.unresolved, []);
+});
+
+test("ROUND 25: cooking kitinin missingRoles listesi player/obstacle/background/ui'ı içeriyor (Food Kit'te karakter/düşman/arka plan/UI yok), collectible 8 malzeme, target plate+cutting-board, gameObject 3 alet, decoration 4 yemek, effect 2 particle", function () {
+  var kit = getKit("cooking");
+  assert.equal(kit.missingRoles.length, 4);
+  assert.equal(kit.roles.player, null);
+  assert.equal(kit.roles.obstacle, null);
+  assert.equal(kit.roles.background, null);
+  assert.equal(kit.roles.ui, null);
+
+  var resolved = resolveKitRoles("cooking");
+  assert.deepEqual(
+    resolved.roles.collectible.map(function (a) { return a.id; }).sort(),
+    [
+      "foodkit_apple", "foodkit_banana", "foodkit_tomato", "foodkit_carrot",
+      "foodkit_egg", "foodkit_cheese", "foodkit_bread", "foodkit_fish",
+    ].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.target.map(function (a) { return a.id; }).sort(),
+    ["foodkit_plate", "foodkit_cutting_board"].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.gameObject.map(function (a) { return a.id; }).sort(),
+    ["foodkit_pot", "foodkit_frying_pan", "foodkit_cooking_knife"].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.decoration.map(function (a) { return a.id; }).sort(),
+    ["foodkit_burger", "foodkit_pizza", "foodkit_cake", "foodkit_donut"].sort()
+  );
+  assert.deepEqual(
+    resolved.roles.effect.map(function (a) { return a.id; }).sort(),
+    ["particle_smoke_puff", "particle_star_sparkle"].sort()
+  );
+  assert.deepEqual(resolved.unresolved, []);
 });
 
 test("her manifest asseti için compatibleGameTypes, o kitin roles'ünde GERÇEKTEN kullanılıyor mu (tutarlılık çapraz kontrolü)", function () {

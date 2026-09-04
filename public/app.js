@@ -14,6 +14,7 @@
   var exampleChipsWrap = document.getElementById("example-chips");
   var gameLibraryGrid = document.getElementById("game-library-grid");
   var configureApiBtn = document.getElementById("configure-api-btn");
+  var helpBtn = document.getElementById("help-btn");
   var restartBtn = document.getElementById("restart-btn");
   var openTabBtn = document.getElementById("open-tab-btn");
   var outputTabs = document.getElementById("output-tabs");
@@ -577,6 +578,16 @@
 
   function renderAssetLibrary() {
     if (!assetLibraryGrid) return;
+    // ROUND (Interaction Audit): arama kutusu SADECE kütüphane gerçekten
+    // boşken devre dışı olmalı — önceden bu satır sadece "boş" dalında
+    // (aşağıda) `disabled = true` yapıyordu ama HİÇBİR yerde `false`'a geri
+    // ALINMIYORDU. Sonuç: ASSET_LIBRARY, ilk (senkron, boş) render'dan SONRA
+    // gerçek veriyle dolduğunda (bkz. loadAssetLibrary) arama kutusu
+    // KALICI OLARAK disabled kalıyordu — kullanıcıya aktifmiş gibi görünen
+    // ama hiçbir tuş girişini kabul etmeyen bir "fake" arama kutusuydu. Her
+    // render'da state'i gerçek ASSET_LIBRARY.length'ten YENİDEN türeterek
+    // (idempotent) düzeltildi.
+    if (assetSearchInput) assetSearchInput.disabled = ASSET_LIBRARY.length === 0;
     if (assetCountEl) {
       // ROUND 12: bu her zaman GERÇEK toplam kütüphane boyutunu gösterir
       // (arama filtrelense bile) — "39 assets available" bir arama
@@ -593,8 +604,8 @@
     // girmeden dürüst bir "yakında" mesajı gösterilir; arama kutusu da
     // devre dışı bırakılır (aranacak hiçbir şey yok).
     if (ASSET_LIBRARY.length === 0) {
+      // disabled state artık fonksiyon başında (yukarıda) tek yerden yönetiliyor.
       assetLibraryGrid.innerHTML = '<p class="asset-search-empty">' + escapeHtml(ASSET_LIBRARY_PENDING_MESSAGE) + "</p>";
-      if (assetSearchInput) assetSearchInput.disabled = true;
       return;
     }
 
@@ -1141,6 +1152,26 @@
     });
   }
 
+  // ================== Help (Interaction Audit fix) ==================
+  // Öncesinde bu buton (index.html'de yalnızca title="Help" ile işaretli,
+  // hiçbir id/handler'ı olmayan bir <button>) .icon-btn'nin hover/glow
+  // stiliyle tıklanabilir GÖRÜNÜYORDU ama tıklandığında HİÇBİR ŞEY
+  // yapmıyordu — klasik bir "fake interaction". Yeni bir modal/yardım
+  // sistemi icat etmek yerine, uygulamanın zaten sahip olduğu, GERÇEK
+  // durum-bildirme kanalı (setStatus — bkz. Configure API butonu, hemen
+  // altta) yeniden kullanılıyor; sadece sayfadaki gerçek 3 adımı (Describe/
+  // Generate/Play — bkz. .workflow-steps) ve gerçek bir klavye ipucunu
+  // özetliyor, uydurma bir özellik/URL YOK.
+  if (helpBtn) {
+    helpBtn.addEventListener("click", function () {
+      setStatus(
+        "How it works: Describe your idea (or pick an example) → Generate → Play, Restart or open it in a new tab. " +
+          "Tip: every button here is keyboard-accessible — Tab to move focus, Enter or Space to activate.",
+        null
+      );
+    });
+  }
+
   // ================== configure API (stub, no backend yet) ==================
 
   if (configureApiBtn) {
@@ -1169,17 +1200,19 @@
     }
   }
 
-  // Asset seçiliyken Generate butonu "Generate with N assets →" gösterir —
+  // Asset seçiliyken Generate butonu "Generate with N assets" gösterir —
   // kullanıcıya seçimin gerçekten generation'a bağlı olduğu hissini verir.
-  // Buton yapısı (ikon + metin + ok) korunuyor, sadece orta metin değişiyor.
-  // generateBtnIdleHTML burada güncellenir ki loading state bitince
-  // setGenerateBtnLoading(false) doğru (güncel) metne dönsün.
+  // Buton yapısı (round play icon + metin) korunuyor, sadece orta metin
+  // değişiyor. generateBtnIdleHTML burada güncellenir ki loading state
+  // bitince setGenerateBtnLoading(false) doğru (güncel) metne dönsün.
   function updateGenerateBtnIdleLabel() {
     if (!generateBtn) return;
     var count = getAllSelected().length;
-    var label = count > 0 ? "Generate with " + count + " asset" + (count > 1 ? "s" : "") : "Generate Playable Ad";
+    var label = count > 0 ? "Generate with " + count + " asset" + (count > 1 ? "s" : "") : "MAKE IT PLAYABLE";
     generateBtnIdleHTML =
-      '<span class="btn-icon">✦</span><span>' + escapeHtml(label) + "</span>" + '<span class="btn-arrow">→</span>';
+      '<span class="btn-play-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span>' +
+      escapeHtml(label) +
+      "</span>";
     // Şu an loading spinner gösterilmiyorsa (disabled değilse) değişikliği hemen yansıt.
     if (!generateBtn.disabled) {
       generateBtn.innerHTML = generateBtnIdleHTML;
@@ -1732,15 +1765,46 @@
   }
 
   // ================== Phase 6: Export / Download ==================
+  // Interaction fix: Download artık aktif Generated Output sekmesine göre
+  // içerik/dosya adı/MIME type seçiyor — önceden sekme ne olursa olsun her
+  // zaman lastResult.html (tam oyun) indiriliyordu. "Aktif tab" için YENİ
+  // bir state icat edilmedi: mevcut tek doğruluk kaynağı olan `activeTab`
+  // (bkz. output-tabs click handler ve renderActiveTab) ve copyCodeBtn'in
+  // zaten kullandığı AYNI cssExcerpt/jsExcerpt alanları (extractBlock ile
+  // gerçek üretilen HTML'den çıkarılıyor, ekranda HTML/CSS/JS sekmelerinde
+  // gösterilenle BİREBİR aynı kaynak) yeniden kullanıldı. Blob +
+  // createObjectURL + geçici <a> deseni DEĞİŞMEDİ, sadece parametrize edildi.
+  var DOWNLOAD_TAB_CONFIG = {
+    game: { filename: "playable-ad.html", mime: "text/html" },
+    html: { filename: "playable-ad.html", mime: "text/html" },
+    css: { filename: "playable-ad.css", mime: "text/css" },
+    js: { filename: "playable-ad.js", mime: "application/javascript" },
+  };
+
+  function getDownloadPayload() {
+    var cfg = DOWNLOAD_TAB_CONFIG[activeTab] || DOWNLOAD_TAB_CONFIG.game;
+    var content;
+    if (activeTab === "css") {
+      content = lastResult.cssExcerpt || "";
+    } else if (activeTab === "js") {
+      content = lastResult.jsExcerpt || "";
+    } else {
+      // "game" ve "html" ikisi de aynı gerçek kaynağı (tam üretilen
+      // playable HTML) gösterir/indirir — bkz. renderActiveTab/renderOutputGameTab.
+      content = lastResult.html || "";
+    }
+    return { content: content, filename: cfg.filename, mime: cfg.mime };
+  }
 
   if (downloadBtn) {
     downloadBtn.addEventListener("click", function () {
       if (!lastResult) return;
-      var blob = new Blob([lastResult.html], { type: "text/html" });
+      var payload = getDownloadPayload();
+      var blob = new Blob([payload.content], { type: payload.mime });
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url;
-      a.download = "playable-ad.html";
+      a.download = payload.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

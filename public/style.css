@@ -296,11 +296,13 @@ button { font-family: inherit; }
   background: radial-gradient(130px 100px at 22% 15%, rgba(126, 110, 214, 0.32), transparent 72%);
 }
 
-/* ROUND 11: rozet, dolu bir gradyan kareden — referans görseldeki gibi
-   içi koyu/yarı saydam, altın kenarlıklı ve hafif ışıltılı bir SEKİZGEN
-   çerçeveye dönüştürüldü. Şekil clip-path polygon ile (gerçek bir görsel
-   asset olmadan) elde ediliyor; kenarlık clip sınırına yakın durduğu için
-   sekizgenin ana hatlarını çiziyor. */
+/* ROUND G: rozet artık AYRI bir CSS sekizgeni (clip-path/border/gradient)
+   ÇİZMİYOR — brand.js'teki markSvg, favicon'daki AYNI SVG'yi (koyu dolgulu
+   + altın kenarlıklı sekizgen path'i ZATEN İÇİNDE taşıyor) birebir
+   kullanıyor, bu yüzden burada ikinci bir sekizgen çizmek "duplicate icon"
+   olurdu. .brand-mark artık sadece boyut/hizalama/glow sağlayan basit bir
+   kapsayıcı; sekizgen çerçeve + sparkle glif TAMAMEN SVG'nin kendisinden
+   geliyor (bkz. brand.js). */
 .brand-mark {
   width: 34px;
   height: 34px;
@@ -309,12 +311,8 @@ button { font-family: inherit; }
   align-items: center;
   justify-content: center;
   position: relative;
-  background: linear-gradient(160deg, rgba(232, 185, 77, 0.16), rgba(10, 13, 24, 0.6) 75%);
-  border: 1.5px solid rgba(232, 185, 77, 0.7);
-  clip-path: polygon(29% 2%, 71% 2%, 98% 29%, 98% 71%, 71% 98%, 29% 98%, 2% 71%, 2% 29%);
-  box-shadow: 0 0 18px rgba(232, 185, 77, 0.32);
 }
-.brand-mark svg { width: 15px; height: 15px; filter: drop-shadow(0 0 5px rgba(232, 185, 77, 0.5)); }
+.brand-mark svg { width: 32px; height: 32px; filter: drop-shadow(0 0 6px rgba(232, 185, 77, 0.4)); }
 
 .brand-wordmark { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
 .brand-name {
@@ -477,14 +475,6 @@ button { font-family: inherit; }
   color: var(--gold-soft);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4), 0 0 1px rgba(246, 216, 136, 0.6), 0 0 22px rgba(232, 185, 77, 0.4), 0 0 46px rgba(255, 157, 82, 0.16);
 }
-.page-heading h1::before {
-  content: "◆ ";
-  font-size: 17px;
-  vertical-align: 6px;
-  color: var(--gold);
-  text-shadow: 0 0 10px rgba(232, 185, 77, 0.6);
-}
-
 .page-heading p {
   margin: 0;
   font-size: 13px;
@@ -1093,8 +1083,27 @@ button { font-family: inherit; }
 .primary-btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 8px 20px rgba(232, 185, 77, 0.32); }
 .primary-btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; text-shadow: none; }
 .primary-btn .btn-icon { font-size: 13px; }
-.primary-btn .btn-arrow { font-size: 15px; transition: transform 0.2s var(--ease-premium); }
-.primary-btn:hover:not(:disabled) .btn-arrow { transform: translateX(3px); }
+
+/* Generate CTA — round play icon (replaces the old ✦ glyph + "→" arrow).
+   Scoped to .primary-btn .btn-play-icon only, so #play-btn's existing
+   .btn-icon (▶ text glyph) is completely untouched. */
+.primary-btn .btn-play-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 224, 170, 0.3), transparent 70%), #241605;
+  color: var(--gold-soft);
+  box-shadow: 0 0 0 2px rgba(255, 224, 160, 0.55), 0 0 14px rgba(232, 185, 77, 0.5);
+  transition: box-shadow 0.22s var(--ease-premium);
+}
+.primary-btn .btn-play-icon svg { margin-left: 1.5px; }
+.primary-btn:hover:not(:disabled) .btn-play-icon {
+  box-shadow: 0 0 0 2px rgba(255, 224, 160, 0.75), 0 0 20px rgba(255, 157, 82, 0.7);
+}
 
 .btn-spinner {
   width: 14px;

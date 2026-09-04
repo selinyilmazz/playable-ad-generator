@@ -224,6 +224,250 @@ var GAME_KITS = [
       "background (meyve/sebze paletiyle uyumlu, nötr bir puzzle/tezgah arka planı yok)",
     ],
   },
+  {
+    key: "racing",
+    name: "Racing",
+    description: "Bir oyuncu arabası, trafikten/engellerden kaçınarak bitiş çizgisine ulaşır.",
+    // ROUND 23 — Selin'in kendi sağladığı, CC0 lisanslı "Kenney Racing Pack"
+    // bu kitin gerçek asset kiti olarak entegre edildi (bkz. assetManifest.js
+    // "ROUND 23" bloğu ve public/assets/packs/racing/ATTRIBUTION.md). Bu,
+    // "player" rolünü BİRİNCİL olarak bir "vehicle" category'sinin doldurduğu
+    // İLK kit (önceki kitlerde player hep "character").
+    roles: {
+      // player rolü mockGameTemplate.js'in #player-sprite render mantığına
+      // AYNEN oturuyor (role key = "player", category = "vehicle" — ikisi
+      // birbirinden bağımsız, kod değişikliği gerekmedi).
+      player: ["racing_car_player_red", "racing_car_player_blue"],
+      // "obstacle" rolü hem trafik araçlarını (car/motorcycle) HEM sahne
+      // engellerini (koni/yağ/bariyer) içeriyor — diğer kitlerdeki AYNI
+      // "tek obstaclePool'da birleştir" çözümü (bkz. forest-platformer ve
+      // space-shooter kitlerinin aynı yorumu).
+      obstacle: [
+        "racing_traffic_car_yellow",
+        "racing_traffic_car_green",
+        "racing_motorcycle_black",
+        "racing_cone",
+        "racing_oil_slick",
+        "racing_barrier",
+      ],
+      // platform rolü mockGameTemplate.js'in #platform-row (4x tekrarlanan
+      // zemin şeridi) render mantığına AYNEN oturuyor — düz yol karosu.
+      platform: "racing_tile_road_straight",
+      // "tile" — SADECE gerçek (LLM) üretimde görünür (mock şablonu bu
+      // anahtarı OKUMUYOR, bkz. diğer kitlerdeki "decoration"/"projectile"
+      // ile aynı desen). Viraj + bitiş çizgisi karosu.
+      tile: ["racing_tile_road_curve", "racing_tile_finish_line"],
+      effect: "racing_skidmark",
+      // "decoration" — SADECE gerçek (LLM) üretimde görünür (mock tüketmiyor,
+      // forest-platformer'ın decoration rolüyle aynı desen).
+      decoration: ["racing_tree_large", "racing_tribune", "racing_tent"],
+      // Aşağıdaki 4 rol için pakette GERÇEKTEN uygun bir asset yok — eski
+      // PLANNED_PACKS_RAW tahmini (powerup:2, ui:1, background:2) pakette
+      // dosya dosya kontrol edildikten sonra YANLIŞ çıktı; uydurmak yerine
+      // dürüstçe null bırakıldı (bkz. missingRoles).
+      collectible: null,
+      background: null,
+      powerup: null,
+      ui: null,
+    },
+    missingRoles: [
+      "collectible (pakette coin/gem/star tarzı bir toplanabilir yok)",
+      "background (pakette tek-kare kapsayan bir pist/sahne arka planı yok)",
+      "powerup (pakette nitro/kalkan gibi bir power-up ikonu yok)",
+      "ui (pakette hız göstergesi/HUD ikonu yok)",
+    ],
+  },
+  {
+    key: "dungeon-rpg",
+    name: "Tiny Dungeon",
+    description: "Bir kahraman, zindanda düşmanlardan kaçınıp/onları yenip hazine bulur.",
+    // ROUND 24 — Selin'in kendi sağladığı, CC0 lisanslı "Kenney Tiny Dungeon"
+    // paketi bu kitin gerçek asset kiti olarak entegre edildi (bkz.
+    // assetManifest.js "ROUND 24" bloğu ve
+    // public/assets/packs/tiny-dungeon/ATTRIBUTION.md).
+    roles: {
+      // player rolü mockGameTemplate.js'in #player-sprite render mantığına
+      // AYNEN oturuyor.
+      player: ["tinydungeon_player_knight", "tinydungeon_player_wizard", "tinydungeon_player_adventurer"],
+      // Pakette AYRI bir hazard/trap/projectile sprite'ı yok — bu yüzden
+      // (forest-platformer ve space-shooter kitlerindeki AYNI çözümle)
+      // TÜM canavarlar (mimic dahil) doğrudan "obstacle" rolüne kondu —
+      // normalizeRoles()'in roles.obstacle||roles.enemy||roles.asteroid
+      // OR-precedence tuzağını aşmak için (bkz. o kitlerin aynı yorumu).
+      obstacle: [
+        "tinydungeon_enemy_slime",
+        "tinydungeon_enemy_crab",
+        "tinydungeon_enemy_orc",
+        "tinydungeon_enemy_bat",
+        "tinydungeon_enemy_ghost",
+        "tinydungeon_enemy_spider",
+        "tinydungeon_enemy_mimic",
+      ],
+      // platform rolü mockGameTemplate.js'in #platform-row (4x tekrarlanan
+      // zemin şeridi) render mantığına AYNEN oturuyor — düz zemin karosu.
+      platform: "tinydungeon_tile_floor",
+      // "tile" — SADECE gerçek (LLM) üretimde görünür (mock bu anahtarı
+      // OKUMUYOR, bkz. Racing'in aynı deseni). Duvar + kapı eşiği karosu
+      // (Tiny Dungeon) + ROUND 25: Retro Fantasy Kit'in taş merdiveni +
+      // tırmanma merdiveni + Retro Textures Fantasy'nin tuğla duvar/tahta
+      // zemin dokusu EKLENDİ — hepsi mock tarafından tüketilmeyen, SADECE
+      // LLM'e sunulan bir rol olduğu için bu ekleme mock demo'nun görsel
+      // tutarlılığını SIFIR riskle zenginleştiriyor (bkz. retro-fantasy.js
+      // ve retro-textures-fantasy.js dosya başı notu).
+      tile: [
+        "tinydungeon_tile_wall",
+        "tinydungeon_tile_door_threshold",
+        "retrofantasy_stairs_stone",
+        "retrofantasy_ladder",
+        "retrotex_wall_brick",
+        "retrotex_floor_wood",
+      ],
+      collectible: ["tinydungeon_potion_red", "tinydungeon_potion_blue"],
+      // "gameObject" — YENİ kit rol anahtarı (bu göreve özel istenen "GAME
+      // OBJECT" kategorisi için). normalizeRoles() bu anahtarı OKUMUYOR
+      // (decoration/tile gibi mock'ta hiçbir etkisi/riski yok), ama
+      // buildAssetContextMessageForKit() TÜM rolleri LLM'e aktardığı için
+      // gerçek üretimde sandık/kapı LLM'e "kullanılabilir" gösteriliyor.
+      // ROUND 25: Retro Textures Fantasy'nin ahşap kapısı EKLENDİ (Tiny
+      // Dungeon'ın kendi tinydungeon_door'undan farklı bir görsel stil —
+      // ikisi de LLM'e seçenek olarak sunuluyor, biri seçilmeye zorlanmıyor).
+      gameObject: ["tinydungeon_chest", "tinydungeon_door", "retrotex_door_wood"],
+      // "decoration" — SADECE gerçek (LLM) üretimde görünür (mock
+      // tüketmiyor) — forest-platformer/racing ile aynı desen. ROUND 25:
+      // Retro Fantasy Kit'in 4 mimari dekor objesi (duvar/kule/varil/sütun)
+      // EKLENDİ — aynı gerekçeyle (tile rolüyle birebir aynı, bkz. yukarı).
+      decoration: [
+        "tinydungeon_decoration_torch",
+        "tinydungeon_decoration_barrel",
+        "tinydungeon_decoration_crate",
+        "tinydungeon_decoration_tombstone",
+        "retrofantasy_wall_fortified",
+        "retrofantasy_tower",
+        "retrofantasy_barrels",
+        "retrofantasy_column",
+      ],
+      // ROUND 25: Particle Pack'in 2 partikülü (hit-impact: vuruş efekti,
+      // magic-glow: büyü/iksir parıltısı) EKLENDİ — daha önce pakette hiç
+      // gerçek bir effect sprite'ı yoktu, bu rol dürüstçe null'du (bkz.
+      // eski missingRoles). Artık gerçek bir karşılığı var, missingRoles'ten
+      // ÇIKARILDI (bkz. aşağı).
+      effect: ["particle_hit_impact", "particle_magic_glow"],
+      // Aşağıdaki 2 rol için pakette hâlâ GERÇEKTEN uygun bir asset yok —
+      // uydurmak yerine dürüstçe null bırakıldı (bkz. missingRoles).
+      background: null,
+      ui: null,
+    },
+    missingRoles: [
+      "background (pakette tam-sahne bir dungeon arka planı yok, her asset 16x16 bir tile)",
+      "ui (pakette dungeon'a özel kullanılabilir bir HUD/UI ikonu yok — 3 adet beyaz reticle/forbidden-sign ikonu bulundu ama bunlar Tiled tileset editor placeholder'ı gibi görünüyor, gerçek in-game UI değil, dahil edilmedi)",
+    ],
+  },
+  {
+    key: "city",
+    name: "City",
+    description: "Bir araç, şehir trafiğinde/inşaat engellerinde ilerler.",
+    // ROUND 25 — Selin'in kendi sağladığı, CC0 lisanslı "Kenney Car Kit" +
+    // "City Kit Roads" + "City Kit Industrial 2.0" paketlerinden BİRLEŞTİRİLMİŞ,
+    // internally-tutarlı YENİ bir kit (bkz. car-kit.js/city-kit-roads.js/
+    // city-kit-industrial.js dosya başı notları ve ATTRIBUTION.md'ler).
+    // Mevcut "racing" kitine BİLEREK eklenmedi — Car Kit/City Kit'in
+    // "Kenney low-poly 3D toy" render stili, Racing pack'inin 2D top-down
+    // sprite stiliyle görsel olarak çakışıyor; bu yüzden ayrı, kendi
+    // içinde tutarlı bir kit kuruldu.
+    roles: {
+      player: "carkit_vehicle_sedan",
+      // "obstacle" rolü hem trafik araçlarını HEM inşaat engellerini
+      // içeriyor — diğer kitlerdeki AYNI "tek obstaclePool'da birleştir"
+      // çözümü (bkz. racing/forest-platformer/space-shooter kitlerinin
+      // aynı yorumu).
+      obstacle: [
+        "carkit_vehicle_taxi",
+        "carkit_vehicle_police",
+        "carkit_vehicle_ambulance",
+        "carkit_vehicle_van",
+        "carkit_vehicle_garbage_truck",
+        "cityroads_cone",
+        "cityroads_barrier",
+      ],
+      // platform rolü mockGameTemplate.js'in #platform-row (4x tekrarlanan
+      // zemin şeridi) render mantığına AYNEN oturuyor — düz yol karosu.
+      platform: "cityroads_tile_road_straight",
+      // "tile" — SADECE gerçek (LLM) üretimde görünür (mock bu anahtarı
+      // OKUMUYOR, bkz. Racing/Tiny Dungeon'ın aynı deseni). Viraj + kavşak.
+      tile: ["cityroads_tile_road_curve", "cityroads_tile_road_intersection"],
+      // "gameObject" — trafik ışığı + dur tabelası (interaktif sokak
+      // objeleri, mock tüketmiyor, LLM'e sunuluyor).
+      gameObject: ["cityroads_traffic_light", "cityroads_sign_stop"],
+      // "decoration" — SADECE gerçek (LLM) üretimde görünür (mock
+      // tüketmiyor) — City Kit Roads'un 2 sokak objesi + City Kit
+      // Industrial'ın 4 bina/sanayi objesi.
+      decoration: [
+        "cityroads_dumpster",
+        "cityroads_electricity_pole",
+        "cityindustrial_building_office",
+        "cityindustrial_building_factory",
+        "cityindustrial_water_tower",
+        "cityindustrial_shipping_container",
+      ],
+      // Particle Pack'in city'ye uygun 3 partikülü (çarpışma/duman/kıvılcım).
+      effect: ["particle_hit_impact", "particle_smoke_puff", "particle_spark_burst"],
+      // Aşağıdaki 3 rol için hiçbir pakette GERÇEKTEN uygun bir asset yok —
+      // uydurmak yerine dürüstçe null bırakıldı (bkz. missingRoles).
+      collectible: null,
+      background: null,
+      ui: null,
+    },
+    missingRoles: [
+      "collectible (Car Kit/City Kit paketlerinde coin/gem tarzı bir toplanabilir yok)",
+      "background (paketlerde tam-sahne bir şehir arka planı yok, sadece tekil yol/bina objeleri var)",
+      "ui (paketlerde şehir temalı kullanılabilir bir HUD/UI ikonu yok)",
+    ],
+  },
+  {
+    key: "cooking",
+    name: "Cooking",
+    description: "Doğru malzemeyi doğru kaba/tahtaya toplayıp basit bir tarif tamamla.",
+    // ROUND 25 — Selin'in kendi sağladığı, CC0 lisanslı "Kenney Food Kit"
+    // bu kitin gerçek asset kiti olarak entegre edildi (bkz. food-kit.js ve
+    // ATTRIBUTION.md). fruit-puzzle kitiyle benzer bir "toplanabilir +
+    // hedef kap" iskeleti kullanıyor ama TEMASI tamamen farklı (yemek
+    // pişirme, meyve/sebze eşleştirme değil) — bu yüzden ayrı bir kit.
+    roles: {
+      // Pakette hiçbir karakter/oyuncu figürü ya da doğal bir düşman/engel
+      // YOK (fruit-puzzle'ın da hiç enemy'i olmadığı gibi) — dürüstçe null.
+      player: null,
+      obstacle: null,
+      collectible: [
+        "foodkit_apple",
+        "foodkit_banana",
+        "foodkit_tomato",
+        "foodkit_carrot",
+        "foodkit_egg",
+        "foodkit_cheese",
+        "foodkit_bread",
+        "foodkit_fish",
+      ],
+      // fruit-puzzle'ın basket_red/basket_green'iyle AYNI desen: hedef kap.
+      target: ["foodkit_plate", "foodkit_cutting_board"],
+      // "gameObject" — mutfak aletleri (mock tüketmiyor, LLM'e sunuluyor).
+      gameObject: ["foodkit_pot", "foodkit_frying_pan", "foodkit_cooking_knife"],
+      // "decoration" — SADECE gerçek (LLM) üretimde görünür (mock
+      // tüketmiyor) — hazır yemekler, sahne zenginliği.
+      decoration: ["foodkit_burger", "foodkit_pizza", "foodkit_cake", "foodkit_donut"],
+      // Particle Pack'in cooking'e uygun 2 partikülü (duman/parıltı).
+      effect: ["particle_smoke_puff", "particle_star_sparkle"],
+      // Aşağıdaki 2 rol için pakette GERÇEKTEN uygun bir asset yok —
+      // uydurmak yerine dürüstçe null bırakıldı (bkz. missingRoles).
+      background: null,
+      ui: null,
+    },
+    missingRoles: [
+      "player (Food Kit'te hiçbir karakter/şef figürü yok)",
+      "obstacle (Food Kit'te doğal bir düşman/engel kavramı yok — fruit-puzzle'ın da hiç enemy'i olmadığı gibi)",
+      "background (pakette tam-sahne bir mutfak arka planı yok, sadece tekil malzeme/alet objeleri var)",
+      "ui (pakette yemek temalı kullanılabilir bir HUD/UI ikonu yok)",
+    ],
+  },
 ];
 
 function getKit(key) {

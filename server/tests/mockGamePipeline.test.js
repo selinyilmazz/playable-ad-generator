@@ -70,6 +70,31 @@ test("selectRolesForMock: tamamen alakasız bir prompt bile boş/kırık bir set
   assert.ok(sel.roles.effect, "effect rolü de dolu olmalı");
 });
 
+test("ROUND 23: selectRolesForMock('racing', ...) racing kitini AYNEN döner — player rolü 2 araba, platform rolü straight tile (mock'un #player-sprite / #platform-row mantığına ek kod değişikliği olmadan oturuyor)", function () {
+  var sel = selectRolesForMock("racing", "irrelevant text");
+  assert.equal(sel.source, "kit");
+  assert.equal(sel.usedFallback, false);
+  assert.equal(sel.kitName, getKit("racing").name);
+  assert.ok(Array.isArray(sel.roles.player));
+  assert.deepEqual(sel.roles.player.map(function (a) { return a.id; }).sort(), ["racing_car_player_blue", "racing_car_player_red"]);
+  assert.equal(sel.roles.platform.id, "racing_tile_road_straight");
+  assert.equal(sel.roles.collectible, null);
+  assert.equal(sel.roles.background, null);
+});
+
+test("ROUND 24+25: selectRolesForMock('dungeon-rpg', ...) dungeon-rpg kitini AYNEN döner — player rolü 3 kahraman, platform rolü floor tile, obstacle rolü 7 canavar, effect ROUND25 ile artık 2 particle (mock'un #player-sprite / #platform-row mantığına ek kod değişikliği olmadan oturuyor)", function () {
+  var sel = selectRolesForMock("dungeon-rpg", "irrelevant text");
+  assert.equal(sel.source, "kit");
+  assert.equal(sel.usedFallback, false);
+  assert.equal(sel.kitName, getKit("dungeon-rpg").name);
+  assert.ok(Array.isArray(sel.roles.player));
+  assert.equal(sel.roles.player.length, 3);
+  assert.equal(sel.roles.platform.id, "tinydungeon_tile_floor");
+  assert.ok(Array.isArray(sel.roles.obstacle) && sel.roles.obstacle.length === 7);
+  assert.ok(Array.isArray(sel.roles.effect) && sel.roles.effect.length === 2, "ROUND 25: Particle Pack ile effect artık 2 partikül içeriyor");
+  assert.equal(sel.roles.background, null);
+});
+
 test("normalizeRoles: kit rollerinin farklı anahtar isimlerini (background/environment, enemy/asteroid/obstacle) tek şekle indirger", function () {
   var resolvedSpace = selectRolesForMock("space-shooter", "").roles;
   var normalized = normalizeRoles(resolvedSpace);
@@ -115,7 +140,7 @@ test("ROUND 18: normalizeRoles genişletilmiş rolleri (tile/weapon/vehicle/powe
   assert.deepEqual(emptyNormalized.uiPool, []);
 });
 
-["forest-platformer", "space-shooter", "endless-runner", "fruit-puzzle"].forEach(function (gameType) {
+["forest-platformer", "space-shooter", "endless-runner", "fruit-puzzle", "racing", "dungeon-rpg", "city", "cooking"].forEach(function (gameType) {
   test("buildMockGameHtml('" + gameType + "'): sadece GERÇEK manifest path'leri kullanır, hiç emoji/uydurma path yok", function () {
     var sel = selectRolesForMock(gameType, "Create a 5-second game.");
     var html = buildMockGameHtml({

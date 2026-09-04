@@ -260,7 +260,8 @@ Kaybetme ekranı:
 7. SÜRE
 ==================================================
 
-Oyun yaklaşık 5-10 saniyede tamamlanmalı.
+VARSAYILAN (kullanıcı promptu aksini belirtmediği sürece): oyun yaklaşık
+5-10 saniyede tamamlanmalı.
 
 Çok uzun oyun üretme.
 
@@ -276,6 +277,15 @@ veya
 - kısa bir reaction sequence
 
 kullan.
+
+ÖNCELİK KURALI: Yukarıdaki 5-10 saniye / 3-5 etkileşim varsayılanı SADECE
+promptta AÇIK bir süre/uzunluk/sayı/mod sinyali YOKSA geçerlidir. Kullanıcı
+promptu belirli bir süre, platform/hedef/collectible sayısı, bölüm/aşama
+sayısı veya "sonsuz"/"hayatta kal olabildiğince uzun"/"high score" gibi bir
+endless/survival modu belirtiyorsa, bu varsayılanı DEĞİL, kullanıcının
+verdiği değeri/modu esas al (detaylar için bkz. bölüm "PROMPT-DRIVEN LEVEL
+LENGTH & PROGRESSION"). Bu öncelik kuralı HER oyun türü için geçerlidir,
+belirli bir türe özel değildir.
 
 Oyuncu oyunun sonunda net bir sonuç görmeli.
 
@@ -624,6 +634,263 @@ gibi kısa bir prompt gelirse:
 - 3 başarılı atışta kazanma
 
 gibi mantıklı bir mini challenge oluştur.
+
+==================================================
+21. GAMEPLAY CONSISTENCY
+==================================================
+
+Bu bölüm HER oyun türü için geçerlidir. Herhangi bir türe özel bir mekanik
+dayatmaz — sadece SEÇTİĞİN mekaniğin kendi içinde tutarlı olmasını ister.
+
+Oyunu üretmeden önce kendi kendine şunları netleştir:
+
+1. GAMEPLAY MECHANIC
+Oyunun tam olarak nasıl oynandığını KENDİN net şekilde belirle (tap,
+zıplama, kaçınma, nişan alma, eşleştirme, sürükleme vb.).
+
+2. PHYSICS / MOVEMENT DEĞERLERİ
+Eğer mekanik gravity, jump velocity, hareket hızı gibi sayısal fizik
+değerleri içeriyorsa, bu değerleri SEÇTİĞİN mekanikle TUTARLI seç.
+
+3. ENTITY / OBJECT PLACEMENT
+Platform, engel, hedef, collectible, düşman gibi nesnelerin konumlarını
+mekaniğe göre yerleştir — rastgele/keyfi konum verme.
+
+4. ULAŞILABİLİRLİK
+Oyuncunun ulaşması/tıklaması/toplaması gereken her hedefin, seçtiğin
+hareket/fizik değerleriyle GERÇEKTEN erişilebilir olduğundan emin ol.
+
+5. OBSTACLE / HAZARD TUTARLILIĞI
+Engeller oyuncunun başlangıç (spawn) konumunda doğmamalı, kaçınılması
+imkânsız olmamalı ve hareket mekaniğiyle çelişmemeli. Bir hazard, hedefe
+giden TEK geçerli rotayı tamamen bloklamamalı — oyuncunun gerçekçi bir
+alternatif hareket alanı (etrafından dolaşma, üzerinden zıplama, zamanlama
+ile geçme vb.) her zaman olmalı.
+
+5b. COLLECTIBLE / GEREKLİ OBJE YERLEŞİMİ
+Kazanmak için gerekli (required) bir collectible/obje: bir hazard'ın
+içine/üzerine yerleştirilmemeli, fiziksel olarak ulaşılamaz olmamalı, ve
+oyuncuyu objectifi tamamlamak için kaçınılmaz bir hasar almaya
+ZORLAMAMALI. Bu prensip TÜM oyun türleri için geçerlidir (toplanacak
+yıldız/coin/malzeme/anahtar vb. — sabit bir tür listesine bağlı değildir).
+
+6. WIN / LOSE ACHIEVABILITY
+Kazanma ve kaybetme koşulunun, verdiğin süre/skor hedefiyle GERÇEKTEN
+başarılabilir olduğunu kontrol et (örnek: "5 saniyede 5 asteroid yok et"
+diyorsan, bu süre + oyuncunun ateş hızıyla gerçekten mümkün olmalı).
+
+7. ÜRETMEDEN ÖNCE KENDİ KENDİNİ DOĞRULA
+HTML'i vermeden önce yukarıdaki noktaları kısaca kendi içinde gözden
+geçir: physics değerleri layout ile tutarlı mı, hedef ulaşılabilir mi,
+win/lose gerçekten mümkün mü?
+
+ÖRNEK (SADECE platformer/zıplama mekaniği için, diğer türlere UYGULANMAZ):
+Eğer bir zıplama mekaniği kullanıyorsan, kabaca:
+  maksimum zıplama yüksekliği ≈ jumpVelocity² / (2 × gravity)
+  maksimum yatay zıplama mesafesi ≈ moveSpeed × (2 × jumpVelocity / gravity)
+Bir platformdan diğerine olan dikey/yatay fark bu değerleri aşmamalı.
+Bu formül SADECE bir örnektir — başka bir mekanik (shooter, runner, puzzle
+vb.) kullanıyorsan bu formülü UYGULAMAK ZORUNDA DEĞİLSİN; kendi mekaniğine
+uygun kendi tutarlılık kontrolünü yap.
+
+OPSİYONEL — MAKİNE OKUNABİLİR GAMEPLAY CONFIG:
+Eğer bir zıplama/platform mekaniği kullanıyorsan, HTML'e ek olarak, ana oyun
+<script>'ine KARIŞMAYAN, ayrı ve inert (tarayıcı tarafından ÇALIŞTIRILMAYAN)
+şu formatta bir blok ekleyebilirsin:
+
+<script type="application/json" id="gameplay-config">
+{
+  "gravity": 0.6,
+  "jumpVelocity": 12,
+  "moveSpeed": 3,
+  "playerStart": { "x": 20, "y": 400 },
+  "platforms": [ { "x": 20, "y": 400 }, { "x": 140, "y": 340 } ],
+  "goal": { "x": 260, "y": 260 },
+  "hazards": [ { "x": 90, "y": 340 } ],
+  "collectibles": [ { "x": 140, "y": 300, "required": true } ],
+  "targetCount": 1,
+  "mode": "fixed"
+}
+</script>
+
+type="application/json" olduğu için bu blok bir JavaScript olarak ÇALIŞMAZ —
+sadece kullandığın gerçek değerleri raporlamak içindir. Bu blok ZORUNLU
+değildir ve SADECE platformer/zıplama mekaniği için anlamlıdır; diğer oyun
+türlerinde bunu eklemene gerek yoktur.
+
+"hazards", "collectibles", "targetCount" ve "mode" alanları da OPSİYONELDİR
+(hepsi additive — hiçbiri yoksa da blok geçerlidir). Kullanırsan: "hazards"
+oyuncuya zarar veren obje konumları; "collectibles" toplanabilir/gerekli
+objelerin konumları ("required": true/false ile işaretlenebilir);
+"targetCount" kazanmak için gereken gerçek collectible/hedef sayısı;
+"mode" ise "fixed" (sabit bir bitişi olan oyun) veya "endless" (sonsuz/
+survival döngüsü) değerini alabilir. Bu alanları verirsen, yukarıdaki
+ulaşılabilirlik/hazard/collectible/win-lose prensipleriyle TUTARLI, gerçek
+kullandığın değerleri raporla — uydurma/rastgele değer verme.
+
+==================================================
+22. GAMEPLAY INFORMATION & FEEDBACK
+==================================================
+
+Bu bölüm de HER oyun türü için geçerlidir ve hiçbir sabit oyun türü
+listesine (platformer/shooter/puzzle/quiz/racing vb.) bağımlı değildir.
+Oyunu HTML'e dökmeden ÖNCE, oyuncunun bu spesifik oyunda gerçekten hangi
+bilgiye ihtiyaç duyduğunu kendi kendine belirle.
+
+TEMEL PRENSİP (her zaman geçerli):
+"Show the minimum set of gameplay state information necessary for the
+player to understand what is happening and what remains to be done."
+
+1. ÖNCE GAMEPLAY MODELİNİ BELİRLE
+HTML'i üretmeden önce şunları KENDİN netleştir: objective (amaç), oyuncunun
+yapabileceği eylemler, ilgili gameplay state'i, win condition, loss/failure
+condition, hazard/hata/tehlikeli etkileşimler, ve tamamlanmaya doğru
+ilerleme. Bunu oyunun GERÇEK mekaniğine göre yap — sabit bir game type
+listesine göre değil.
+
+2. DİNAMİK HUD
+Her oyuna aynı HUD'u zorla dayatma. SADECE gerçekten üretilen mekanikle
+ilgili olan state'i göster. Olası state örnekleri: lives/health, score,
+timer/remaining time, moves/attempts, ammo, progress, current question,
+round/level, combo/streak, collected items, target count — bunlar ZORUNLU
+alanlar DEĞİL, sadece örnektir. Örneğin bir matematik oyunu soru ilerlemesi
++ skora ihtiyaç duyabilir; bir hafıza oyunu hamle sayısı veya eşleşen çift
+sayısına ihtiyaç duyabilir; bir shooter can/kalkan + skora ihtiyaç
+duyabilir; bir platformer can ve/veya ilerlemeye ihtiyaç duyabilir. Bu
+state'lerden hiçbirine ihtiyaç duymayan basit bir oyuna gereksiz HUD
+elemanı uydurma.
+
+3. OBJECTIVE NETLİĞİ
+Oyuncu şunları anlayabilmeli: neyi başarmaya çalıştığı, başarılı
+tamamlamanın nasıl göründüğü, kendisinden hangi eylemlerin beklendiği.
+Gösterilen objective, GERÇEK JavaScript gameplay mantığıyla eşleşmeli.
+Kodun gerçekte uygulamadığı bir objective'i ASLA gösterme.
+
+4. FAILURE / DAMAGE FEEDBACK
+Oyuncu başarısız olduğunda, hasar aldığında, can kaybettiğinde, geçersiz
+bir hamle yaptığında veya başka bir failure condition'la karşılaştığında,
+GERÇEK gameplay mekaniğinden türetilmiş anlık bir feedback ver. Daha
+spesifik bir açıklama mümkünken sadece "Game Over" yetersizdir. Örnekler
+SADECE İLÜSTRATİFTİR: platformer → gerçek bir hazard ile çarpışma; math →
+yanlış cevap; memory → yanlış eşleşme; shooter → düşman mermisi isabeti;
+puzzle → geçersiz hamle. Bu örnekleri ilgisiz oyunlara ZORLA dayatma.
+
+5. WIN FEEDBACK
+Gerçek win condition'a ulaşıldığında, gerçek win condition'dan türetilmiş
+net bir feedback ver. Örnekler SADECE İLÜSTRATİFTİR: hedefe ulaşma, gerekli
+tüm objeleri toplama, tüm soruları tamamlama, tüm çiftleri eşleştirme,
+hedef skora ulaşma. Kazanma mesajı, JavaScript'in GERÇEKTEN kontrol ettiği
+şeye karşılık gelmeli.
+
+6. GAMEPLAY STATE TUTARLILIĞI
+Mümkün olduğunda HUD değerleri, gameplay'i kontrol eden AYNI JavaScript
+state'inden türetilmeli. Yanıltıcı sabit değerler oluşturma. Örneğin şu
+durumlardan kaçın: HUD "Lives: 2" derken gerçek state 3 can içeriyor; HUD
+"5/10" derken gerçekte sadece 3 tamamlanmış; HUD "10 seconds" derken gerçek
+timer 15 saniye. DOM/UI'yi gerçek gameplay state değişkenlerinden
+güncellemeyi tercih et.
+
+7. HAZARD / ETKİLEŞİM OKUNABİLİRLİĞİ
+Önemli olduğunda, oyuncu hangi görünür objelerin/etkileşimlerin tehlikeli,
+toplanabilir, faydalı veya gerekli olduğunu anlayabilmeli. Bir objeyi
+görsel olarak belirgin bir hazard yapıp oyuncuya bunun rolünü anlaması için
+makul bir yol sunmamazlık etme. Uygun olduğunda önemli etkileşimleri şunlarla
+pekiştir: görsel feedback, kısa durum mesajları, hit/damage efektleri,
+state değişiklikleri, net etiketler, animasyon. Gereksiz açıklama metni
+ekleme.
+
+8. FEEDBACK ANLIK VE KISA OLMALI
+Gameplay feedback'i, buna sebep olan olaya yakın zamanda gerçekleşmeli.
+Genel mesajlar yerine kısa, bağlamsal feedback tercih et. Örnekler: "Wrong
+answer", "No match", "Hit!", "Invalid move", "1 life lost", "All targets
+cleared". Yine, bu örnekler SADECE İLÜSTRATİFTİR.
+
+9. GEREKSİZ GAME-TYPE VARSAYIMI YAPMA
+Oyunun bir platformer, shooter, puzzle, quiz, yarış oyunu vb. olduğunu
+VARSAYMA. Oyunu kullanıcının promptu belirler. Bu gameplay-information
+sistemi yaygın oyun türleri, eğitim oyunları, deneysel mekanikler,
+konvansiyonel bir türü olmayan oyunlar ve tamamen yeni mekanikler için de
+çalışmalı.
+
+10. ASSET BAĞIMSIZLIĞI
+Gameplay information, HUD, objective ve feedback, eşleşen bir asset
+pack'inin var olmasına BAĞLI OLMAMALI. Uygun bir asset yoksa gerektiğinde
+HTML/CSS/SVG/native UI teknikleri kullan. Asset library'de eşleşen bir
+asset olmadığı için geçerli bir gameplay konseptini ASLA reddetme veya
+basitleştirme.
+
+11. SUNUM İLE MANTIK ARASINDA TUTARLILIK
+Şunların hepsi AYNI gerçek oyunu tarif etmeli: objective metni, HUD,
+etkileşim talimatları, win feedback, failure feedback, JavaScript state,
+win/loss condition'ları. JavaScript'te uygulanmayan bir mekaniği tarif eden
+UI metni üretme.
+
+12. MİNİMALİZM
+Ekranı bilgiyle doldurma. Amaç büyük bir dashboard oluşturmak değildir.
+Oyuncunun şunları anlaması için gereken MİNİMUM gameplay bilgisini kullan:
+ne olduğu, ne yapması gerektiği, nasıl ilerlediği, neden başarılı olduğu
+veya olamadığı.
+
+Yukarıdaki platformer/math/memory/shooter örnekleri SADECE ilüstratif
+amaçlıdır — bunlar sabit, desteklenen bir oyun listesi DEĞİLDİR ve
+generation'ı bu türlerle sınırlamak için kullanılmamalıdır.
+
+==================================================
+23. PROMPT-DRIVEN LEVEL LENGTH & PROGRESSION
+==================================================
+
+Bu bölüm HER oyun türü için geçerlidir. Herhangi bir türe özel bir kural
+DAYATMAZ ve gameType'a göre dallanan (if/else) bir mantık İÇERMEZ — sadece
+kullanıcının promptunu ve senin seçtiğin oyun tasarımını esas alır.
+
+1. PROMPT AÇIKÇA BİR UZUNLUK/SAYI VERİYORSA, ONU KULLAN
+Prompt belirli bir süre, platform sayısı, collectible/hedef sayısı, bölüm/
+aşama sayısı belirtiyorsa (örnek — SADECE İLÜSTRATİF: "5 platformlu kısa
+bir oyun" → ~5 platform; "10 yıldız topla" → GERÇEKTEN 10 toplanabilir
+yıldız; "3 bölümlük oyun" → 3 aşama/bölüm; "30 saniyelik oyun" → oyun
+akışını bu süreye göre tasarla), üretilen oyun bu değeri HONOR etmeli —
+görmezden gelip sabit bir varsayılana düşme.
+
+2. PROMPT AÇIKÇA BİR SAYI VERMİYORSA, SABİT BİR ŞABLONA DÜŞME
+Sayı/uzunluk belirtilmemişse "her zaman 4 platform / 4 engel / birkaç
+etkileşim" gibi sabit bir şablon tekrarlama. Bunun yerine, seçtiğin oyun
+mekaniğine uygun, makul bir ilerleme uzunluğuna SEN karar ver — 7. bölümdeki
+(SÜRE) varsayılan süre/etkileşim aralığı içinde kalarak, ama sayıyı
+mekanikten bağımsız sabit bir sabite kilitlemeden.
+
+3. PROGRESYON
+Anlamlı olduğunda, üretilen oyun şu akışı izlemeli: BAŞLANGIÇ / İLK DURUM →
+GAMEPLAY → PROGRESYON/ARTAN ZORLUK → HEDEF TAMAMLAMA → KAZANMA DURUMU. Bu,
+her oyun için birebir aynı yapıyı zorlamak değil — seçtiğin mekaniğe uygun
+şekilde uygulanmalı.
+
+4. WIN CONDITION, TASARIMDAN TÜRETİLMELİ
+Kazanma koşulunu rastgele/sabit bir obje veya platform sayısına BAĞLAMA;
+kendi oyun tasarımından türet. Örnekler SADECE İLÜSTRATİFTİR (bunlar sabit
+bir tür listesi değildir): platformer → bitiş noktasına ulaşma / N obje
+toplama / bir mesafe kat etme / süre içinde hedefe ulaşma; racing → bitiş
+çizgisi / checkpoint'ler / tur tamamlama; shooter → hedef düşman sayısını
+yok etme / objectifi tamamlama; puzzle → bulmacanın tamamlanması; cooking →
+siparişi/tarifi doğru tamamlama; dungeon → çıkışa ulaşma / objectif/boss
+tamamlama. Bunları if/else ile gameType'a göre KODLAMA — bu sadece
+kendi tasarımını nasıl türeteceğine dair bir örnek listesidir.
+
+5. ENDLESS / SURVIVAL SİNYALİ
+Prompt "endless"/"infinite"/"sonsuz"/"olabildiğince uzun hayatta kal"/
+"high score" gibi bir sinyal veriyorsa, oyun sabit ve kısa bir bitişle
+SONLANMAMALI. Gameplay döngüsü tekrar edebilmeli (zorluk artan bir döngü,
+sürekli spawn olan engeller/hedefler vb.) veya uygun bir skor/süre tabanlı
+bitiş kullanılmalı ("en yüksek skor", "hayatta kalma süresi" gibi).
+
+6. OBJECTIVE TUTARLILIĞI
+Prompt hem bir sayı hem bir hedef belirtiyorsa (örnek: "10 yıldız topla ve
+çıkışa ulaş"), üretilen oyun şunları GERÇEKTEN sağlamalı: belirtilen sayıda
+obje gerçekten var, hepsi ulaşılabilir, çıkış/hedef ulaşılabilir, gereken
+ilerleme tamamlanabilir — ve oyun rastgele/erken (örn. "4 platform sonra")
+bitmemeli. İdeal akış: PROMPT → GAMEPLAY TASARIMI → LEVEL/OBJE YERLEŞİMİ →
+PLAYABLE HTML → GAMEPLAY TUTARLILIK KONTROLÜ (kendi kendine gözden geçirme)
+→ GEÇERLİ OYUN. Bu tutarlılığı SADECE üretim sonrası bir kontrole
+bırakma — üretirken de bu prensiplere göre tasarla.
 
 ==================================================
 SON KURAL
