@@ -18,6 +18,11 @@
  */
 const { ASSET_MANIFEST } = require("../config/assetManifest");
 const { resolveKitRoles } = require("../config/assetKits");
+// CUSTOM ASSET LIBRARY round — additive: şirketlerin yüklediği custom
+// assetleri LLM'in context'ine dahil eden AYRI bir fonksiyon (bkz. aşağı,
+// buildCustomAssetContextMessage). buildAssetContextMessage/
+// buildAssetContextMessageForKit YUKARIDA HİÇ DEĞİŞMEDİ.
+const customAssetLibrary = require("./customAssetLibrary");
 
 var USAGE_RULE = [
   "Use available game assets when they match the user's requested game.",
@@ -86,8 +91,41 @@ function buildAssetContextMessageForKit(kitKey) {
   return USAGE_RULE + "\n\n" + lines.join("\n");
 }
 
+// ================== CUSTOM ASSET LIBRARY round ==================
+// Şirketlerin yüklediği custom assetleri, MEVCUT (default) asset context'in
+// (yukarıdaki iki fonksiyondan biri) YANINA, AYRI bir blok olarak ekler.
+// "Bütün custom library'yi körlemesine LLM'e gönderme" (görev md.9)
+// kısıtı için: gameType/kit eşleşmesi varsa SADECE o kite `kit` alanıyla
+// bağlı custom assetler; yoksa customAssetLibrary.js'in basit anahtar-kelime
+// ön-filtresiyle prompta en alakalı olanlar (üst sınır MAX_CUSTOM_ASSETS_
+// IN_CONTEXT) kullanılır. Hiç custom library yüklenmemişse (varsayılan/
+// mevcut durum) bu fonksiyon HER ZAMAN null döner — mevcut davranış SIFIR
+// etkilenir.
+var MAX_CUSTOM_ASSETS_IN_CONTEXT = 12;
+
+function buildCustomAssetContextMessage(gameType, prompt) {
+  var kitMatched = gameType ? customAssetLibrary.getCustomAssetsForKit(gameType) : [];
+  var selected = kitMatched.length > 0
+    ? kitMatched.slice(0, MAX_CUSTOM_ASSETS_IN_CONTEXT)
+    : customAssetLibrary.getCustomAssetsRelevantToPrompt(prompt, MAX_CUSTOM_ASSETS_IN_CONTEXT);
+
+  if (!selected || selected.length === 0) return null;
+
+  var lines = [
+    "CUSTOM COMPANY ASSETS AVAILABLE (uploaded separately from the default library).",
+    "Use these if they fit the user's request. Do not invent paths beyond what is listed here.",
+    "",
+  ];
+  selected.forEach(function (asset) {
+    lines.push("- " + (asset.role || asset.category) + ": " + asset.id + " -> " + asset.path);
+  });
+
+  return lines.join("\n");
+}
+
 module.exports = {
   buildAssetContextMessage: buildAssetContextMessage,
   getKnownAssetPaths: getKnownAssetPaths,
   buildAssetContextMessageForKit: buildAssetContextMessageForKit,
+  buildCustomAssetContextMessage: buildCustomAssetContextMessage,
 };

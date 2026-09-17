@@ -120,9 +120,16 @@ test("hiçbir durumda 'fail' status'u ÜRETMEZ (critical:false ile birlikte mima
   });
 });
 
-test("mevcut 18 check'in tamamı hâlâ çalışıyor, yeni check (level-length-consistency) 19. olarak ekleniyor (ROUND F)", function () {
+test("mevcut check'lerin tamamı hâlâ çalışıyor, ROUND M mekanik-özel check'leri additive olarak ekleniyor", function () {
+  // HORIZONTAL MOVEMENT FIX: yeni "movement-input-consistency" check'i
+  // eklenmesiyle 19 -> 20 oldu. ROUND M: yeni "gameplay-config-valid" check'i
+  // + 7 yeni mekanik-özel check (racing/space-shooter/collection/memory/
+  // math/cooking/dungeon-gameplay-consistency) eklenmesiyle 20 -> 28 oldu —
+  // bu testin amacı mevcut check'lerin hâlâ çalıştığını doğrulamak, mutlak
+  // sayı değil; sayı buradan güncellendi ki gerçek CHECKS uzunluğuyla senkron
+  // kalsın.
   var result = validatePlayable(baseHtml(), "5 second test game win game over play again");
-  assert.equal(result.checks.length, 19);
+  assert.equal(result.checks.length, 28);
   var keys = result.checks.map(function (c) {
     return c.key;
   });
@@ -131,7 +138,12 @@ test("mevcut 18 check'in tamamı hâlâ çalışıyor, yeni check (level-length-
     "lose-condition", "can-end", "prompt-alignment", "mobile-ready",
     "no-infinite-loop", "cta", "duration", "no-storage", "no-external-resources",
     "asset-paths-valid", "asset-integrity", "resource-size",
-    "platformer-gameplay-consistency", "level-length-consistency",
+    "platformer-gameplay-consistency", "gameplay-config-valid",
+    "level-length-consistency", "movement-input-consistency",
+    "racing-gameplay-consistency", "space-shooter-gameplay-consistency",
+    "collection-gameplay-consistency", "memory-gameplay-consistency",
+    "math-gameplay-consistency", "cooking-gameplay-consistency",
+    "dungeon-gameplay-consistency",
   ].forEach(function (key) {
     assert.ok(keys.indexOf(key) !== -1, "eksik check: " + key);
   });

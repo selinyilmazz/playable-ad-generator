@@ -19,13 +19,19 @@ var GAME_TYPE_KEYWORDS = {
     "runner", "running", "run", "endless", "city", "barrier", "barriers",
     "dash", "auto-run", "subway", "sidewalk", "street",
   ],
+  // ROUND L — Türkçe kapsam eklendi (uzay gemisi/ateş et/mermi/lazer).
   "space-shooter": [
     "space", "spaceship", "space ship", "ship", "shoot", "shooter",
     "asteroid", "asteroids", "laser", "alien", "galaxy", "rocket", "blaster",
+    "uzay gemisi", "uzay", "ateş et", "ateş etmek", "vur", "düşman gemisi",
+    "mermi", "lazer",
   ],
+  // ROUND L — Türkçe kapsam eklendi (saf keyword-veri eklemesi, hiçbir yeni
+  // branching mantığı YOK — diğer 4 kelimeyle AYNI skorlama mekanizmasından
+  // geçiyor).
   "forest-platformer": [
     "forest", "jump", "jumping", "platform", "platformer", "jungle",
-    "hop", "hopping",
+    "hop", "hopping", "zıpla", "zıplama", "zıplayarak", "yerçekimi",
   ],
   "fruit-puzzle": [
     "fruit", "fruits", "match", "matching", "puzzle", "basket", "sort",
@@ -35,18 +41,22 @@ var GAME_TYPE_KEYWORDS = {
   // suggestedKeywords'ü ile birebir aynı liste, saf keyword-veri eklemesi
   // (hiçbir yeni branching/if(gameType==="racing") mantığı YOK — diğer
   // türlerle aynı skorlama mekanizmasından geçiyor).
+  // ROUND L — Türkçe kapsam genişletildi (araç/direksiyon/pist/rakip araç).
   racing: [
     "race", "racing", "car", "cars", "track", "drift", "speed", "finish line",
-    "yarış", "araba",
+    "yarış", "araba", "araç", "direksiyon", "pist", "rakip araç",
   ],
   // ROUND 24 — assetPacks.js'teki eski "dungeon" planned kaydının
   // suggestedKeywords'üne dayanıyor (+ görevin kendi örnek kelimeleri:
   // rpg/warrior/knight/mage/monster), saf keyword-veri eklemesi (hiçbir
   // yeni branching/if(gameType==="dungeon-rpg") mantığı YOK).
+  // ROUND L — Türkçe kapsam genişletildi (anahtar/kapı/çıkış key-door-exit
+  // dili — bkz. mockGameplayIntent.js'in AYNI kelimelerle ayrı bir mekanik
+  // katmanı; burası SADECE asset-kit seçimi için).
   "dungeon-rpg": [
     "dungeon", "dungeons", "crawler", "rpg", "warrior", "knight", "mage",
     "wizard", "torch", "trap", "underground", "labyrinth", "maze", "monster",
-    "zindan", "mahzen",
+    "zindan", "mahzen", "anahtar", "kapı", "çıkış", "kilitli kapı",
   ],
   // ROUND 25 — assetPacks.js'teki car-kit/city-kit-roads/city-kit-industrial
   // paketlerinin beslediği "city" kitine karşılık gelen saf keyword-veri
@@ -62,9 +72,11 @@ var GAME_TYPE_KEYWORDS = {
   ],
   // ROUND 25 — food-kit paketinin beslediği "cooking" kitine karşılık gelen
   // saf keyword-veri eklemesi (hiçbir yeni branching mantığı YOK).
+  // ROUND L — Türkçe kapsam genişletildi (tarif/malzeme/sırayla seç).
   cooking: [
     "cooking", "cook", "kitchen", "chef", "recipe", "food", "restaurant",
-    "meal", "yemek", "mutfak", "aşçı",
+    "meal", "yemek", "mutfak", "aşçı", "tarif", "malzeme", "malzemeleri",
+    "sırayla seç",
   ],
 };
 

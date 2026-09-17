@@ -58,6 +58,63 @@
 
 const DEFAULT_MODEL = "deepseek/deepseek-v4-flash-0731";
 
+/**
+ * AI MODEL SELECTOR round — kullanıcının sağ üstteki model selector'dan
+ * seçebileceği, GERÇEKTEN bu projede daha önce doğrulanmış OpenRouter model
+ * id'lerinin merkezi listesi. Yeni bir model ID UYDURULMADI — ikisi de bu
+ * dosyanın üstündeki "ROUND 19 NOTU" bloklarında GERÇEKTEN test edilmiş/
+ * OpenRouter'ın canlı /api/v1/models'inden doğrulanmış id'ler:
+ *   - deepseek/deepseek-v4-flash-0731: mevcut, gerçek makinede doğrulanmış
+ *     DEFAULT_MODEL (Part D/E notlarına bkz.) — 28 farklı provider, thinking
+ *     mode kapatıldığında güvenilir şekilde çalışıyor.
+ *   - qwen/qwen3.8-flash: Part D'de denenmiş, tek-provider (Alibaba) rate-
+ *     limit riski nedeniyle DEFAULT_MODEL'den ÇIKARILDI ama .env.example'ın
+ *     kendi notunun da dediği gibi "hâlâ geçerli bir seçenek" — id
+ *     UYDURULMADI, o round'da OpenRouter'dan doğrulanmıştı, koddan hiç
+ *     SİLİNMEDİ (sadece DEFAULT_MODEL olmaktan çıktı). Kullanıcı bunu
+ *     seçerse rate-limit riski hâlâ geçerli olabilir — bu, selector'ın
+ *     kapsamı dışında bir OpenRouter/provider durumu, koddan kontrol
+ *     edilemez.
+ * Anthropic modelleri BİLEREK eklenmedi — ROUND 19 NOTU (Part A/B) bu
+ * hesapta Anthropic modellerinin kısıtlı olduğunu ("No endpoints found")
+ * belgeliyor; gerçekte çalışmayan bir seçeneği listeye koymak "gerçekten
+ * uygulamanın kullanabileceği modeller" kuralını ihlal ederdi.
+ *
+ * Her girdi { id, displayName }: id = OpenRouter'a gönderilen GERÇEK model
+ * string'i (frontend bunu ASLA görmek zorunda değil, bkz. UI notu),
+ * displayName = kullanıcıya gösterilen kısa, okunabilir isim.
+ */
+const SUPPORTED_MODELS = [
+  { id: DEFAULT_MODEL, displayName: "DeepSeek V4 Flash" },
+  { id: "qwen/qwen3.8-flash", displayName: "Qwen3.8 Flash" },
+];
+
+/**
+ * id: frontend'den (veya herhangi bir çağrıdan) gelen, GÜVENİLMEYEN bir
+ * model id adayı. Dönüş: SUPPORTED_MODELS içinde GERÇEKTEN var olan bir
+ * id ise `true` — "selectedModel ∈ supportedModels" kontrolünün TEK,
+ * paylaşılan uygulama noktası (routes/generate.js BUNU çağırır, kendi
+ * kopyasını YAZMAZ).
+ */
+function isSupportedModel(id) {
+  return typeof id === "string" && SUPPORTED_MODELS.some(function (m) {
+    return m.id === id;
+  });
+}
+
+/**
+ * requestedModel: frontend'den gelen, GÜVENİLMEYEN bir model id adayı
+ * (örn. req.body.model — eksik/boş/uydurma/eski bir sürümden kalma geçersiz
+ * bir id olabilir). isSupportedModel() ile GERÇEKTEN desteklenen bir id ise
+ * AYNEN döner; aksi halde (undefined/null/boş/geçersiz/manifestte olmayan)
+ * SESSİZCE mevcut varsayılana (config.model — .env OPENROUTER_MODEL override'ı
+ * dahil) düşer. Bu fonksiyon ASLA throw etmez — "request crash olmamalı"
+ * kısıtının doğrudan karşılığı.
+ */
+function resolveRequestedModel(requestedModel) {
+  return isSupportedModel(requestedModel) ? requestedModel : config.model;
+}
+
 const config = {
   // .env -> OPENROUTER_MODEL varsa onu kullan, yoksa DEFAULT_MODEL
   model: process.env.OPENROUTER_MODEL || DEFAULT_MODEL,
@@ -90,5 +147,18 @@ const config = {
   appName: "Playable Ad Generator (MVP)",
   appUrl: "https://localhost",
 };
+
+// AI MODEL SELECTOR round — additive: mevcut `config` objesinin ŞEKLİ
+// (model/temperature/max_tokens/reasoning/apiUrl/appName/appUrl) HİÇ
+// değişmedi, mevcut TÜM `require("../config/models")` çağıran yerler
+// (`modelConfig.model` vb.) BİREBİR aynı şekilde çalışmaya devam eder.
+// Sadece YENİ alanlar EKLENDİ: `models`/`defaultModel` (routes/models.js'in
+// GET /api/models yanıtı için, bkz. o dosya), `isSupportedModel`/
+// `resolveRequestedModel` (routes/generate.js'in server-side validation'ı
+// için, bkz. yukarıdaki fonksiyon yorumları).
+config.models = SUPPORTED_MODELS;
+config.defaultModel = config.model;
+config.isSupportedModel = isSupportedModel;
+config.resolveRequestedModel = resolveRequestedModel;
 
 module.exports = config;

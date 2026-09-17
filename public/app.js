@@ -9,6 +9,34 @@
   var modeBadge = document.getElementById("mode-badge");
   var mockInfoCard = document.getElementById("mock-info-card");
 
+  // AI MODEL SELECTOR round — mode-badge artık bir <button> (bkz.
+  // index.html), metni ARTIK bir alt span'de (modeBadgeTextEl) tutuluyor ki
+  // setBadge()'in textContent ataması dropdown/caret'i SİLMESİN. modeBadge'in
+  // KENDİSİ (id/class geçişleri: "badge"/"badge mock"/"badge live") HİÇ
+  // değişmedi.
+  var modelSelectorEl = document.getElementById("model-selector");
+  var modeBadgeTextEl = document.getElementById("mode-badge-text");
+  var modelDropdownEl = document.getElementById("model-dropdown");
+  var modelDropdownListEl = document.getElementById("model-dropdown-list");
+  // MODEL SELECTOR UI/UX POLISH round — dropdown artık sabit üst (başlık+
+  // arama) / scroll eden gövde / sabit BYOK alt satırı olarak 3 bölgeye
+  // ayrıldı (bkz. index.html/style.css). Scroll bölgesine SADECE açılışta
+  // scrollTop'u sıfırlamak için referans tutuluyor.
+  var modelDropdownScrollEl = document.getElementById("model-dropdown-scroll");
+  // OPENROUTER MODEL CATALOG + BYOK round — arama kutusu + "kendi key'ini
+  // kullan" satırı, mevcut dropdown'ın İÇİNDE (bkz. index.html); BYOK
+  // popover/modal ise (taşma riskine karşı) dropdown'ın DIŞINDA, ayrı bir
+  // position:fixed overlay (bkz. index.html/style.css notları).
+  var modelSearchInputEl = document.getElementById("model-search-input");
+  var modelByokBtnEl = document.getElementById("model-byok-btn");
+  var modelByokBtnLabelEl = document.getElementById("model-byok-btn-label");
+  var byokModalBackdropEl = document.getElementById("byok-modal-backdrop");
+  var byokKeyInputEl = document.getElementById("byok-key-input");
+  var byokModalStatusEl = document.getElementById("byok-modal-status");
+  var byokUseBtnEl = document.getElementById("byok-use-btn");
+  var byokCancelBtnEl = document.getElementById("byok-cancel-btn");
+  var byokClearBtnEl = document.getElementById("byok-clear-btn");
+
   // ---------- UI elements from the previous redesign ----------
   var charCounter = document.getElementById("char-counter");
   var exampleChipsWrap = document.getElementById("example-chips");
@@ -27,15 +55,26 @@
   var qualityDetailsToggleEl = document.getElementById("quality-details-toggle");
   var qualityChecksEl = document.getElementById("quality-checks");
   var qualityActionsEl = document.getElementById("quality-actions");
+  // ROUND J — QUALITY SCORE DETAILS: yeni modal element referansları.
+  var qualityDetailsModalOverlay = document.getElementById("quality-details-modal-overlay");
+  var qualityDetailsModalSubtitleEl = document.getElementById("quality-details-modal-subtitle");
+  var qualityDetailsModalCloseBtn = document.getElementById("quality-details-modal-close");
+  var qualityDetailsBodyEl = document.getElementById("quality-details-body");
   var previewStatusEl = document.getElementById("preview-status");
   var downloadBtn = document.getElementById("download-btn");
 
+  // ROUND G — IMPROVE WITH AI: eski (Phase 4) inline "chip + textarea"
+  // panelinin element referansları, yerini alan yeni modal referanslarıyla
+  // değiştirildi (bkz. index.html). improveToggleBtn'in KENDİSİ (id/enabled-
+  // disabled mantığı) HİÇ değişmedi.
   var improveToggleBtn = document.getElementById("improve-toggle-btn");
-  var improvePanel = document.getElementById("improve-panel");
-  var improveChips = document.getElementById("improve-chips");
-  var improveInput = document.getElementById("improve-input");
+  var improveModalBackdropEl = document.getElementById("improve-modal-backdrop");
+  var improveModalCloseBtnEl = document.getElementById("improve-modal-close-btn");
+  var improveOptionsEl = document.getElementById("improve-options");
+  var improveCustomInputEl = document.getElementById("improve-custom-input");
+  var improveModalStatusEl = document.getElementById("improve-modal-status");
+  var improveCancelBtnEl = document.getElementById("improve-cancel-btn");
   var improveSubmitBtn = document.getElementById("improve-submit-btn");
-  var improveStatus = document.getElementById("improve-status");
 
   // ---------- UI redesign (premium AI studio layout) — new elements ----------
   // Bunların hiçbiri backend contract'ını değiştirmiyor; hepsi mevcut
@@ -83,11 +122,53 @@
   // eklemek yerine gerçekten filtreliyor.
   var assetSearchInput = document.getElementById("asset-search-input");
   var assetSelectionSummaryEl = document.getElementById("asset-selection-summary");
+  // CUSTOM ASSET LIBRARY round — Upload Asset Library UI element referansları.
+  var assetUploadInput = document.getElementById("asset-upload-input");
+  var assetUploadBtn = document.getElementById("asset-upload-btn");
+  var assetUploadStatusEl = document.getElementById("asset-upload-status");
+  var assetCustomLibrariesEl = document.getElementById("asset-custom-libraries");
   var previewAssetTagEl = document.getElementById("preview-asset-tag");
   var assetModalOverlay = document.getElementById("asset-modal-overlay");
   var assetModalTitle = document.getElementById("asset-modal-title");
   var assetModalGrid = document.getElementById("asset-modal-grid");
   var assetModalCloseBtn = document.getElementById("asset-modal-close");
+
+  // ROUND H — ASSET BROWSER: kategori filtre çipleri + gerçek asset detay
+  // modalı element referansları. #asset-modal-overlay (üstteki, "+N View
+  // All" popover'ı) HİÇ değişmedi/dokunulmadı — bu tamamen ayrı bir set.
+  var assetFilterChipsEl = document.getElementById("asset-filter-chips");
+  var assetDetailModalOverlay = document.getElementById("asset-detail-modal-overlay");
+  var assetDetailModalCloseBtn = document.getElementById("asset-detail-modal-close");
+  var assetDetailPreviewEl = document.getElementById("asset-detail-preview");
+  var assetDetailNameEl = document.getElementById("asset-detail-name");
+  var assetDetailCategoryEl = document.getElementById("asset-detail-category");
+  var assetDetailTagsEl = document.getElementById("asset-detail-tags");
+  var assetDetailKitEl = document.getElementById("asset-detail-kit");
+  var assetDetailSourceEl = document.getElementById("asset-detail-source");
+  var assetDetailUseBtn = document.getElementById("asset-detail-use-btn");
+
+  // ROUND I — GAME LIBRARY element referansları.
+  var sidebarMyGamesBtn = document.getElementById("sidebar-my-games-btn");
+  var myGamesModalOverlay = document.getElementById("my-games-modal-overlay");
+  var myGamesModalCloseBtn = document.getElementById("my-games-modal-close");
+  var myGamesSearchInput = document.getElementById("my-games-search-input");
+  var myGamesSortChipsEl = document.getElementById("my-games-sort-chips");
+  var myGamesGridEl = document.getElementById("my-games-grid");
+  var myGamesRenameModalOverlay = document.getElementById("my-games-rename-modal-overlay");
+  var myGamesRenameInput = document.getElementById("my-games-rename-input");
+  var myGamesRenameStatusEl = document.getElementById("my-games-rename-status");
+  var myGamesRenameSaveBtn = document.getElementById("my-games-rename-save");
+  var myGamesRenameCancelBtn = document.getElementById("my-games-rename-cancel");
+  var myGamesRenameCloseBtn = document.getElementById("my-games-rename-close");
+  var myGamesDeleteModalOverlay = document.getElementById("my-games-delete-modal-overlay");
+  var myGamesDeleteMessageEl = document.getElementById("my-games-delete-message");
+  var myGamesDeleteConfirmBtn = document.getElementById("my-games-delete-confirm");
+  var myGamesDeleteCancelBtn = document.getElementById("my-games-delete-cancel");
+  var myGamesDeleteCloseBtn = document.getElementById("my-games-delete-close");
+  // Silinen/boş bir oyuna dönüldüğünde preview-placeholder'ı sayfa ilk
+  // yüklendiğindeki GERÇEK/orijinal metnine geri döndürmek için — renderPreview
+  // hata durumunda bu innerHTML'i geçici olarak değiştiriyor (bkz. resetGeneratorToEmptyState).
+  var DEFAULT_PREVIEW_PLACEHOLDER_HTML = previewPlaceholder ? previewPlaceholder.innerHTML : "";
 
   var appShellEl = document.getElementById("app-shell");
   var sidebarToggleBtn = document.getElementById("sidebar-toggle-btn");
@@ -109,6 +190,26 @@
   var lastResult = null;
   var activeTab = "game";
 
+  // ROUND I — GAME LIBRARY: mevcut mimari incelendi (bkz. ÖNCE MEVCUT
+  // SİSTEMİ İNCELE notu) — sistemde zaten TEK doğruluk kaynağı olan
+  // `lastResult` VAR (html/cssExcerpt/jsExcerpt/validation/meta/prompt), ve
+  // MODEL_STORAGE_KEY (yukarıda, sadece seçilen model id'si için) zaten
+  // localStorage kullanıyor. Yeni bir database/backend YOK — sadece AYNI
+  // localStorage mekanizması, bu sefer TAM game record'ları için kullanıldı.
+  // currentGameId: Library'de hangi kaydın "şu an açık oyun" olduğunu
+  // izler — Generate her zaman YENİ bir id/kayıt üretir, Improve/Fix with AI
+  // ise (varsa) BU id'nin kaydını GÜNCELLER (bkz. saveGeneratedGameAsNew /
+  // syncCurrentGameAfterFixOrImprove, aşağıda).
+  var GAME_LIBRARY_STORAGE_KEY = "playableAi.gameLibrary";
+  var gameLibrary = [];
+  var currentGameId = null;
+  var gameLibraryPersistFailed = false;
+  var myGamesSearchQuery = "";
+  var myGamesSortOrder = "newest";
+  var myGamesOpenMenuId = null;
+  var myGamesRenameTargetId = null;
+  var myGamesDeleteTargetId = null;
+
   // Asset seçim state'i. Salt bu closure-variable'da tutulur, lastResult gibi
   // tek doğruluk kaynağıdır. Kategori şekli, gerçek kullanım senaryosuna göre
   // kasıtlı olarak farklı: bir sahnede genelde tek bir karakter, tek bir
@@ -125,6 +226,11 @@
   // (bee/piranha-plant/slug) aynı anda seçilebilsin diye.
   var selectedAssets = { character: null, enemy: [], object: [], effect: null, background: null };
   var assetSearchQuery = ""; // ROUND 12: küçük harfe çevrilmiş, trim'lenmiş arama metni
+  // ROUND H — ASSET BROWSER: aktif kategori filtresi ("all" ya da
+  // ASSET_CATEGORY_ORDER'dan biri). Sidebar'daki data-sidebar-asset-link
+  // tıklamaları ve #asset-filter-chips'teki çipler AYNI bu değişkeni okur/
+  // yazar — iki ayrı state YOK, tek doğruluk kaynağı.
+  var assetCategoryFilter = "all";
 
   // PHASE 4 polish: "AI Selected Assets" panelinde o an gösterilen asset
   // id'lerinin kümesi (heuristik ÖNCESİ ya da gerçek SONUÇ, bkz.
@@ -182,6 +288,14 @@
   // sadece içeriği artık backend'den geliyor.
   var ASSET_LIBRARY = [];
 
+  // CUSTOM ASSET LIBRARY round — GET /api/assets'in additive
+  // `customLibraries` alanından ({id,name,version,assetCount,createdAt}[])
+  // dolduruluyor; sadece görev md.8'in özet satırı için kullanılıyor. Bu
+  // dizinin assetlerinin KENDİSİ zaten ASSET_LIBRARY'nin İÇİNDE (bkz.
+  // routes/assets.js merge noktası) — renderAssetLibrary()'nin mevcut
+  // kategori render mantığı hiç değişmeden onları da gösteriyor.
+  var CUSTOM_LIBRARIES = [];
+
   // Backend'in 14 değerli category enum'unu (bkz. assetManifest.js) bu
   // sayfanın kullanıcı-dostu taksonomisine eşler. "object" geri kalan HER ŞEY
   // için (collectible/obstacle/platform/game-object/projectile/tile/powerup/
@@ -210,6 +324,22 @@
       gameTypes: a.compatibleGameTypes || [],
       theme: a.theme || null,
       style: a.visualStyle || null,
+      // ROUND H — ASSET BROWSER: additive alanlar, HİÇBİR mevcut tüketici
+      // fonksiyon bunları önceden okumuyordu (renderAssetLibrary/arama/
+      // seçim/detectGameplayBlocks hepsi yukarıdaki alanları kullanıyor,
+      // aşağıdakiler sadece YENİ Asset Detail modalı ve genişletilmiş arama
+      // içindir). `pack` — görsel asset paketi (server/config/packs/*).
+      // `kit` — SADECE custom library assetlerinde var olabilen, manifest'te
+      // beyan edilmiş GAME_KITS anahtarı (bkz. customAssetLibrary.js);
+      // default assetlerde backend bu alanı hiç göndermiyor, bu yüzden
+      // burada da null kalır (uydurma değer YOK). `libraryId`/`libraryName`
+      // SADECE custom library assetlerinde var — bu, "Default vs Custom
+      // Library" ayrımının GERÇEK, backend-kaynaklı tespiti (bkz.
+      // server/services/customAssetLibrary.js registerLibrary()).
+      pack: a.pack || null,
+      kit: a.kit || null,
+      libraryId: a.libraryId || null,
+      libraryName: a.libraryName || null,
     };
   }
 
@@ -236,8 +366,570 @@
         updateSidebarAssetCounts();
         renderAssetSelectionSummary();
         renderAiSelectedAssetsFromPrompt();
+        // CUSTOM ASSET LIBRARY round — additive alan: data.customLibraries
+        // yoksa (eski/offline yanıt şekli) CUSTOM_LIBRARIES sessizce boş
+        // kalır, görev md.8 özet satırı basitçe gösterilmez.
+        CUSTOM_LIBRARIES = Array.isArray(data.customLibraries) ? data.customLibraries : [];
+        renderCustomLibrariesSummary();
       })
       .catch(function () { /* offline/hata: ASSET_LIBRARY boş kalır, güvenli empty-state gösterilir */ });
+  }
+
+  // ---------------------------------------------------------------------
+  // CUSTOM ASSET LIBRARY round — "+ Upload Asset Library" butonu, gizli
+  // file input'u tetikler; seçilen ZIP ham binary body olarak POST
+  // /api/assets/libraries'e gönderilir (multipart YOK — bkz.
+  // routes/assetLibraries.js dosya başı notu, fetch bir File'ı doğrudan
+  // body olarak kabul ediyor). loading/success/error durumları mevcut
+  // .status-line/.error/.success sınıflarını (bkz. style.css, generate
+  // akışıyla PAYLAŞILAN aynı kurallar) kullanır.
+  // ---------------------------------------------------------------------
+  function renderCustomLibrariesSummary() {
+    if (!assetCustomLibrariesEl) return;
+    if (!CUSTOM_LIBRARIES || CUSTOM_LIBRARIES.length === 0) {
+      assetCustomLibrariesEl.innerHTML = "";
+      assetCustomLibrariesEl.classList.add("hidden");
+      return;
+    }
+    assetCustomLibrariesEl.classList.remove("hidden");
+    assetCustomLibrariesEl.innerHTML =
+      '<span>Custom Libraries:</span>' +
+      CUSTOM_LIBRARIES.map(function (lib) {
+        return (
+          '<span class="custom-library-pill">' +
+          escapeHtml(lib.name) + " · " + lib.assetCount + (lib.assetCount === 1 ? " asset" : " assets") +
+          "</span>"
+        );
+      }).join("");
+  }
+
+  function setAssetUploadStatus(message, kind) {
+    if (!assetUploadStatusEl) return;
+    assetUploadStatusEl.textContent = message || "";
+    assetUploadStatusEl.className = "status-line" + (kind ? " " + kind : "");
+  }
+
+  // err: /api/assets/libraries'in JSON hata gövdesi ({error, details?}).
+  // details varsa (validation md.12 senaryoları) İLK 3 tanesi kısa bir özet
+  // olarak eklenir — tüm listeyi dökmek UI'ı boğar, konsola tam liste zaten
+  // yazılıyor (bkz. aşağı) ilgilenen biri (Selin) DevTools'tan görebilir.
+  function formatUploadError(err) {
+    var base = (err && err.error) || "Yükleme başarısız oldu.";
+    if (err && Array.isArray(err.details) && err.details.length > 0) {
+      var shown = err.details.slice(0, 3).join(" / ");
+      var more = err.details.length > 3 ? " (+" + (err.details.length - 3) + " daha)" : "";
+      return base + " — " + shown + more;
+    }
+    return base;
+  }
+
+  function handleAssetUploadFile(file) {
+    if (!file) return;
+    if (!/\.zip$/i.test(file.name)) {
+      setAssetUploadStatus("Sadece .zip dosyaları kabul edilir.", "error");
+      return;
+    }
+
+    if (assetUploadBtn) assetUploadBtn.disabled = true;
+    setAssetUploadStatus("Yükleniyor…", "");
+
+    fetch("/api/assets/libraries", {
+      method: "POST",
+      headers: { "Content-Type": "application/zip" },
+      body: file,
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      })
+      .then(function (result) {
+        if (!result.ok) {
+          if (result.data && Array.isArray(result.data.details) && result.data.details.length > 0) {
+            console.error("[asset upload] validation details:", result.data.details);
+          }
+          setAssetUploadStatus(formatUploadError(result.data), "error");
+          return;
+        }
+        var lib = result.data && result.data.library;
+        setAssetUploadStatus(
+          lib ? "✓ \"" + lib.name + "\" eklendi (" + lib.assetCount + " asset)." : "✓ Yüklendi.",
+          "success"
+        );
+        // Yeni assetlerin Asset Library ızgarasında/sidebar sayaçlarında
+        // GERÇEKTEN görünmesi için mevcut GET /api/assets akışı (bkz.
+        // loadAssetLibrary) TEKRAR çalıştırılır — ayrı bir "custom asset
+        // ekle" client-side birleştirme mantığı YAZILMADI, tek doğruluk
+        // kaynağı hep backend.
+        loadAssetLibrary();
+      })
+      .catch(function () {
+        setAssetUploadStatus("Yükleme sırasında bir bağlantı hatası oluştu.", "error");
+      })
+      .finally(function () {
+        if (assetUploadBtn) assetUploadBtn.disabled = false;
+        if (assetUploadInput) assetUploadInput.value = ""; // aynı dosyanın tekrar seçilebilmesi için
+      });
+  }
+
+  function initAssetLibraryUpload() {
+    if (assetUploadBtn && assetUploadInput) {
+      assetUploadBtn.addEventListener("click", function () { assetUploadInput.click(); });
+      assetUploadInput.addEventListener("change", function () {
+        var file = assetUploadInput.files && assetUploadInput.files[0];
+        handleAssetUploadFile(file);
+      });
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // AI MODEL SELECTOR round — sağ üstteki mode-badge'i tıklanabilir bir
+  // model seçici hâline getirir. loadAssetLibrary()'nin AYNI deseni: GET
+  // ile salt-okunur veri çek, başarısızsa SESSİZCE no-op (mevcut "…" rozeti
+  // görünmeye devam eder, tıklama da hiçbir şey açmaz — kırılma yok).
+  // ---------------------------------------------------------------------
+  var MODEL_STORAGE_KEY = "playableAi.selectedModel";
+  var AVAILABLE_MODELS = [];
+  var DEFAULT_MODEL_ID = null;
+  var selectedModelId = null;
+  // OPENROUTER MODEL CATALOG + BYOK round — arama sorgusu SADECE geçici
+  // görüntü state'i, hiçbir yere kaydedilmiyor.
+  var MODEL_SEARCH_QUERY = "";
+  // GÜVENLİK (görev md.5/md.6 — ÇOK ÖNEMLİ): userApiKey SADECE bu modül
+  // kapsamındaki (IIFE) bir JS DEĞİŞKENİ — bilerek localStorage/
+  // sessionStorage/cookie'ye YAZILMIYOR. Sayfa yenilenince (refresh) kabul
+  // edilebilir şekilde kaybolur (görev md.5'in AÇIKÇA izin verdiği
+  // davranış) — kullanıcı isterse "Clear key" ile de elle temizleyebilir
+  // (bkz. handleByokClear). Bu değişken hiçbir zaman: console.log'a,
+  // herhangi bir DOM textContent/innerHTML'e, ya da /api/generate DIŞINDA
+  // bir yere YAZILMAZ.
+  var userApiKey = null;
+
+  // localStorage private-browsing/quota hatalarına karşı try/catch'li —
+  // bu SADECE seçilen model id string'ini tutar, API key/secret ASLA
+  // yazılmıyor (bkz. görev md.6).
+  function getStoredModelId() {
+    try {
+      return window.localStorage ? window.localStorage.getItem(MODEL_STORAGE_KEY) : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function storeModelId(id) {
+    try {
+      if (window.localStorage) window.localStorage.setItem(MODEL_STORAGE_KEY, id);
+    } catch (err) {
+      /* private mode/quota: seçim bu sekmede geçerli kalır, sadece kalıcı olmaz */
+    }
+  }
+
+  // id: GET /api/models'ten gelen AVAILABLE_MODELS içinde bulunamıyorsa
+  // (ör. henüz yüklenmediyse ya da meta.model beklenmedik bir id ise) ham
+  // id'nin kendisi güvenli bir fallback olarak gösterilir — hiçbir şey
+  // gizlenmez, sadece "kullanıcı dostu isim" bulunamamış olur.
+  function getModelDisplayName(id) {
+    if (!id) return "OpenRouter";
+    for (var i = 0; i < AVAILABLE_MODELS.length; i++) {
+      if (AVAILABLE_MODELS[i].id === id) return AVAILABLE_MODELS[i].displayName;
+    }
+    return id;
+  }
+
+  function getSelectedModelId() {
+    return selectedModelId;
+  }
+
+  // GÜVENLİK: bu getter'ın DIŞINDA userApiKey'i OKUYAN tek yer, Generate
+  // isteğinin body'sini kurduğu satırdır (bkz. aşağıdaki fetch("/api/generate")
+  // çağrısı) — hiçbir yerde loglanmaz/DOM'a yazılmaz.
+  function getUserApiKey() {
+    return userApiKey;
+  }
+
+  // OPENROUTER MODEL CATALOG + BYOK round — md.2: kullanıcı model listesini
+  // arayabilsin. Sadece istemci tarafında, AVAILABLE_MODELS üzerinde ad/
+  // sağlayıcı/id'ye göre filtreler — hiçbir ağ isteği tetiklemez.
+  // Virtualized rendering GEREKMİYOR (görev md.2: "v1 için yeterli").
+  function getFilteredModels() {
+    var q = MODEL_SEARCH_QUERY.trim().toLowerCase();
+    if (!q) return AVAILABLE_MODELS;
+    return AVAILABLE_MODELS.filter(function (m) {
+      return (
+        (m.displayName && m.displayName.toLowerCase().indexOf(q) !== -1) ||
+        (m.provider && m.provider.toLowerCase().indexOf(q) !== -1) ||
+        (m.id && m.id.toLowerCase().indexOf(q) !== -1)
+      );
+    });
+  }
+
+  // MODEL SELECTOR UI/UX POLISH round — md.4/md.5: katalog çok büyüdüğünde
+  // düz liste kullanışsızlaşıyor. "Recommended" (bilinen/güvenilir
+  // fallback modeller) HER ZAMAN en üstte; ardından SADECE birkaç BÜYÜK
+  // sağlayıcı için (bounded — kaç farklı sağlayıcı gelirse gelsin grup
+  // sayısı sabit kalır, görev md.4'ün "model sayısı çok fazlaysa UX'i
+  // kötüleştirmemeli" kısıtı) ayrı başlıklar; geri kalan HER ŞEY tek bir
+  // "Other" grubuna düşer. Backend response'una (id/displayName/provider/…)
+  // HİÇ dokunulmadı — bu SADECE istemci tarafında görsel bir gruplama.
+  var RECOMMENDED_MODEL_IDS = ["deepseek/deepseek-v4-flash-0731", "qwen/qwen3.8-flash"];
+  var MAJOR_PROVIDER_GROUPS = [
+    { slug: "openai", label: "OpenAI" },
+    { slug: "anthropic", label: "Anthropic" },
+    { slug: "google", label: "Google" },
+    { slug: "meta-llama", label: "Meta" },
+    { slug: "meta", label: "Meta" },
+    { slug: "x-ai", label: "xAI" },
+    { slug: "mistralai", label: "Mistral" },
+  ];
+
+  function buildGroupedSections(models) {
+    var byId = {};
+    models.forEach(function (m) { byId[m.id] = m; });
+
+    var recommended = RECOMMENDED_MODEL_IDS.map(function (id) { return byId[id]; }).filter(Boolean);
+    var recommendedIds = recommended.map(function (m) { return m.id; });
+    var remaining = models.filter(function (m) { return recommendedIds.indexOf(m.id) === -1; });
+
+    var sections = [];
+    if (recommended.length) sections.push({ label: "Recommended", models: recommended });
+
+    MAJOR_PROVIDER_GROUPS.forEach(function (group) {
+      var matched = remaining.filter(function (m) { return m.provider === group.slug; });
+      if (!matched.length) return;
+      // İki farklı slug AYNI etikete (ör. "meta-llama" + "meta" -> "Meta")
+      // eşleniyorsa, YENİ bir section AÇMAK yerine var olana EKLENİR —
+      // aksi halde aynı isimli iki grup başlığı yan yana görünürdü.
+      var existing = sections.filter(function (s) { return s.label === group.label; })[0];
+      if (existing) {
+        existing.models = existing.models.concat(matched);
+      } else {
+        sections.push({ label: group.label, models: matched });
+      }
+      remaining = remaining.filter(function (m) { return m.provider !== group.slug; });
+    });
+
+    if (remaining.length) sections.push({ label: "Other", models: remaining });
+
+    return sections;
+  }
+
+  function appendModelGroupHeader(label) {
+    var header = document.createElement("div");
+    header.className = "model-group-header";
+    header.textContent = label;
+    modelDropdownListEl.appendChild(header);
+  }
+
+  function appendModelOption(m) {
+    var isSelected = m.id === selectedModelId;
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "model-option" + (isSelected ? " selected" : "");
+    btn.setAttribute("role", "option");
+    btn.setAttribute("aria-selected", isSelected ? "true" : "false");
+    btn.dataset.modelId = m.id;
+
+    var check = document.createElement("span");
+    check.className = "model-option-check";
+    check.textContent = "✓";
+    check.setAttribute("aria-hidden", "true");
+
+    // md.3: "Model Name / Provider" — isim + sağlayıcı ayrı satırda, her
+    // ikisi de kendi ellipsis kuralına sahip (bkz. style.css) ki uzun
+    // isimler dropdown'ı GENİŞLETMESİN.
+    var nameWrap = document.createElement("span");
+    nameWrap.className = "model-option-name-wrap";
+
+    var nameEl = document.createElement("span");
+    nameEl.className = "model-option-name";
+    nameEl.textContent = m.displayName;
+    nameWrap.appendChild(nameEl);
+
+    if (m.provider) {
+      var providerEl = document.createElement("span");
+      providerEl.className = "model-option-provider";
+      providerEl.textContent = m.provider;
+      nameWrap.appendChild(providerEl);
+    }
+
+    btn.appendChild(check);
+    btn.appendChild(nameWrap);
+    modelDropdownListEl.appendChild(btn);
+  }
+
+  function renderModelDropdown() {
+    if (!modelDropdownListEl) return;
+    modelDropdownListEl.innerHTML = "";
+    var isSearching = MODEL_SEARCH_QUERY.trim().length > 0;
+    var filtered = getFilteredModels();
+
+    if (filtered.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "model-dropdown-empty";
+      empty.textContent = "No models found";
+      modelDropdownListEl.appendChild(empty);
+      return;
+    }
+
+    // Arama YAPILIYORSA: düz, filtrelenmiş liste (grup başlıkları arama
+    // sırasında gereksiz — kullanıcı zaten daraltıyor, md.2). Arama
+    // YAPILMIYORSA: Recommended + bounded sağlayıcı grupları (md.4).
+    if (isSearching) {
+      filtered.forEach(appendModelOption);
+    } else {
+      buildGroupedSections(filtered).forEach(function (section) {
+        appendModelGroupHeader(section.label);
+        section.models.forEach(appendModelOption);
+      });
+    }
+  }
+
+  function isModelDropdownOpen() {
+    return !!modelDropdownEl && !modelDropdownEl.classList.contains("hidden");
+  }
+
+  function handleModelDropdownOutsideClick(e) {
+    if (modelSelectorEl && !modelSelectorEl.contains(e.target)) {
+      closeModelDropdown();
+    }
+  }
+
+  function handleModelDropdownKeydown(e) {
+    if (e.key === "Escape") {
+      closeModelDropdown();
+      if (modeBadge) modeBadge.focus();
+    }
+  }
+
+  function openModelDropdown() {
+    if (!modelDropdownEl || !modeBadge) return;
+    modelDropdownEl.classList.remove("hidden");
+    modeBadge.setAttribute("aria-expanded", "true");
+    // OPENROUTER MODEL CATALOG + BYOK round — her açılışta arama kutusu
+    // temiz başlar (önceki bir aramanın filtrelenmiş görünümünde takılı
+    // kalmamak için).
+    MODEL_SEARCH_QUERY = "";
+    if (modelSearchInputEl) modelSearchInputEl.value = "";
+    renderModelDropdown();
+    updateByokRowLabel();
+    // MODEL SELECTOR UI/UX POLISH round — her açılışta scroll gövdesi
+    // baştan başlasın (önceki bir kapanıştan kalma scroll pozisyonunda
+    // takılı kalmasın).
+    if (modelDropdownScrollEl) modelDropdownScrollEl.scrollTop = 0;
+    // Sadece açıkken dinle, kapanınca kaldır — gereksiz global listener birikmesin.
+    document.addEventListener("click", handleModelDropdownOutsideClick, true);
+    document.addEventListener("keydown", handleModelDropdownKeydown);
+  }
+
+  function closeModelDropdown() {
+    if (!modelDropdownEl || !modeBadge) return;
+    modelDropdownEl.classList.add("hidden");
+    modeBadge.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", handleModelDropdownOutsideClick, true);
+    document.removeEventListener("keydown", handleModelDropdownKeydown);
+  }
+
+  function toggleModelDropdown() {
+    if (isModelDropdownOpen()) {
+      closeModelDropdown();
+    } else {
+      openModelDropdown();
+    }
+  }
+
+  function selectModel(id) {
+    if (!id || id === selectedModelId) {
+      closeModelDropdown();
+      return;
+    }
+    selectedModelId = id;
+    storeModelId(id);
+    // DISCOVERABILITY round — henüz bir generate yapılmadıysa (rozet hâlâ
+    // nötr/ilk "badge" durumundaysa, bkz. setBadge) kapalı seçiciye YENİ
+    // seçimin adı hemen yansısın ("kullanıcı hangi modelin seçili olduğunu
+    // ANINDA görebilmeli"). Bir generate ZATEN yapıldıysa (rozet "badge
+    // mock"/"badge live" oldu) buraya HİÇ dokunulmuyor — setBadge'in
+    // post-generation davranışı (o generate'te GERÇEKTEN kullanılan modeli
+    // göstermesi) bu round'da HİÇ değişmedi.
+    if (modeBadge && modeBadge.className === "badge") {
+      setModeBadgeText(getModelDisplayName(selectedModelId));
+    }
+    renderModelDropdown();
+    closeModelDropdown();
+  }
+
+  // ---------------------------------------------------------------------
+  // OPENROUTER MODEL CATALOG + BYOK round — kullanıcının kendi OpenRouter
+  // API key'i. GÜVENLİK KURALLARI (görev md.5/md.6/md.16, ÇOK ÖNEMLİ):
+  //  - userApiKey SADECE bellekte (bu IIFE'nin bir değişkeni) tutulur.
+  //  - localStorage/sessionStorage/cookie'ye ASLA yazılmaz.
+  //  - console.log/console.error'a ASLA verilmez.
+  //  - Doğrulama (validate-key) SADECE "Use API Key" tıklanınca yapılır —
+  //    her Generate'te TEKRAR doğrulanmaz (md.7: "gereksiz tekrar
+  //    doğrulama isteği atma").
+  // ---------------------------------------------------------------------
+  function updateByokRowLabel() {
+    if (modelByokBtnLabelEl) {
+      modelByokBtnLabelEl.textContent = userApiKey ? "Using your own API key" : "Use your own API key";
+    }
+    if (modelByokBtnEl) {
+      modelByokBtnEl.classList.toggle("selected", !!userApiKey);
+    }
+  }
+
+  function setByokModalStatus(text, kind) {
+    if (!byokModalStatusEl) return;
+    byokModalStatusEl.textContent = text || "";
+    byokModalStatusEl.className = "byok-modal-status" + (kind ? " " + kind : "");
+  }
+
+  function isByokModalOpen() {
+    return !!byokModalBackdropEl && !byokModalBackdropEl.classList.contains("hidden");
+  }
+
+  function openByokModal() {
+    if (!byokModalBackdropEl) return;
+    closeModelDropdown();
+    if (byokKeyInputEl) byokKeyInputEl.value = "";
+    setByokModalStatus("", "");
+    if (byokClearBtnEl) byokClearBtnEl.classList.toggle("hidden", !userApiKey);
+    byokModalBackdropEl.classList.remove("hidden");
+    if (byokKeyInputEl) byokKeyInputEl.focus();
+    document.addEventListener("keydown", handleByokModalKeydown);
+  }
+
+  function closeByokModal() {
+    if (!byokModalBackdropEl) return;
+    byokModalBackdropEl.classList.add("hidden");
+    // GÜVENLİK: modal kapanınca input'taki ham metin DOM'da/bellekte
+    // gereksiz yere bırakılmaz — zaten geçerliyse userApiKey'e taşındı
+    // (bkz. handleByokUse), değilse burada tamamen atılır.
+    if (byokKeyInputEl) byokKeyInputEl.value = "";
+    document.removeEventListener("keydown", handleByokModalKeydown);
+  }
+
+  function handleByokModalKeydown(e) {
+    if (e.key === "Escape") closeByokModal();
+  }
+
+  async function handleByokUse() {
+    var rawKey = byokKeyInputEl ? byokKeyInputEl.value : "";
+    if (!rawKey || !rawKey.trim()) {
+      setByokModalStatus("Please enter your OpenRouter API key.", "error");
+      return;
+    }
+    if (typeof fetch !== "function") {
+      setByokModalStatus("Key validation is unavailable right now.", "error");
+      return;
+    }
+    setByokModalStatus("Checking key…", "");
+    byokUseBtnEl.disabled = true;
+    try {
+      var res = await fetch("/api/models/validate-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: rawKey.trim() }),
+      });
+      var data = res.ok ? await res.json() : { valid: false, error: "Invalid OpenRouter API key" };
+      if (data && data.valid) {
+        // GÜVENLİK: SADECE burada, bellek-içi değişkene taşınıyor —
+        // hiçbir depolama API'sine yazılmıyor.
+        userApiKey = rawKey.trim();
+        updateByokRowLabel();
+        setByokModalStatus("Key saved for this session.", "success");
+        window.setTimeout(closeByokModal, 500);
+      } else {
+        setByokModalStatus((data && data.error) || "Invalid OpenRouter API key", "error");
+      }
+    } catch (err) {
+      setByokModalStatus("Could not reach the server to validate the key.", "error");
+    } finally {
+      byokUseBtnEl.disabled = false;
+    }
+  }
+
+  function handleByokClear() {
+    userApiKey = null;
+    if (byokKeyInputEl) byokKeyInputEl.value = "";
+    updateByokRowLabel();
+    setByokModalStatus("Key cleared.", "");
+    if (byokClearBtnEl) byokClearBtnEl.classList.add("hidden");
+  }
+
+  function initModelSelector() {
+    if (modeBadge) {
+      modeBadge.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleModelDropdown();
+      });
+    }
+    if (modelDropdownListEl) {
+      modelDropdownListEl.addEventListener("click", function (e) {
+        var optionBtn = e.target.closest ? e.target.closest(".model-option") : null;
+        if (optionBtn && optionBtn.dataset.modelId) {
+          selectModel(optionBtn.dataset.modelId);
+        }
+      });
+    }
+    if (modelSearchInputEl) {
+      modelSearchInputEl.addEventListener("click", function (e) { e.stopPropagation(); });
+      modelSearchInputEl.addEventListener("input", function () {
+        MODEL_SEARCH_QUERY = modelSearchInputEl.value || "";
+        renderModelDropdown();
+      });
+    }
+    if (modelByokBtnEl) {
+      modelByokBtnEl.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openByokModal();
+      });
+    }
+    if (byokUseBtnEl) byokUseBtnEl.addEventListener("click", handleByokUse);
+    if (byokCancelBtnEl) byokCancelBtnEl.addEventListener("click", closeByokModal);
+    if (byokClearBtnEl) byokClearBtnEl.addEventListener("click", handleByokClear);
+    if (byokModalBackdropEl) {
+      byokModalBackdropEl.addEventListener("click", function (e) {
+        if (e.target === byokModalBackdropEl) closeByokModal();
+      });
+    }
+    if (byokKeyInputEl) {
+      byokKeyInputEl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleByokUse();
+        }
+      });
+    }
+    updateByokRowLabel();
+
+    if (typeof fetch !== "function") return;
+    fetch("/api/models")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !Array.isArray(data.models) || data.models.length === 0) return;
+        AVAILABLE_MODELS = data.models;
+        DEFAULT_MODEL_ID = data.defaultModel || data.models[0].id;
+
+        // HEDEF 7: ilk açılışta mevcut/varsayılan model seçili olsun. Sadece
+        // GERÇEKTEN AVAILABLE_MODELS içinde var olan saklı bir seçim kabul
+        // edilir — eski/geçersiz bir localStorage değeri sessizce varsayılana
+        // düşer (server-side resolveRequestedModel ile AYNI güvenli felsefe).
+        var stored = getStoredModelId();
+        var storedIsValid = stored && AVAILABLE_MODELS.some(function (m) { return m.id === stored; });
+        selectedModelId = storedIsValid ? stored : DEFAULT_MODEL_ID;
+
+        // DISCOVERABILITY round — katalog yüklenir yüklenmez (sayfa
+        // açılışında, HENÜZ hiçbir generate yapılmadan) kapalı rozet artık
+        // statik "…" yerine seçili/varsayılan modelin GERÇEK adını gösterir.
+        // Sadece rozet hâlâ nötr/ilk durumdaysa (className tam olarak
+        // "badge") yazılır — kullanıcı bu fetch tamamlanmadan ÖNCE zaten bir
+        // generate yapmışsa (rozet "badge mock"/"badge live" oldu) buraya
+        // HİÇ dokunulmaz, setBadge'in post-generation metni ezilmez.
+        if (modeBadge && modeBadge.className === "badge") {
+          setModeBadgeText(getModelDisplayName(selectedModelId));
+        }
+
+        renderModelDropdown();
+      })
+      .catch(function () { /* offline/hata: selector sessizce işlevsiz kalır, mevcut rozet davranışı bozulmaz */ });
   }
 
   // renderAssetLibrary() içinde, kütüphane GERÇEKTEN boşsa (arama sonucu boş
@@ -554,6 +1246,15 @@
   // (focus-visible), hover ve is-selected durumları var. selectedAssets'teki
   // güncel state'e göre is-selected class'ı burada hesaplanıyor, bu yüzden hem
   // ana grid hem de asset-modal-grid AYNI fonksiyonu kullanıyor — tek kaynak.
+  // ROUND H — ASSET BROWSER: her thumb artık ince bir .asset-thumb-wrap
+  // içinde. .asset-thumb <button>'ının kendisi (id/class/click-delegasyonu —
+  // bkz. assetLibraryGrid/assetModalGrid click handler'ları, ikisi de
+  // .closest(".asset-thumb[data-asset-id]") kullanıyor) HİÇ değişmedi;
+  // sadece yanına, AYRI bir <button> olan küçük "ⓘ" (detay) affordance'ı
+  // eklendi — bir <button> içine ikinci bir <button> geçersiz HTML olacağı
+  // için bu bir kardeş element olarak eklendi, iç içe DEĞİL. Custom library
+  // assetleri (a.libraryId dolu — bkz. mapApiAssetToLibraryItem) küçük bir
+  // "CUSTOM" rozeti alır; default assetlerde bu rozet hiç render edilmez.
   function renderThumbs(items) {
     return items
       .map(function (a) {
@@ -567,10 +1268,15 @@
         var name = prettyAssetName(a.id);
         var title = name + (isAiPick ? " — AI selected" : "");
         return (
+          '<div class="asset-thumb-wrap">' +
           '<button type="button" class="' + cls + '" data-asset-id="' + escapeAttr(a.id) + '" ' +
           'title="' + escapeAttr(title) + '" aria-pressed="' + (isSelected ? "true" : "false") + '">' +
           '<img src="' + escapeAttr(a.path) + '" alt="' + escapeAttr(name) + '" loading="lazy" />' +
-          "</button>"
+          "</button>" +
+          '<button type="button" class="asset-thumb-info" data-asset-detail-id="' + escapeAttr(a.id) + '" ' +
+          'aria-label="View details for ' + escapeAttr(name) + '">ⓘ</button>' +
+          (a.libraryId ? '<span class="asset-thumb-custom-badge">CUSTOM</span>' : "") +
+          "</div>"
         );
       })
       .join("");
@@ -610,16 +1316,38 @@
     }
 
     // ROUND 12: gerçek, çalışan arama filtresi — sadece client-side'da zaten
-    // var olan ASSET_LIBRARY dizisi üzerinde substring eşleşmesi (isim veya
-    // kategori etiketine göre). Yeni bir veri kaynağı/backend YOK.
+    // var olan ASSET_LIBRARY dizisi üzerinde substring eşleşmesi. Yeni bir
+    // veri kaynağı/backend YOK.
+    // ROUND H — ASSET BROWSER: kapsam genişletildi — artık sadece isim/
+    // kategori değil, id (ör. "sunnyland_bee"), tag'ler ve (varsa) kit de
+    // taranıyor, hepsi case-insensitive (query zaten toLowerCase — bkz.
+    // input listener). "apple" hem isimde hem id'de, "fruit" ise sadece
+    // tags'te geçebilir — ikisi de artık eşleşiyor.
     var query = assetSearchQuery;
     var libraryItems = !query
       ? ASSET_LIBRARY
       : ASSET_LIBRARY.filter(function (a) {
           var name = prettyAssetName(a.id).toLowerCase();
+          var idLower = a.id.toLowerCase();
           var catLabel = (ASSET_CATEGORY_LABELS[a.category] || a.category).toLowerCase();
-          return name.indexOf(query) !== -1 || catLabel.indexOf(query) !== -1;
+          var tagsLower = (a.tags || []).join(" ").toLowerCase();
+          var kitLower = (a.kit || "").toLowerCase();
+          return (
+            name.indexOf(query) !== -1 ||
+            idLower.indexOf(query) !== -1 ||
+            catLabel.indexOf(query) !== -1 ||
+            tagsLower.indexOf(query) !== -1 ||
+            (kitLower && kitLower.indexOf(query) !== -1)
+          );
         });
+
+    // ROUND H — ASSET BROWSER: kategori filtresi ("all" -> hiçbir daraltma).
+    // Sidebar/çip senkronu için tek doğruluk kaynağı olan assetCategoryFilter
+    // burada uygulanıyor — arama filtresinin ÜSTÜNE, ikisi birlikte çalışır
+    // (ör. "Enemies" seçiliyken "bee" aramak sadece Enemies içinde arar).
+    if (assetCategoryFilter && assetCategoryFilter !== "all") {
+      libraryItems = libraryItems.filter(function (a) { return a.category === assetCategoryFilter; });
+    }
 
     var newItems = libraryItems.filter(function (a) { return a.isNew; });
 
@@ -676,9 +1404,14 @@
       );
     }).join("");
 
-    if (query && !newCardHtml && !categoryCardsHtml) {
-      assetLibraryGrid.innerHTML =
-        '<p class="asset-search-empty">No assets match “' + escapeHtml((assetSearchInput && assetSearchInput.value) || "") + '”.</p>';
+    // ROUND H — ASSET BROWSER: iki AYRI, dürüst boş-durum mesajı — "arama
+    // sonucu yok" ile "bu kategoride hiç asset yok" farklı durumlar,
+    // kullanıcıya farklı bir şey söylemeliler (görev md.13).
+    if (!newCardHtml && !categoryCardsHtml) {
+      var emptyMessage = query
+        ? 'No assets match “' + escapeHtml((assetSearchInput && assetSearchInput.value) || "") + '”.'
+        : "No assets in this category.";
+      assetLibraryGrid.innerHTML = '<p class="asset-search-empty">' + emptyMessage + "</p>";
       return;
     }
 
@@ -725,6 +1458,9 @@
     renderAssetSelectionSummary();
     updatePreviewAssetTag();
     updateGenerateBtnIdleLabel();
+    // ROUND H: asset detay modalı açıkken (ör. modaldaki "Use in Game"
+    // dışında bir yerden seçim değişirse) buton durumu senkron kalsın.
+    refreshAssetDetailUseBtn();
   }
 
   function renderAssetSelectionSummary() {
@@ -774,6 +1510,15 @@
 
   if (assetLibraryGrid) {
     assetLibraryGrid.addEventListener("click", function (e) {
+      // ROUND H — ASSET BROWSER: "ⓘ" detay affordance'ı — asset SEÇİMİNİ
+      // (aşağıdaki toggleAssetSelection dalı) TETİKLEMEZ, sadece detay
+      // modalını açar. .asset-thumb'tan AYRI bir <button> olduğu için
+      // (bkz. renderThumbs) bu kontrol diğerlerinden önce, ayrı olarak yapılır.
+      var infoBtn = e.target.closest(".asset-thumb-info[data-asset-detail-id]");
+      if (infoBtn) {
+        openAssetDetailModal(infoBtn.getAttribute("data-asset-detail-id"));
+        return;
+      }
       var moreBtn = e.target.closest(".asset-thumb-more");
       if (moreBtn) {
         openAssetModal(moreBtn.getAttribute("data-more-category"));
@@ -811,6 +1556,93 @@
     assetModalOverlay.classList.add("hidden");
   }
 
+  // ================== ROUND H — ASSET BROWSER: Asset Detail modal ==================
+  // Şu an detay modalında gösterilen assetin id'si — "Use in Game" butonuna
+  // basıldığında hangi asseti (yeniden) seçeceğimizi/kaldıracağımızı bilmek
+  // ve butonun etiketini/durumunu her seçim değişikliğinde tazelemek için.
+  var assetDetailCurrentId = null;
+
+  // "Kit" alanı: uydurma bir tekil "kit" değeri YOK — mevcut veri modelinde
+  // custom library assetleri OPSİYONEL bir `kit` alanı taşıyabilir (bkz.
+  // customAssetLibrary.js manifest.kit), default assetlerde ise bunun yerine
+  // `compatibleGameTypes` dizisi var (bkz. assetManifest.js). Bu fonksiyon
+  // GERÇEKTEN mevcut olanı gösterir, ikisi de boşsa dürüstçe "General
+  // purpose" der — hiçbir alan icat edilmiyor (görev md.10).
+  function assetDetailKitText(asset) {
+    if (asset.kit) return prettyAssetName(asset.kit.replace(/-/g, "_"));
+    if (asset.gameTypes && asset.gameTypes.length > 0) {
+      return asset.gameTypes.map(function (gt) { return prettyAssetName(gt.replace(/-/g, "_")); }).join(", ");
+    }
+    return "General purpose (not tied to a specific kit)";
+  }
+
+  function assetDetailSourceText(asset) {
+    return asset.libraryId ? "Custom Library — " + (asset.libraryName || asset.libraryId) : "Default Library";
+  }
+
+  function refreshAssetDetailUseBtn() {
+    if (!assetDetailUseBtn || !assetDetailCurrentId) return;
+    var asset = findAssetById(assetDetailCurrentId);
+    if (!asset) return;
+    var selected = isAssetSelected(asset);
+    assetDetailUseBtn.setAttribute("aria-pressed", selected ? "true" : "false");
+    assetDetailUseBtn.textContent = selected ? "✓ Selected for Generation" : "+ Use in Game";
+  }
+
+  // ÖNEMLİ (görev md.10 — "mevcut sistemin desteklemediği davranışı
+  // uydurma"): bu buton YENİ bir mekanizma İCAT ETMİYOR. Mevcut,
+  // Generate'e ZATEN bağlı olan toggleAssetSelection()/selectedAssets/
+  // buildPromptWithAssets() zincirini (bkz. yukarısı) TETİKLİYOR — aynı
+  // asset library thumb'ına tıklamakla BİREBİR aynı, gerçek etki. Bu yüzden
+  // "Available for AI selection" gibi dürüst ama PASİF bir metin yerine
+  // gerçek, işlevsel bir buton gösterilebiliyor — çünkü mekanizma GERÇEKTEN
+  // var ve GERÇEKTEN prompta ekleniyor (en iyi çaba/"best effort" olduğu,
+  // modelin bunu her zaman uygulayacağının garanti edilmediği not metninde
+  // (#asset-detail-use-btn'in üstündeki .asset-detail-use-note) açıkça belirtiliyor).
+  if (assetDetailUseBtn) {
+    assetDetailUseBtn.addEventListener("click", function () {
+      if (!assetDetailCurrentId) return;
+      toggleAssetSelection(assetDetailCurrentId);
+      refreshAssetDetailUseBtn();
+    });
+  }
+
+  function openAssetDetailModal(assetId) {
+    var asset = findAssetById(assetId);
+    if (!asset || !assetDetailModalOverlay) return;
+    assetDetailCurrentId = assetId;
+
+    var name = asset.name || prettyAssetName(asset.id);
+    if (assetDetailPreviewEl) {
+      assetDetailPreviewEl.innerHTML = '<img src="' + escapeAttr(asset.path) + '" alt="' + escapeAttr(name) + '" />';
+    }
+    if (assetDetailNameEl) assetDetailNameEl.textContent = name;
+    if (assetDetailCategoryEl) assetDetailCategoryEl.textContent = ASSET_CATEGORY_LABELS[asset.category] || asset.category;
+    if (assetDetailTagsEl) assetDetailTagsEl.textContent = asset.tags && asset.tags.length > 0 ? asset.tags.join(", ") : "—";
+    if (assetDetailKitEl) assetDetailKitEl.textContent = assetDetailKitText(asset);
+    if (assetDetailSourceEl) {
+      assetDetailSourceEl.textContent = assetDetailSourceText(asset);
+      assetDetailSourceEl.classList.toggle("is-custom-source", !!asset.libraryId);
+    }
+    refreshAssetDetailUseBtn();
+
+    assetDetailModalOverlay.classList.remove("hidden");
+    if (assetDetailModalCloseBtn) assetDetailModalCloseBtn.focus();
+  }
+
+  function closeAssetDetailModal() {
+    if (!assetDetailModalOverlay) return;
+    assetDetailModalOverlay.classList.add("hidden");
+    assetDetailCurrentId = null;
+  }
+
+  if (assetDetailModalCloseBtn) assetDetailModalCloseBtn.addEventListener("click", closeAssetDetailModal);
+  if (assetDetailModalOverlay) {
+    assetDetailModalOverlay.addEventListener("click", function (e) {
+      if (e.target === assetDetailModalOverlay) closeAssetDetailModal();
+    });
+  }
+
   if (assetModalCloseBtn) assetModalCloseBtn.addEventListener("click", closeAssetModal);
 
   if (assetModalOverlay) {
@@ -821,6 +1653,13 @@
 
   if (assetModalGrid) {
     assetModalGrid.addEventListener("click", function (e) {
+      // ROUND H — ASSET BROWSER: aynı "ⓘ" affordance'ı, "View All" popover'ı
+      // İÇİNDE de çalışır (renderThumbs paylaşılan tek fonksiyon).
+      var infoBtn = e.target.closest(".asset-thumb-info[data-asset-detail-id]");
+      if (infoBtn) {
+        openAssetDetailModal(infoBtn.getAttribute("data-asset-detail-id"));
+        return;
+      }
       var thumb = e.target.closest(".asset-thumb[data-asset-id]");
       if (!thumb) return;
       var id = thumb.getAttribute("data-asset-id");
@@ -841,8 +1680,17 @@
   }
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && assetModalOverlay && !assetModalOverlay.classList.contains("hidden")) {
+    if (e.key !== "Escape") return;
+    if (assetModalOverlay && !assetModalOverlay.classList.contains("hidden")) {
       closeAssetModal();
+    }
+    // ROUND H — ASSET BROWSER: yeni asset detay modalı da Escape ile kapanır.
+    if (assetDetailModalOverlay && !assetDetailModalOverlay.classList.contains("hidden")) {
+      closeAssetDetailModal();
+    }
+    // ROUND J — QUALITY SCORE DETAILS: yeni modal da Escape ile kapanır.
+    if (qualityDetailsModalOverlay && !qualityDetailsModalOverlay.classList.contains("hidden")) {
+      closeQualityDetailsModal();
     }
   });
 
@@ -1092,19 +1940,35 @@
     }
   }
 
+  // AI MODEL SELECTOR round — metin artık modeBadgeTextEl'e (mode-badge
+  // içindeki alt span) yazılıyor ki modeBadge.textContent ataması dropdown
+  // caret'ini SİLMESİN. modeBadge (buton) üzerindeki className atamaları
+  // (badge/badge mock/badge live) BİREBİR ÖNCEKİ round'la aynı — sadece
+  // görsel renk/duruma bakan CSS kuralları, dropdown/caret ayrı elemanlar
+  // olduğu için etkilenmiyor. modeBadgeTextEl yoksa (beklenmedik durum)
+  // modeBadge.textContent'e düşülür — hiçbir zaman sessizce hiçbir şey
+  // göstermemek yerine güvenli bir fallback.
+  function setModeBadgeText(text) {
+    if (modeBadgeTextEl) {
+      modeBadgeTextEl.textContent = text;
+    } else {
+      modeBadge.textContent = text;
+    }
+  }
+
   function setBadge(meta) {
     updateMockInfoCard(meta);
     if (mockPreviewRibbonEl) mockPreviewRibbonEl.classList.toggle("hidden", !(meta && meta.mock));
     if (!meta) {
-      modeBadge.textContent = "…";
+      setModeBadgeText("…");
       modeBadge.className = "badge";
       return;
     }
     if (meta.mock) {
-      modeBadge.textContent = "MOCK MODE";
+      setModeBadgeText("MOCK MODE");
       modeBadge.className = "badge mock";
     } else {
-      modeBadge.textContent = "LIVE — " + (meta.model || "OpenRouter");
+      setModeBadgeText("LIVE — " + getModelDisplayName(meta.model));
       modeBadge.className = "badge live";
     }
   }
@@ -1230,6 +2094,11 @@
     var selectedCount = getAllSelected().length;
 
     generateBtn.disabled = true;
+    // ROUND G (md.6): Generate ile Improve with AI arasında race condition
+    // olmasın — Generate sürerken Improve butonu da devre dışı kalır
+    // (Improve tarafı da simetrik olarak Generate'i devre dışı bırakıyor,
+    // bkz. improveSubmitBtn click handler).
+    if (improveToggleBtn) improveToggleBtn.disabled = true;
     setGenerateBtnLoading(true);
     startGenerationPipeline();
     setStatus(
@@ -1239,13 +2108,26 @@
     );
 
     try {
-      // /api/generate contract'ı aynı: tek bir { prompt } string'i. Asset
-      // seçimi varsa, o seçim bu string'in İÇİNE (buildPromptWithAssets ile)
-      // ekleniyor — ayrı bir alan/parametre YOK, backend değişmedi.
+      // /api/generate contract'ı BÜYÜK ÖLÇÜDE aynı: { prompt } string'i.
+      // AI MODEL SELECTOR round — SADECE opsiyonel bir `model` alanı eklendi
+      // (görev md.3: "gereksiz kırmadan"). getSelectedModelId() henüz hiç
+      // seçim yapılmadıysa/GET /api/models yüklenemediyse null döner ve bu
+      // durumda `model` hiç gönderilmez (undefined -> JSON.stringify onu
+      // atlar) — backend zaten böyle bir isteği kendi varsayılanına
+      // (resolveRequestedModel) düşürür, davranış ÖNCEKİ round'la aynı kalır.
+      // OPENROUTER MODEL CATALOG + BYOK round — EK OLARAK opsiyonel bir
+      // `apiKey` alanı eklendi: getUserApiKey() kullanıcı bir key GİRMEDİYSE
+      // null döner ve `apiKey` hiç gönderilmez — backend zaten böyle bir
+      // isteği MEVCUT .env ENV key fallback'ine düşürür (görev md.9,
+      // regresyon YOK).
       var res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: finalPrompt }),
+        body: JSON.stringify({
+          prompt: finalPrompt,
+          model: getSelectedModelId() || undefined,
+          apiKey: getUserApiKey() || undefined,
+        }),
       });
 
       var data = await res.json();
@@ -1255,6 +2137,11 @@
       }
 
       applyNewResult(data.html, data.validation, data.meta, finalPrompt);
+      // ROUND I (md.3/md.16): Generate HER ZAMAN yeni bir Game record
+      // oluşturur (sadece geçerliyse — bkz. saveGeneratedGameAsNew'in kendi
+      // validation.valid koruması); Improve/Fix with AI'dan FARKLI olarak
+      // mevcut bir kaydı GÜNCELLEMEZ.
+      saveGeneratedGameAsNew();
 
       if (data.validation.valid) {
         setStatus("Playable ad generated ✔ — Quality score " + data.validation.score + "/100", "success");
@@ -1275,9 +2162,92 @@
       }
     } finally {
       generateBtn.disabled = false;
+      // ROUND G (md.1/md.6): generate bittiğinde Improve butonu SADECE
+      // gerçekten bir generated game varsa (lastResult) tekrar aktif olur —
+      // generate başarısız olduysa (lastResult hâlâ null) disabled kalmaya
+      // devam eder, mevcut "generated game yokken disabled" kuralı bozulmaz.
+      if (improveToggleBtn) improveToggleBtn.disabled = !lastResult;
       setGenerateBtnLoading(false);
       finishGenerationPipeline();
     }
+  }
+
+  // ================== RESPONSIVE PREVIEW FIT (render-layer only) ==================
+  // PROBLEM: bir üretilen oyun sabit/geniş piksel boyutlarıyla (örn. 900px
+  // genişliğinde bir #game/canvas) yazılmışsa, bu HTML host'un dar/telefon
+  // benzeri #preview-frame / #output-game-frame iframe'lerine (320×568
+  // portre, hatta 260px genişliğe kadar inen "Game" sekmesi) OLDUĞU GİBİ
+  // yüklendiğinde, iframe'in KENDİ iç viewport'u oyunun gerçek boyutundan
+  // dar kalıyor ve yatay (bazen dikey) taşma/scrollbar oluşuyor — HUD,
+  // kontrol ipucu ve oyun alanının bir kısmı görünmez hale geliyor.
+  //
+  // KAPSAM/KISIT: server/prompts/systemPrompt.js (generation talimatları),
+  // server/services/validation/checks.js, asset sistemi, AI model config
+  // VE üretilen oyunun kendi JS mantığı/coordinate system'i BURADA
+  // DEĞİŞTİRİLMİYOR — hiçbiri bu değişikliğin kapsamında değil. Bunun
+  // yerine SADECE bu dosyanın (host render katmanı) srcdoc'a yazdığı HTML
+  // string'ine, iframe içinde ÇALIŞACAK, TAMAMEN AYRI ve saf bir CSS
+  // transform tabanlı "fit-to-viewport" script'i ENJEKTE EDİLİYOR:
+  //   - <body>'nin GERÇEK/doğal (natural) scrollWidth/scrollHeight'ı ölçülür,
+  //   - bu, iframe'in gerçek window.innerWidth/innerHeight'ından BÜYÜKSE,
+  //     <body>'ye `transform: scale(...)` (SADECE küçültme yönünde, asla
+  //     büyütme — zaten sığan oyunlar hiç dokunulmadan kalır) uygulanır,
+  //   - <body>'nin transform SONRASI kapladığı görünür alanla eşleşmesi
+  //     için width/height de scaled değere set edilir (böylece altta boşluk
+  //     kalmaz / scrollbar oluşmaz).
+  // Bu SADECE görsel bir ölçekleme katmanıdır: CSS transform, tarayıcının
+  // click/touch hit-testing'ini VE getBoundingClientRect()'i otomatik olarak
+  // post-transform (görünen) koordinatlara göre hesaplar — bu yüzden mevcut
+  // click/tap/keyboard etkileşimi, oyunun kendi iç JS koordinat sistemi
+  // (örn. canvas piksel koordinatları) TAMAMEN BOZULMADAN çalışmaya devam
+  // eder. `transform`, CSS spesifikasyonu gereği position:fixed/absolute
+  // torunları için de yeni bir containing block oluşturduğundan HUD/kontrol
+  // elementleri de doğru şekilde birlikte ölçeklenir.
+  //
+  // Bu enjeksiyon SADECE srcdoc'a yazılan (ekranda GÖSTERİLEN) kopyada
+  // yapılır — `lastResult.html` (Copy Code / Download'ın kullandığı asıl
+  // üretim) HİÇBİR ZAMAN değiştirilmez, bkz. applyNewResult/downloadBtn.
+  var RESPONSIVE_FIT_SCRIPT =
+    "\n<script>(function(){\n" +
+    "  function __paFitToViewport(){\n" +
+    "    try {\n" +
+    "      var body = document.body, docEl = document.documentElement;\n" +
+    "      if (!body) return;\n" +
+    "      body.style.transform = 'none';\n" +
+    "      body.style.width = '';\n" +
+    "      body.style.height = '';\n" +
+    "      void body.offsetWidth; /* reflow, olculerin sifirlanmis haliyle alinmasi icin */\n" +
+    "      var naturalWidth = Math.max(body.scrollWidth, docEl.scrollWidth, 1);\n" +
+    "      var naturalHeight = Math.max(body.scrollHeight, docEl.scrollHeight, 1);\n" +
+    "      var vw = window.innerWidth || naturalWidth;\n" +
+    "      var vh = window.innerHeight || naturalHeight;\n" +
+    "      var scale = Math.min(vw / naturalWidth, vh / naturalHeight, 1);\n" +
+    "      if (scale < 0.999) {\n" +
+    "        body.style.transformOrigin = 'top left';\n" +
+    "        body.style.transform = 'scale(' + scale + ')';\n" +
+    "        body.style.width = naturalWidth + 'px';\n" +
+    "        body.style.height = naturalHeight + 'px';\n" +
+    "      }\n" +
+    "      docEl.style.overflow = 'hidden';\n" +
+    "    } catch (e) { /* asla uretilen oyunu bozacak sekilde patlamamali */ }\n" +
+    "  }\n" +
+    "  __paFitToViewport();\n" +
+    "  window.addEventListener('load', __paFitToViewport);\n" +
+    "  window.addEventListener('resize', __paFitToViewport);\n" +
+    "  window.addEventListener('orientationchange', __paFitToViewport);\n" +
+    "})();</" + "script>\n";
+
+  function withResponsiveFitLayer(html) {
+    if (!html) return html;
+    // </body> hemen öncesine ekle — o ana kadar body içindeki tüm
+    // element/script'ler zaten DOM'a girmiş olur, ölçüm doğru natural
+    // boyutu yansıtır. </body> yoksa (beklenmedik/eksik HTML) en sona
+    // ekle — hiçbir zaman throw etmez, en kötü ihtimalle hiçbir şey
+    // değişmemiş gibi davranır.
+    if (/<\/body\s*>/i.test(html)) {
+      return html.replace(/<\/body\s*>/i, RESPONSIVE_FIT_SCRIPT + "</body>");
+    }
+    return html + RESPONSIVE_FIT_SCRIPT;
   }
 
   // isValid === false: sunucudan gelen validation.valid alanı false demek —
@@ -1306,7 +2276,9 @@
 
     previewPlaceholder.classList.add("hidden");
     // sandbox="allow-scripts" -> runs isolated, no outside/parent access
-    previewFrame.srcdoc = html;
+    // Gerçek üretim (lastResult.html / Copy / Download) DEĞİŞMİYOR —
+    // sadece burada, GÖRÜNTÜLENEN kopyaya responsive-fit katmanı ekleniyor.
+    previewFrame.srcdoc = withResponsiveFitLayer(html);
     previewFrame.onload = function () {
       previewStatusEl.textContent = "Preview loaded ✓";
     };
@@ -1405,6 +2377,11 @@
         qualityRingEl.style.setProperty("--score-pct", 0);
         qualityRingEl.className = "quality-ring";
       }
+      // ROUND J: geçerli bir sonuç yokken (ör. current game silindi/reset
+      // edildi) açık kalmış bir Quality Score Details modalı, artık hiçbir
+      // gerçek veriye karşılık gelmeyen ESKİ bir görünüm göstermeye devam
+      // etmesin diye kapatılır — uydurma/stale veri göstermek yerine.
+      if (typeof closeQualityDetailsModal === "function") closeQualityDetailsModal();
       return;
     }
 
@@ -1467,17 +2444,263 @@
     } else {
       qualityActionsEl.innerHTML = "";
     }
+
+    // ROUND J: Quality Score Details modalı AÇIKKEN yeni bir Generate/Fix
+    // with AI/Improve with AI/Open Game applyNewResult() çağırırsa (hepsi bu
+    // fonksiyona -> renderQualityCard'a AKAR), modal içeriği STALE kalmasın
+    // diye otomatik yeniden render edilir (görev md.7/md.8: "must update
+    // automatically after Generate / Improve"). Modal kapalıysa hiçbir şey
+    // yapılmaz (gereksiz iş yok).
+    if (isQualityDetailsModalOpen()) renderQualityDetailsModal();
   }
 
-  // PHASE 4 polish: Quality Score "Details" toggle — SADECE zaten
-  // hesaplanmış qualityChecksEl içeriğinin görünürlüğünü açar/kapar, yeni
-  // bir veri istemiyor.
+  // ================== ROUND J — QUALITY SCORE DETAILS ==================
+  // SYSTEM REVIEW (görev md.1'in istediği inceleme, kod içinde belgelendi):
+  // Skor ZATEN server/services/validation/score.js -> computeScore() içinde
+  // TEK bir yerde hesaplanıyor (pass=1, warning=0.5, fail=0 puan; toplam
+  // check sayısına bölünüp yüzdeleniyor) ve server/services/validation/
+  // checks.js içindeki 28 GERÇEK, statik-analiz tabanlı kontrolün (her biri
+  // key/name/critical/status/detail taşıyor, bkz. validate.js — ROUND M'de
+  // "gameplay-config-valid" + 7 mekanik-özel check eklenmesiyle 20 -> 28
+  // oldu) sonucundan üretiliyor. Bu round YENİ bir scoring sistemi KURMUYOR —
+  // sadece ZATEN VAR OLAN validation.checks dizisini, sabit/deterministik
+  // bir key -> kategori haritasıyla gruplayıp, her kategori için
+  // score.js'teki AYNI pass/warning/fail formülünü (bkz.
+  // computeCategoryScore) bir ALT KÜMEYE uygulayarak sunuyor. Check'lerin
+  // HER BİRİ tam olarak bir kategoriye dahil edilmiştir (çift sayım veya
+  // kayıp yok — bkz. gameLibrarySmoke.js
+  // benzeri bir doğrulama yerine burada doğrudan kod incelemesiyle
+  // garanti edildi). "WHAT'S WORKING" SADECE gerçekten "pass" olan check'ler
+  // için sabit bir insan-okunur etiket kullanır (bilinmeyen bir key'de
+  // check'in KENDİ GERÇEK `name` alanına düşer). "NEEDS ATTENTION" ise
+  // server'ın zaten ürettiği validation.warnings dizisini AYNEN kullanır —
+  // ikinci bir uyarı listesi İCAT EDİLMEZ. lastResult.validation, Game
+  // Library record'larında da AYNEN saklanıyor (bkz. ROUND I
+  // buildGameRecordFromResult) — bu yüzden bu modal hem canlı bir
+  // generate/improve sonrası hem de My Games'ten açılan (openGameFromLibrary
+  // -> applyNewResult) bir kayıt için AYNI, TEK kaynaktan (lastResult.
+  // validation) besleniyor; ikinci/tutarsız bir skor kaynağı yok. Score
+  // eşikleri (80/50) de YENİ icat edilmedi — üstteki mevcut scoreClass()
+  // fonksiyonuyla BİREBİR aynı, zaten var olan eşikler.
+
+  var QUALITY_CATEGORY_DEFS = [
+    {
+      key: "gameplay",
+      label: "Gameplay",
+      checkKeys: [
+        "interactive", "win-condition", "lose-condition", "can-end", "cta",
+        "platformer-gameplay-consistency", "movement-input-consistency",
+        // ROUND M — additive: self-report config sinyali + mekanik-özel
+        // gerçek-sinyal check'leri (hepsi mevcut mekanik gruba katıldı,
+        // yeni bir kategori icat edilmedi).
+        "gameplay-config-valid",
+        "racing-gameplay-consistency", "space-shooter-gameplay-consistency",
+        "collection-gameplay-consistency", "memory-gameplay-consistency",
+        "math-gameplay-consistency", "cooking-gameplay-consistency",
+        "dungeon-gameplay-consistency",
+      ],
+      allPassText: "Core interaction and game flow (win / lose / end) checks passed.",
+    },
+    {
+      key: "technical",
+      label: "Technical Reliability",
+      checkKeys: [
+        "valid-html", "has-js", "js-syntax-valid", "no-storage",
+        "no-external-resources", "resource-size", "no-infinite-loop",
+      ],
+      allPassText: "No critical validation failures detected.",
+    },
+    {
+      key: "prompt-fulfillment",
+      label: "Prompt Fulfillment",
+      checkKeys: ["prompt-alignment", "duration", "level-length-consistency"],
+      allPassText: "Generated output matches the key elements requested in your prompt.",
+    },
+    {
+      key: "responsiveness",
+      label: "Responsiveness",
+      checkKeys: ["mobile-ready"],
+      allPassText: "Mobile-ready (responsive viewport) layout detected.",
+    },
+    {
+      key: "asset-usage",
+      label: "Asset Usage",
+      checkKeys: ["asset-paths-valid", "asset-integrity"],
+      allPassText: "All referenced assets are valid and accounted for.",
+    },
+  ];
+
+  var QUALITY_PASS_LABELS = {
+    "valid-html": "Playable output generated",
+    "has-js": "Game logic (JavaScript) present",
+    "js-syntax-valid": "No JavaScript syntax errors",
+    "interactive": "Core interaction detected (click / tap)",
+    "win-condition": "Win condition implemented",
+    "lose-condition": "Lose / game-over condition implemented",
+    "can-end": "Game has a clear end state",
+    "prompt-alignment": "Matches key elements from your prompt",
+    "mobile-ready": "Responsive layout (mobile-ready)",
+    "no-infinite-loop": "No infinite loop risk detected",
+    "cta": "Call-to-action present",
+    "duration": "Matches requested duration",
+    "no-storage": "No browser storage used",
+    "no-external-resources": "No external resource requests",
+    "asset-paths-valid": "All asset references are valid",
+    "asset-integrity": "Asset files verified on disk",
+    "resource-size": "Output size within expected range",
+    "platformer-gameplay-consistency": "Platformer gameplay is consistent / reachable",
+    "level-length-consistency": "Level length matches your prompt",
+    "movement-input-consistency": "Movement controls match your prompt",
+    "gameplay-config-valid": "Gameplay self-report data is well-formed",
+    "racing-gameplay-consistency": "Racing controls / obstacles match your prompt",
+    "space-shooter-gameplay-consistency": "Shooting / enemy mechanics match your prompt",
+    "collection-gameplay-consistency": "Collection mechanics match your prompt",
+    "memory-gameplay-consistency": "Memory-matching mechanics match your prompt",
+    "math-gameplay-consistency": "Math quiz mechanics match your prompt",
+    "cooking-gameplay-consistency": "Cooking sequence mechanics match your prompt",
+    "dungeon-gameplay-consistency": "Key / door / exit mechanics match your prompt",
+  };
+
+  // score.js -> computeScore() ile BİREBİR AYNI formül; ikinci bir puanlama
+  // sistemi DEĞİL, aynı formülün bir alt kümeye (kategori) uygulanması.
+  function computeCategoryScore(checks) {
+    if (!checks || checks.length === 0) return null;
+    var total = 0;
+    checks.forEach(function (c) {
+      if (c.status === "pass") total += 1;
+      else if (c.status === "warning") total += 0.5;
+    });
+    return Math.round((total / checks.length) * 100);
+  }
+
+  function buildQualityCategories(validation) {
+    if (!validation || !Array.isArray(validation.checks)) return [];
+    var byKey = {};
+    validation.checks.forEach(function (c) { byKey[c.key] = c; });
+
+    return QUALITY_CATEGORY_DEFS.map(function (def) {
+      var checks = def.checkKeys.map(function (k) { return byKey[k]; }).filter(Boolean);
+      // md.3: bu sonuçta bu kategoriye ait HİÇBİR gerçek check verisi yoksa
+      // (teorik olarak — şu an her kategori en az bir check'e karşılık
+      // geliyor), kategori UYDURULMAZ, sessizce atlanır.
+      if (checks.length === 0) return null;
+      var failing = checks.filter(function (c) { return c.status !== "pass"; });
+      var explanation = failing.length === 0
+        ? def.allPassText
+        : (checks.length - failing.length) + "/" + checks.length + " checks passed. Needs attention: " +
+          failing.map(function (c) { return c.name; }).join(", ") + ".";
+      return {
+        key: def.key,
+        label: def.label,
+        score: computeCategoryScore(checks),
+        checks: checks,
+        explanation: explanation,
+      };
+    }).filter(Boolean);
+  }
+
+  function buildQualityPositiveSignals(validation) {
+    if (!validation || !Array.isArray(validation.checks)) return [];
+    return validation.checks
+      .filter(function (c) { return c.status === "pass"; })
+      .map(function (c) { return QUALITY_PASS_LABELS[c.key] || c.name; });
+  }
+
+  // validation.warnings server tarafında (validate.js) HER pass-olmayan
+  // check için zaten "İsim: detay" formatında üretiliyor — burada ikinci bir
+  // uyarı listesi İCAT EDİLMİYOR, aynen kullanılıyor.
+  function buildQualityWarnings(validation) {
+    if (!validation || !Array.isArray(validation.warnings)) return [];
+    return validation.warnings;
+  }
+
+  function isQualityDetailsModalOpen() {
+    return !!(qualityDetailsModalOverlay && !qualityDetailsModalOverlay.classList.contains("hidden"));
+  }
+
+  function renderQualityDetailsModal() {
+    if (!qualityDetailsBodyEl || !lastResult || !lastResult.validation) return;
+    var validation = lastResult.validation;
+    var categories = buildQualityCategories(validation);
+    var positives = buildQualityPositiveSignals(validation);
+    var warnings = buildQualityWarnings(validation);
+
+    if (qualityDetailsModalSubtitleEl) {
+      qualityDetailsModalSubtitleEl.textContent =
+        validation.score + " / 100 · " + (validation.valid ? "Passed critical checks" : "Some critical checks failed");
+      qualityDetailsModalSubtitleEl.className = "my-games-modal-subtitle " + scoreClass(validation.score);
+    }
+
+    var categoriesHtml = categories.length
+      ? categories
+          .map(function (cat) {
+            var barClass = cat.score == null ? "" : scoreClass(cat.score);
+            return (
+              '<div class="quality-category-row">' +
+              '<div class="quality-category-header">' +
+              '<span class="quality-category-name">' + escapeHtml(cat.label) + "</span>" +
+              '<span class="quality-category-score ' + barClass + '">' + (cat.score == null ? "—" : cat.score) + "/100</span>" +
+              "</div>" +
+              '<div class="quality-category-bar-track"><div class="quality-category-bar-fill ' + barClass +
+              '" style="width:' + (cat.score == null ? 0 : cat.score) + '%"></div></div>' +
+              '<p class="quality-category-explanation">' + escapeHtml(cat.explanation) + "</p>" +
+              "</div>"
+            );
+          })
+          .join("")
+      : '<p class="quality-details-empty">No category breakdown available for this result.</p>';
+
+    var positivesHtml = positives.length
+      ? '<ul class="quality-signal-list">' +
+        positives.map(function (p) { return '<li class="quality-signal-item positive">✓ ' + escapeHtml(p) + "</li>"; }).join("") +
+        "</ul>"
+      : "";
+
+    var warningsHtml = warnings.length
+      ? '<ul class="quality-signal-list">' +
+        warnings.map(function (w) { return '<li class="quality-signal-item warning">! ' + escapeHtml(w) + "</li>"; }).join("") +
+        "</ul>"
+      : '<p class="quality-signal-item positive">✓ No major issues detected</p>';
+
+    qualityDetailsBodyEl.innerHTML =
+      '<div class="quality-details-section">' +
+      '<div class="quality-details-section-title">Category Breakdown</div>' +
+      categoriesHtml +
+      "</div>" +
+      (positives.length
+        ? '<div class="quality-details-section"><div class="quality-details-section-title">What’s Working</div>' + positivesHtml + "</div>"
+        : "") +
+      '<div class="quality-details-section">' +
+      '<div class="quality-details-section-title">Needs Attention</div>' +
+      warningsHtml +
+      "</div>";
+  }
+
+  function openQualityDetailsModal() {
+    if (!qualityDetailsModalOverlay || !lastResult || !lastResult.validation) return;
+    renderQualityDetailsModal();
+    qualityDetailsModalOverlay.classList.remove("hidden");
+    if (qualityDetailsModalCloseBtn) qualityDetailsModalCloseBtn.focus();
+  }
+
+  function closeQualityDetailsModal() {
+    if (qualityDetailsModalOverlay) qualityDetailsModalOverlay.classList.add("hidden");
+  }
+
+  // "Details" butonu (mevcut buton/ID — bkz. index.html) artık eski inline
+  // pill-listesini (qualityChecksEl) AÇIP KAPAMIYOR — bunun yerine
+  // kategorilere ayrılmış, gerçek validation verisinden üretilen "Quality
+  // Score Details" modalını açıyor (görev md.2/md.3). qualityChecksEl HALA
+  // (değişmeden, yukarıdaki renderQualityCard içinde) hesaplanıyor — sadece
+  // artık kullanıcıya bu buton üzerinden gösterilmiyor; hiçbir veri kaybı
+  // veya regresyon yok, sadece etkileşim daha zengin bir deneyime yönlendi.
   if (qualityDetailsToggleEl) {
-    qualityDetailsToggleEl.addEventListener("click", function () {
-      var isOpen = !qualityChecksEl.classList.contains("hidden");
-      qualityChecksEl.classList.toggle("hidden", isOpen);
-      qualityDetailsToggleEl.classList.toggle("is-open", !isOpen);
-      qualityDetailsToggleEl.setAttribute("aria-expanded", isOpen ? "false" : "true");
+    qualityDetailsToggleEl.addEventListener("click", openQualityDetailsModal);
+  }
+  if (qualityDetailsModalCloseBtn) qualityDetailsModalCloseBtn.addEventListener("click", closeQualityDetailsModal);
+  if (qualityDetailsModalOverlay) {
+    qualityDetailsModalOverlay.addEventListener("click", function (e) {
+      if (e.target === qualityDetailsModalOverlay) closeQualityDetailsModal();
     });
   }
 
@@ -1507,6 +2730,11 @@
 
       if (data.applied) {
         applyNewResult(data.html, data.validation, lastResult.meta, lastResult.prompt);
+        // ROUND I: Fix with AI da (Improve gibi) MEVCUT oyunu günceller,
+        // yeni bir kopya oluşturmaz — syncCurrentGameAfterFixOrImprove
+        // kendi içinde validation.valid === true kontrolünü yapıyor, bu
+        // yüzden hâlâ geçersiz bir fix denemesi Library'yi ETKİLEMİYOR.
+        syncCurrentGameAfterFixOrImprove();
         setStatus("Fix with AI applied ✔ — new score " + data.validation.score + "/100", "success");
       } else {
         // Mock mode: architecture is wired end-to-end, but no real AI call was made.
@@ -1523,64 +2751,202 @@
     }
   }
 
-  // ================== Phase 4: Improve with AI ==================
+  // ================== ROUND G: Improve with AI ==================
+  // Eski (Phase 4) "chip + textarea + Apply" inline paneli tamamen bir
+  // modale dönüştürüldü (bkz. index.html). Mimari değişmedi: HÂLÂ
+  // POST /api/improve -> refinePlayableAd -> validatePlayable akışı (bkz.
+  // server/routes/improve.js) — burada YENİ bir generation pipeline'ı
+  // YAZILMIYOR, sadece isteğin gövdesi zenginleşti (seçili improvement
+  // seçenekleri + custom metin + mevcut oyunun meta context'i + Generate
+  // ile AYNI model/apiKey) ve sonuç UYGULANMADAN ÖNCE validation.valid
+  // kontrol ediliyor (md.9/md.10: "invalid ise mevcut oyun korunmalı").
+  var isImproving = false;
 
-  if (improveToggleBtn) {
-    improveToggleBtn.addEventListener("click", function () {
-      improvePanel.classList.toggle("hidden");
+  function getSelectedImprovementKeys() {
+    if (!improveOptionsEl) return [];
+    var pressed = improveOptionsEl.querySelectorAll('.improve-option[aria-pressed="true"]');
+    return Array.prototype.map.call(pressed, function (btn) {
+      return btn.getAttribute("data-improve-key");
     });
   }
 
-  if (improveChips) {
-    improveChips.addEventListener("click", function (e) {
-      var chip = e.target.closest(".chip");
-      if (!chip) return;
-      improveInput.value = chip.getAttribute("data-instruction") || "";
-      improveInput.focus();
+  function resetImproveModalSelection() {
+    if (improveOptionsEl) {
+      var opts = improveOptionsEl.querySelectorAll(".improve-option");
+      Array.prototype.forEach.call(opts, function (btn) {
+        btn.setAttribute("aria-pressed", "false");
+      });
+    }
+    if (improveCustomInputEl) improveCustomInputEl.value = "";
+    setImproveModalStatus("", "");
+  }
+
+  function setImproveModalStatus(text, kind) {
+    if (!improveModalStatusEl) return;
+    improveModalStatusEl.textContent = text || "";
+    improveModalStatusEl.className = "improve-modal-status" + (kind ? " " + kind : "");
+  }
+
+  function isImproveModalOpen() {
+    return !!improveModalBackdropEl && !improveModalBackdropEl.classList.contains("hidden");
+  }
+
+  function openImproveModal() {
+    if (!improveModalBackdropEl || !lastResult) return;
+    // md.6: Generate çalışırken Improve modalı açılamaz (buton zaten
+    // disabled olur — bkz. generate()'in başı/sonu — bu sadece ek bir
+    // güvenlik katmanı).
+    if (generateBtn && generateBtn.disabled) return;
+    resetImproveModalSelection();
+    improveModalBackdropEl.classList.remove("hidden");
+    improveToggleBtn.setAttribute("aria-expanded", "true");
+    document.addEventListener("keydown", handleImproveModalKeydown);
+    if (improveOptionsEl) {
+      var firstOption = improveOptionsEl.querySelector(".improve-option");
+      if (firstOption) firstOption.focus();
+    }
+  }
+
+  function closeImproveModal() {
+    if (!improveModalBackdropEl) return;
+    // md.6: yükleme sırasında (isImproving) kapatma engellenir — kullanıcı
+    // devam eden isteği "kaybetmiş" hissetmesin, sonucu görsün.
+    if (isImproving) return;
+    improveModalBackdropEl.classList.add("hidden");
+    improveToggleBtn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("keydown", handleImproveModalKeydown);
+  }
+
+  function handleImproveModalKeydown(e) {
+    if (e.key === "Escape") closeImproveModal();
+  }
+
+  if (improveToggleBtn) {
+    improveToggleBtn.setAttribute("aria-expanded", "false");
+    improveToggleBtn.addEventListener("click", function () {
+      if (isImproveModalOpen()) {
+        closeImproveModal();
+      } else {
+        openImproveModal();
+      }
+    });
+  }
+
+  if (improveModalCloseBtnEl) improveModalCloseBtnEl.addEventListener("click", closeImproveModal);
+  if (improveCancelBtnEl) improveCancelBtnEl.addEventListener("click", closeImproveModal);
+  if (improveModalBackdropEl) {
+    improveModalBackdropEl.addEventListener("click", function (e) {
+      if (e.target === improveModalBackdropEl) closeImproveModal();
+    });
+  }
+
+  if (improveOptionsEl) {
+    improveOptionsEl.addEventListener("click", function (e) {
+      var optionBtn = e.target.closest ? e.target.closest(".improve-option") : null;
+      if (!optionBtn) return;
+      var isPressed = optionBtn.getAttribute("aria-pressed") === "true";
+      optionBtn.setAttribute("aria-pressed", isPressed ? "false" : "true");
     });
   }
 
   if (improveSubmitBtn) {
     improveSubmitBtn.addEventListener("click", async function () {
-      if (!lastResult) return;
-      var instruction = improveInput.value.trim();
-      if (!instruction) {
-        improveStatus.textContent = "Describe an improvement first.";
-        improveStatus.className = "status-line error";
+      // md.6: aynı anda ikinci bir improve isteği gönderilemez.
+      if (!lastResult || isImproving) return;
+
+      var selectedKeys = getSelectedImprovementKeys();
+      var customText = improveCustomInputEl ? improveCustomInputEl.value.trim() : "";
+
+      if (selectedKeys.length === 0 && !customText) {
+        setImproveModalStatus("Select an improvement option or describe one.", "error");
         return;
       }
 
+      isImproving = true;
       improveSubmitBtn.disabled = true;
-      improveStatus.textContent = "Applying…";
-      improveStatus.className = "status-line";
+      if (improveCancelBtnEl) improveCancelBtnEl.disabled = true;
+      if (improveModalCloseBtnEl) improveModalCloseBtnEl.disabled = true;
+      var previousSubmitLabel = improveSubmitBtn.textContent;
+      improveSubmitBtn.textContent = "Improving…";
+      setImproveModalStatus("AI is refining your game…", "");
+
+      // md.6: Generate ile Improve arasında race condition olmasın — Improve
+      // sürerken Generate butonu da devre dışı kalır (generate()'in kendisi
+      // de simetrik olarak Improve butonunu devre dışı bırakıyor, bkz. aşağı).
+      if (generateBtn) generateBtn.disabled = true;
 
       try {
+        // md.5: Generate ile AYNI model-selection sistemi — ayrı bir model
+        // state YOK, getSelectedModelId()/getUserApiKey() Generate'in
+        // KULLANDIĞI AYNI fonksiyonlar (bkz. yukarıdaki generate()).
         var res = await fetch("/api/improve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             html: lastResult.html,
             prompt: lastResult.prompt,
-            instruction: instruction,
+            meta: lastResult.meta,
+            improvements: selectedKeys,
+            customText: customText || undefined,
+            model: getSelectedModelId() || undefined,
+            apiKey: getUserApiKey() || undefined,
           }),
         });
         var data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Unknown error");
-
-        if (data.applied) {
-          applyNewResult(data.html, data.validation, lastResult.meta, lastResult.prompt);
-          improveStatus.textContent = "Applied ✔ — new score " + data.validation.score + "/100";
-          improveStatus.className = "status-line success";
-        } else {
-          // Mock mode: no real AI call, but the request round-tripped through the real endpoint.
-          improveStatus.textContent = data.message;
-          improveStatus.className = "status-line";
+        if (!res.ok) {
+          // md.8: teknik hata detayları (OpenRouter/status kodu vb.)
+          // kullanıcıya GÖSTERİLMEZ — mevcut oyun asla dokunulmadı.
+          setImproveModalStatus("Could not improve the game. Your current version is still available.", "error");
+          return;
         }
+
+        if (!data.applied) {
+          // Mock mode: gerçek bir AI çağrısı yapılmadı (ENV/BYOK key yok).
+          // Mevcut oyun zaten hiç değişmedi (server aynı html'i geri döner).
+          setImproveModalStatus(data.message, "");
+          return;
+        }
+
+        // md.10 (Quality Guard): improve edilmiş çıktı da AYNI validation
+        // pipeline'ından geçti (bkz. routes/improve.js -> validatePlayable).
+        // Kritik bir kontrol fail verdiyse (validation.valid === false),
+        // mevcut çalışan oyun KORUNUR — applyNewResult'a HİÇ girilmez, bu
+        // yüzden lastResult/preview olduğu gibi kalır (md.9).
+        if (!data.validation || data.validation.valid === false) {
+          setImproveModalStatus("Could not improve the game. Your current version is still available.", "error");
+          return;
+        }
+
+        // Başarılı newVersion -> currentVersion (md.9): SADECE burada,
+        // geçerliliği doğrulanmış yeni sonuç mevcut oyunun yerini alıyor.
+        // gameType/assetKit/pipeline/gameSpec gibi (improve'un değiştirmediği)
+        // alanlar ÖNCEKİ meta'dan KORUNUYOR — sadece mock/model bu improve
+        // çağrısının GERÇEK sonucunu yansıtacak şekilde güncelleniyor.
+        var updatedMeta = Object.assign({}, lastResult.meta, {
+          mock: data.mock,
+          model: data.model || (lastResult.meta && lastResult.meta.model) || null,
+        });
+        applyNewResult(data.html, data.validation, updatedMeta, lastResult.prompt);
+        // ROUND I (md.16/md.19/md.20): Improve MEVCUT current game'i
+        // günceller (Game A -> Game A), yeni bir Game B OLUŞTURMAZ.
+        syncCurrentGameAfterFixOrImprove();
+        setImproveModalStatus("Improved ✔ — new score " + data.validation.score + "/100", "success");
+        window.setTimeout(closeImproveModal, 700);
       } catch (err) {
-        improveStatus.textContent = "Error: " + err.message;
-        improveStatus.className = "status-line error";
+        // md.8: network/parse hatalarında da aynı, teknik olmayan mesaj —
+        // mevcut oyun dokunulmadan kalır.
+        setImproveModalStatus("Could not improve the game. Your current version is still available.", "error");
       } finally {
+        isImproving = false;
         improveSubmitBtn.disabled = false;
+        improveSubmitBtn.textContent = previousSubmitLabel;
+        if (improveCancelBtnEl) improveCancelBtnEl.disabled = false;
+        if (improveModalCloseBtnEl) improveModalCloseBtnEl.disabled = false;
+        // Generate hâlâ kendi çalışması sürüyorsa (teorik olarak imkânsız —
+        // ikisi karşılıklı olarak birbirini engelliyor) onu ezmemek için
+        // sadece lastResult VARSA geri açılır; generate()'in kendi finally'si
+        // zaten kendi durumunu ayrıca yönetiyor.
+        if (generateBtn) generateBtn.disabled = false;
       }
     });
   }
@@ -1627,7 +2993,12 @@
     }
     outputGamePlaceholder.style.display = "none";
     outputGameFrame.style.display = "block";
-    outputGameFrame.srcdoc = lastResult.html;
+    // Bkz. renderPreview/withResponsiveFitLayer — "Game" sekmesi AYNI
+    // lastResult.html'i gösterir (yeni veri kaynağı değil), bu yüzden AYNI
+    // görüntüleme-katmanı fix'ini alması gerekiyor (bu iframe portre modda
+    // #preview-frame'den bile daha dar — max-width 260px). lastResult.html
+    // kendisi burada da DEĞİŞMİYOR, sadece srcdoc'a yazılan kopya sarılıyor.
+    outputGameFrame.srcdoc = withResponsiveFitLayer(lastResult.html);
   }
 
   var CODE_WINDOW_FILENAMES = { game: "live preview", html: "playable-ad.html", css: "style.css", js: "game.js" };
@@ -1836,6 +3207,10 @@
       var count = ASSET_LIBRARY.filter(function (a) { return a.category === cat; }).length;
       el.textContent = String(count);
     });
+    // ROUND H: "All Assets" sayısı — mevcut per-category sayaçlarla AYNI
+    // dinamik kaynaktan (ASSET_LIBRARY.length), hardcode değil.
+    var allEl = document.getElementById("sidebar-count-all");
+    if (allEl) allEl.textContent = String(ASSET_LIBRARY.length);
   }
 
   function initSidebar() {
@@ -1856,17 +3231,639 @@
       setCollapsed(!appShellEl.classList.contains("sidebar-collapsed"));
     });
 
-    // Mobilde bir kategori linkine tıklayınca (asset-library-panel'e
-    // kaydırdıktan sonra) overlay'i otomatik kapat — masaüstünde etkisiz.
+    // ROUND H — SIDEBAR: her tıklanabilir (disabled olmayan) sidebar linki
+    // artık tıklanınca "active" durumuna geçiyor (görev md.2 "clear active
+    // page indication") — hepsi aynı sayfa içi anchor'lar, gerçek bir router
+    // YOK, bu yüzden en dürüst/basit yaklaşım budur. Asset kategori linkleri
+    // (data-sidebar-asset-link) EK olarak Asset Browser'ın filtresini de
+    // senkron ediyor (bkz. setAssetCategoryFilter) — bidirectional sync
+    // için tek giriş noktası.
     if (sidebarNavEl) {
       sidebarNavEl.addEventListener("click", function (e) {
-        var link = e.target.closest(".sidebar-link[data-sidebar-asset-link]");
-        if (!link) return;
-        if (window.matchMedia && window.matchMedia("(max-width: 980px)").matches) {
+        var link = e.target.closest(".sidebar-link");
+        if (!link || link.getAttribute("aria-disabled") === "true") return;
+        // ROUND I: "My Games" bir sayfa/panele DEĞİL, geçici bir modale
+        // açılıyor — "şu an oradasınız" gibi kalıcı bir active durumu YANLIŞ
+        // olur (modal kapanınca kullanıcı hâlâ Generator'da). Bu yüzden
+        // navigasyon active-state mantığından BİLEREK hariç tutuluyor;
+        // kendi click handler'ı (openMyGamesModal) zaten ayrıca bağlı.
+        if (link.id === "sidebar-my-games-btn") return;
+
+        var allLinks = sidebarNavEl.querySelectorAll(".sidebar-link");
+        for (var i = 0; i < allLinks.length; i++) allLinks[i].classList.remove("active");
+        link.classList.add("active");
+
+        var assetCat = link.getAttribute("data-sidebar-asset-link");
+        if (assetCat) setAssetCategoryFilter(assetCat, { fromSidebar: true });
+
+        if (assetCat && window.matchMedia && window.matchMedia("(max-width: 980px)").matches) {
           setCollapsed(true);
         }
       });
     }
+  }
+
+  // ROUND H — ASSET BROWSER: sidebar kategori linkleri VE #asset-filter-chips
+  // arasındaki tek, paylaşılan senkron noktası. `opts.fromSidebar` sadece
+  // hangi taraftan geldiğini belirtir (şu an ikisi de aynı işi yapıyor, ama
+  // gelecekte ayrışması gerekirse diye bırakıldı) — asıl iş: state'i
+  // güncelle, çiplerin aria-pressed'ini eşitle, sidebar'daki asset linklerinin
+  // active durumunu eşitle, grid'i yeniden çiz.
+  function setAssetCategoryFilter(cat, opts) {
+    assetCategoryFilter = cat;
+
+    if (assetFilterChipsEl) {
+      var chips = assetFilterChipsEl.querySelectorAll(".asset-filter-chip");
+      for (var i = 0; i < chips.length; i++) {
+        chips[i].setAttribute("aria-pressed", chips[i].getAttribute("data-asset-filter") === cat ? "true" : "false");
+      }
+    }
+
+    var assetLinks = document.querySelectorAll(".sidebar-link[data-sidebar-asset-link]");
+    for (var j = 0; j < assetLinks.length; j++) {
+      var isMatch = assetLinks[j].getAttribute("data-sidebar-asset-link") === cat;
+      assetLinks[j].classList.toggle("active", isMatch);
+      // Bu grup dışındaki (Generator/Game Library/My Game/Code) linklerin
+      // active durumunu SADECE sidebar'dan gelen tıklamalarda (yukarıdaki
+      // genel handler zaten hallediyor) etkile — çipten gelen bir değişiklik
+      // sidebar'ın Generator/Game Library gibi diğer linklerine dokunmasın.
+    }
+    if (!opts || !opts.fromSidebar) {
+      // Çipten tetiklendiyse: karşılık gelen asset linkini active yap, diğer
+      // (asset-olmayan) sidebar linklerini pasifleştir — tutarlı tek-aktif-
+      // link davranışı için.
+      var allLinks = document.querySelectorAll(".sidebar-link");
+      for (var k = 0; k < allLinks.length; k++) {
+        if (!allLinks[k].hasAttribute("data-sidebar-asset-link")) allLinks[k].classList.remove("active");
+      }
+    }
+
+    renderAssetLibrary();
+  }
+
+  if (assetFilterChipsEl) {
+    assetFilterChipsEl.addEventListener("click", function (e) {
+      var chip = e.target.closest(".asset-filter-chip[data-asset-filter]");
+      if (!chip) return;
+      setAssetCategoryFilter(chip.getAttribute("data-asset-filter"));
+    });
+  }
+
+  // ================== ROUND I — GAME LIBRARY ==================
+  // SYSTEM REVIEW (görev md.1'in istediği inceleme, kod içinde belgelendi):
+  // Üretilen oyun şu anda SADECE `lastResult` (bu dosyanın üst kısmında,
+  // module-scope bir JS değişkeni — { html, cssExcerpt, jsExcerpt,
+  // validation, meta, prompt }) içinde, sayfa hayatı boyunca bellekte
+  // tutuluyor; sayfa yenilenince (refresh) TAMAMEN kaybolur. Kalıcı
+  // (persistent) HİÇBİR mekanizma yoktu — `window.localStorage` sadece
+  // MODEL_STORAGE_KEY (seçili model id'si, birkaç byte) için kullanılıyordu.
+  // Bu round için: yeni bir database/Supabase/IndexedDB KURULMADI — mevcut,
+  // zaten kullanılan localStorage mekanizması, bu sefer TAM game record'ları
+  // saklamak için genişletildi. Bu, sayfa yenilendiğinde de (tarayıcı
+  // sekmesi kapatılıp açılsa bile) oyunların kaybolmaması için YETERLİ ve
+  // en küçük değişiklik: yeni bir backend endpoint'i, yeni bir npm paketi
+  // veya yeni bir sunucu-taraflı persistence katmanı GEREKMEDİ.
+  //
+  // Game record şekli (md.2) — meta/validation zaten var olan, ZENGİN
+  // objeler olduğu için AYNEN saklanıyor (kopya/uydurma alan YOK); title/
+  // gameType/model/qualityScore SADECE bunlardan türetilen, ucuz arama/
+  // sıralama/kart-render için önbelleğe alınmış kısayollar:
+  // { id, title, titleIsCustom, prompt, html, meta, validation,
+  //   gameType, model, qualityScore, createdAt, updatedAt }
+
+  function loadGameLibrary() {
+    try {
+      var raw = window.localStorage ? window.localStorage.getItem(GAME_LIBRARY_STORAGE_KEY) : null;
+      var parsed = raw ? JSON.parse(raw) : [];
+      gameLibrary = Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      // Bozuk/eski-şekilli bir kayıt VARSA sessizce boş başla — asla çökme.
+      gameLibrary = [];
+    }
+  }
+
+  // GÜVENLİK (görev md.15/md.22, ÇOK ÖNEMLİ): burada YAZILAN game record'ları
+  // SADECE html/prompt/meta/validation/başlık gibi alanlar içerir. API key
+  // (ne ENV'in ne kullanıcının BYOK key'i) hiçbir game record'a YAZILMAZ —
+  // zaten `meta` objesinin kendisi (server'ın /api/generate ve /api/improve
+  // yanıtlarından gelen GERÇEK meta) hiçbir zaman bir key alanı taşımıyor
+  // (bkz. server/routes/generate.js ve improve.js — sadece
+  // mock/model/finishReason/gameType/assetKit/pipeline/gameSpec).
+  function persistGameLibrary() {
+    try {
+      if (!window.localStorage) return;
+      window.localStorage.setItem(GAME_LIBRARY_STORAGE_KEY, JSON.stringify(gameLibrary));
+      gameLibraryPersistFailed = false;
+    } catch (err) {
+      // Kota aşımı (private mode / tarayıcı limiti) — md.15: "büyük bir
+      // persistence mimarisi kurma", bu yüzden burada karmaşık bir
+      // eviction/senkronizasyon sistemi YOK. Bellekteki state (bu sekme
+      // ömrü boyunca) geçerli kalır, kullanıcı Library'yi açtığında dürüst
+      // bir uyarı görür (bkz. renderMyGamesLibrary) — kullanıcının rızası
+      // olmadan sessizce eski bir oyun SİLİNMEZ.
+      gameLibraryPersistFailed = true;
+    }
+  }
+
+  function makeGameId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+    return "game_" + Date.now() + "_" + Math.random().toString(36).slice(2, 10);
+  }
+
+  // md.2/md.19: uydurma metadata YOK — SADECE meta objesindeki gerçek
+  // alanlardan (assetKit.name zaten backend'in ürettiği insan-okunur bir
+  // isim, bkz. server/config/assetKits.js) türetiliyor; hiçbiri
+  // bulunamazsa promptun kendisinden kısaltılmış, dürüst bir başlık.
+  function deriveGameTitle(meta, prompt) {
+    if (meta && meta.assetKit && meta.assetKit.name) return meta.assetKit.name;
+    if (meta && meta.gameType) return prettyAssetName(meta.gameType.replace(/-/g, "_"));
+    var trimmed = (prompt || "").trim();
+    if (trimmed) return trimmed.length > 48 ? trimmed.slice(0, 48).trim() + "…" : trimmed;
+    return "Untitled Game";
+  }
+
+  // md.19: game type bilinmiyorsa TAHMİN ETME — null döner, kart "—" gösterir.
+  function deriveGameTypeLabel(meta) {
+    if (meta && meta.pipeline === "topdown-runtime") return "TopDown";
+    if (meta && meta.gameType) return prettyAssetName(meta.gameType.replace(/-/g, "_"));
+    return null;
+  }
+
+  // md.17: uydurma model adı YOK — meta.mock/meta.model'den, mevcut model
+  // katalog fonksiyonuyla (getModelDisplayName, Generate'in de kullandığı
+  // AYNI fonksiyon) türetiliyor.
+  function deriveGameModelLabel(meta) {
+    if (!meta) return null;
+    if (meta.mock) return "Mock Mode";
+    if (meta.model) return getModelDisplayName(meta.model);
+    return null;
+  }
+
+  function buildGameRecordFromResult(result, existing) {
+    var meta = result.meta || null;
+    var now = new Date().toISOString();
+    return {
+      id: existing ? existing.id : makeGameId(),
+      // Kullanıcı Rename yaptıysa (titleIsCustom) bir sonraki Improve/Fix
+      // with AI güncellemesi bu ismi SESSİZCE geri almaz.
+      title: existing && existing.titleIsCustom ? existing.title : deriveGameTitle(meta, result.prompt),
+      titleIsCustom: existing ? !!existing.titleIsCustom : false,
+      prompt: result.prompt || "",
+      html: result.html || "",
+      meta: meta,
+      validation: result.validation || null,
+      gameType: deriveGameTypeLabel(meta),
+      model: deriveGameModelLabel(meta),
+      qualityScore: result.validation && typeof result.validation.score === "number" ? result.validation.score : null,
+      createdAt: existing ? existing.createdAt : now,
+      updatedAt: now,
+    };
+  }
+
+  function findGameIndexById(id) {
+    for (var i = 0; i < gameLibrary.length; i++) {
+      if (gameLibrary[i].id === id) return i;
+    }
+    return -1;
+  }
+
+  function findGameById(id) {
+    var idx = findGameIndexById(id);
+    return idx === -1 ? null : gameLibrary[idx];
+  }
+
+  function createGameFromResult(result) {
+    var rec = buildGameRecordFromResult(result, null);
+    gameLibrary.push(rec);
+    persistGameLibrary();
+    return rec;
+  }
+
+  function updateGameFromResult(id, result) {
+    var idx = findGameIndexById(id);
+    if (idx === -1) return createGameFromResult(result); // kayıt silinmiş/kaybolmuşsa: yeni oluştur, çökme
+    gameLibrary[idx] = buildGameRecordFromResult(result, gameLibrary[idx]);
+    persistGameLibrary();
+    return gameLibrary[idx];
+  }
+
+  function updateSidebarMyGamesCount() {
+    var el = document.getElementById("sidebar-count-my-games");
+    if (el) el.textContent = String(gameLibrary.length);
+  }
+
+  function isMyGamesModalOpen() {
+    return !!(myGamesModalOverlay && !myGamesModalOverlay.classList.contains("hidden"));
+  }
+
+  // md.3/md.16 — ÇOK ÖNEMLİ AYRIM:
+  //  - Generate HER ZAMAN yeni bir Game record oluşturur (Game A) ve onu
+  //    "current game" yapar — önceden açık bir oyun olsa bile ONU değiştirmez.
+  //  - Fix with AI / Improve with AI ise MEVCUT current game'i GÜNCELLER
+  //    (currentGameId varsa) — yeni bir kopya OLUŞTURMAZ.
+  // İkisi de SADECE validation.valid === true olduğunda kaydeder/günceller
+  // (md.3: "Invalid generated output Game Library'ye kaydedilmemeli").
+  function saveGeneratedGameAsNew() {
+    if (!lastResult || !lastResult.validation || lastResult.validation.valid !== true) return;
+    var rec = createGameFromResult(lastResult);
+    currentGameId = rec.id;
+    updateSidebarMyGamesCount();
+    if (isMyGamesModalOpen()) renderMyGamesLibrary();
+  }
+
+  function syncCurrentGameAfterFixOrImprove() {
+    if (!lastResult || !lastResult.validation || lastResult.validation.valid !== true) return;
+    if (currentGameId && findGameIndexById(currentGameId) !== -1) {
+      updateGameFromResult(currentGameId, lastResult);
+    } else {
+      // Bu oyun daha önce hiç kaydedilmemiş (ör. ilk Generate invalid'di,
+      // Fix/Improve onu şimdi ilk kez geçerli hâle getirdi) — ilk kez
+      // geçerli olduğu bu anda kaydedilir.
+      var rec = createGameFromResult(lastResult);
+      currentGameId = rec.id;
+    }
+    updateSidebarMyGamesCount();
+    if (isMyGamesModalOpen()) renderMyGamesLibrary();
+  }
+
+  // md.13: current game silindiğinde preview boş kalmamalı / crash olmamalı
+  // — sayfa ilk yüklendiğindeki TEMİZ, boş jeneratör durumuna dönülür.
+  function resetGeneratorToEmptyState() {
+    lastResult = null;
+    if (previewFrame) {
+      previewFrame.srcdoc = "";
+      previewFrame.onload = null;
+    }
+    if (previewPlaceholder) {
+      previewPlaceholder.innerHTML = DEFAULT_PREVIEW_PLACEHOLDER_HTML;
+      previewPlaceholder.classList.remove("error");
+      previewPlaceholder.classList.remove("hidden");
+    }
+    if (restartBtn) restartBtn.disabled = true;
+    if (openTabBtn) openTabBtn.disabled = true;
+    if (copyCodeBtn) copyCodeBtn.disabled = true;
+    if (downloadBtn) downloadBtn.disabled = true;
+    if (improveToggleBtn) improveToggleBtn.disabled = true;
+    if (playBtn) playBtn.disabled = true;
+    if (fullscreenBtn) fullscreenBtn.disabled = true;
+    renderQualityCard(null);
+    setBadge(null);
+    updateGameInfoRow(null);
+    updatePreviewMetaBadges(null, null);
+    updateOutputValidationSummary(null);
+    // updateBottomStatusBar(validation) validation null iken erken return
+    // ediyor (mevcut, değiştirilmeyen davranış) — bu yüzden alt status bar'ı
+    // sayfa ilk yüklendiğindeki gerçek varsayılan metinlerine burada elle
+    // geri döndürüyoruz (uydurma bir metin DEĞİL, index.html'deki orijinal
+    // statik metinlerin birebir aynısı).
+    if (statusBarSafeEl) { statusBarSafeEl.textContent = "🛡 Safe & Valid"; statusBarSafeEl.className = "status-bar-item"; }
+    if (statusBarChecksEl) { statusBarChecksEl.textContent = "— Validation Checks"; statusBarChecksEl.className = "status-bar-item"; }
+    if (statusBarExternalEl) { statusBarExternalEl.textContent = "No External Requests"; statusBarExternalEl.className = "status-bar-item"; }
+    if (statusBarLoopEl) { statusBarLoopEl.textContent = "No Infinite Loop Risk"; statusBarLoopEl.className = "status-bar-item"; }
+    if (statusBarAssetEl) { statusBarAssetEl.textContent = "Asset Verified"; statusBarAssetEl.className = "status-bar-item"; }
+    renderActiveTab();
+    renderAiSelectedAssetsFromPrompt();
+    promptInput.value = "";
+    updateCharCounter();
+    setStatus("", null);
+  }
+
+  // md.9/md.17 — Open: seçilen oyun current game olur, preview/prompt/
+  // metadata/quality score/model state (best-effort) senkron edilir. Sayfa
+  // refresh GEREKMEZ.
+  function openGameFromLibrary(id) {
+    var game = findGameById(id);
+    if (!game) return;
+    currentGameId = game.id;
+    promptInput.value = game.prompt || "";
+    updateCharCounter();
+    applyNewResult(game.html, game.validation, game.meta, game.prompt);
+    // md.17: model state mümkün olduğunca senkron — sadece bu oyunun GERÇEKTEN
+    // kullandığı model biliniyorsa (mock ise zaten meta.model null'dır,
+    // selectModel çağrılmaz, mevcut seçim olduğu gibi kalır).
+    if (game.meta && game.meta.model) selectModel(game.meta.model);
+    closeMyGamesModal();
+    setStatus("Opened \"" + (game.title || "Untitled Game") + "\".", "success");
+  }
+
+  function duplicateGame(id) {
+    var game = findGameById(id);
+    if (!game) return;
+    var now = new Date().toISOString();
+    var copy = Object.assign({}, game, {
+      id: makeGameId(),
+      title: (game.title || "Untitled Game") + " Copy",
+      titleIsCustom: true, // md.11: kopyanın adı sabit kalsın, sonraki bir Improve onu geri almasın
+      createdAt: now,
+      updatedAt: now,
+    });
+    gameLibrary.push(copy);
+    persistGameLibrary();
+    renderMyGamesLibrary();
+    updateSidebarMyGamesCount();
+  }
+
+  function openRenameModal(id) {
+    var game = findGameById(id);
+    if (!game || !myGamesRenameModalOverlay || !myGamesRenameInput) return;
+    myGamesRenameTargetId = id;
+    myGamesRenameInput.value = game.title || "";
+    if (myGamesRenameStatusEl) myGamesRenameStatusEl.textContent = "";
+    myGamesRenameModalOverlay.classList.remove("hidden");
+    myGamesRenameInput.focus();
+    myGamesRenameInput.select();
+  }
+
+  function closeRenameModal() {
+    if (myGamesRenameModalOverlay) myGamesRenameModalOverlay.classList.add("hidden");
+    myGamesRenameTargetId = null;
+  }
+
+  function saveRename() {
+    if (!myGamesRenameTargetId || !myGamesRenameInput) return;
+    var value = myGamesRenameInput.value.trim();
+    if (!value) {
+      if (myGamesRenameStatusEl) myGamesRenameStatusEl.textContent = "Name cannot be empty.";
+      return;
+    }
+    if (value.length > 80) value = value.slice(0, 80).trim();
+    var idx = findGameIndexById(myGamesRenameTargetId);
+    if (idx !== -1) {
+      gameLibrary[idx].title = value;
+      gameLibrary[idx].titleIsCustom = true;
+      persistGameLibrary();
+      renderMyGamesLibrary();
+    }
+    closeRenameModal();
+  }
+
+  function openDeleteModal(id) {
+    var game = findGameById(id);
+    if (!game || !myGamesDeleteModalOverlay) return;
+    myGamesDeleteTargetId = id;
+    if (myGamesDeleteMessageEl) {
+      myGamesDeleteMessageEl.textContent = 'Delete "' + (game.title || "Untitled Game") + '"? This action cannot be undone.';
+    }
+    myGamesDeleteModalOverlay.classList.remove("hidden");
+    if (myGamesDeleteConfirmBtn) myGamesDeleteConfirmBtn.focus();
+  }
+
+  function closeDeleteModal() {
+    if (myGamesDeleteModalOverlay) myGamesDeleteModalOverlay.classList.add("hidden");
+    myGamesDeleteTargetId = null;
+  }
+
+  function confirmDelete() {
+    var id = myGamesDeleteTargetId;
+    if (!id) return;
+    gameLibrary = gameLibrary.filter(function (g) { return g.id !== id; });
+    persistGameLibrary();
+    if (currentGameId === id) {
+      // md.13: silinen oyun current game'se, Generator temiz bir boş duruma
+      // döner — preview asla boş/kırık bırakılmaz, uygulama çökmez.
+      currentGameId = null;
+      resetGeneratorToEmptyState();
+    }
+    renderMyGamesLibrary();
+    updateSidebarMyGamesCount();
+    closeDeleteModal();
+  }
+
+  // md.7: title/prompt/gameType/model üzerinden, case-insensitive arama.
+  function myGamesMatchesQuery(game, query) {
+    if (!query) return true;
+    var haystack = [
+      game.title || "",
+      game.prompt || "",
+      game.gameType || "",
+      game.model || "",
+    ].join(" ").toLowerCase();
+    return haystack.indexOf(query) !== -1;
+  }
+
+  function myGameCardIcon(game) {
+    var type = (game.gameType || "").toLowerCase();
+    if (type.indexOf("topdown") !== -1) return "▦";
+    if (type.indexOf("shooter") !== -1) return "✦";
+    if (type.indexOf("runner") !== -1) return "▲";
+    if (type.indexOf("puzzle") !== -1) return "◆";
+    if (type.indexOf("platform") !== -1) return "▣";
+    return "✦";
+  }
+
+  function myGameCardHtml(game) {
+    var isCurrent = game.id === currentGameId;
+    var scoreHtml =
+      typeof game.qualityScore === "number"
+        ? '<span class="' + (game.qualityScore >= 70 ? "quality-good" : game.qualityScore < 40 ? "quality-bad" : "") + '">Quality ' + game.qualityScore + "/100</span>"
+        : "<span>Quality —</span>";
+    var dateLabel = "";
+    try {
+      dateLabel = new Date(game.updatedAt || game.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+    } catch (err) {
+      dateLabel = "";
+    }
+    return (
+      '<div class="my-games-card' + (isCurrent ? " is-current" : "") + '" data-game-id="' + escapeAttr(game.id) + '">' +
+      '<div class="my-games-thumb" aria-hidden="true">' + myGameCardIcon(game) + "</div>" +
+      '<div class="my-games-card-body">' +
+      '<div class="my-games-card-title" title="' + escapeAttr(game.title || "Untitled Game") + '">' + escapeHtml(game.title || "Untitled Game") + "</div>" +
+      '<div class="my-games-card-meta">' +
+      "<span>" + escapeHtml(game.gameType || "—") + "</span>" +
+      scoreHtml +
+      "</div>" +
+      '<div class="my-games-card-date">' + escapeHtml(dateLabel) + (game.model ? " · " + escapeHtml(game.model) : "") + "</div>" +
+      '<div class="my-games-card-actions">' +
+      '<button type="button" class="my-games-open-btn" data-my-games-open="' + escapeAttr(game.id) + '">Open</button>' +
+      '<span class="my-games-menu-wrap">' +
+      '<button type="button" class="my-games-menu-btn" data-my-games-menu-toggle="' + escapeAttr(game.id) + '" aria-haspopup="true" aria-expanded="' + (myGamesOpenMenuId === game.id ? "true" : "false") + '" aria-label="More actions for ' + escapeAttr(game.title || "Untitled Game") + '">⋯</button>' +
+      '<div class="my-games-menu' + (myGamesOpenMenuId === game.id ? "" : " hidden") + '" role="menu">' +
+      '<button type="button" role="menuitem" data-my-games-open="' + escapeAttr(game.id) + '">Open</button>' +
+      '<button type="button" role="menuitem" data-my-games-duplicate="' + escapeAttr(game.id) + '">Duplicate</button>' +
+      '<button type="button" role="menuitem" data-my-games-rename="' + escapeAttr(game.id) + '">Rename</button>' +
+      '<button type="button" role="menuitem" class="is-danger" data-my-games-delete="' + escapeAttr(game.id) + '">Delete</button>' +
+      "</div>" +
+      "</span>" +
+      "</div>" +
+      "</div>" +
+      "</div>"
+    );
+  }
+
+  function renderMyGamesLibrary() {
+    if (!myGamesGridEl) return;
+    var query = myGamesSearchQuery;
+    var filtered = gameLibrary.filter(function (g) { return myGamesMatchesQuery(g, query); });
+    filtered.sort(function (a, b) {
+      var aT = new Date(a.updatedAt || a.createdAt).getTime();
+      var bT = new Date(b.updatedAt || b.createdAt).getTime();
+      return myGamesSortOrder === "oldest" ? aT - bT : bT - aT;
+    });
+
+    var noticeHtml = gameLibraryPersistFailed
+      ? '<p class="my-games-empty" style="grid-column:1/-1;padding:10px 4px;color:var(--danger);text-align:left;">⚠ Your browser storage is full — recent changes may not be saved permanently. Consider deleting some games.</p>'
+      : "";
+
+    if (gameLibrary.length === 0) {
+      myGamesGridEl.innerHTML =
+        noticeHtml +
+        '<div class="my-games-empty">' +
+        "<p>You haven't created any games yet.<br />Create your first playable game with AI.</p>" +
+        '<button type="button" class="byok-btn byok-btn-primary" id="my-games-empty-create-btn">Create Game</button>' +
+        "</div>";
+      return;
+    }
+
+    if (filtered.length === 0) {
+      myGamesGridEl.innerHTML = noticeHtml + '<div class="my-games-empty"><p>No games found.</p></div>';
+      return;
+    }
+
+    myGamesGridEl.innerHTML = noticeHtml + filtered.map(myGameCardHtml).join("");
+  }
+
+  function openMyGamesModal() {
+    if (!myGamesModalOverlay) return;
+    myGamesOpenMenuId = null;
+    renderMyGamesLibrary();
+    myGamesModalOverlay.classList.remove("hidden");
+    if (sidebarMyGamesBtn) sidebarMyGamesBtn.setAttribute("aria-expanded", "true");
+    if (myGamesSearchInput) myGamesSearchInput.focus();
+  }
+
+  function closeMyGamesModal() {
+    if (!myGamesModalOverlay) return;
+    myGamesModalOverlay.classList.add("hidden");
+    myGamesOpenMenuId = null;
+    if (sidebarMyGamesBtn) sidebarMyGamesBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function initMyGamesLibrary() {
+    if (sidebarMyGamesBtn) sidebarMyGamesBtn.addEventListener("click", openMyGamesModal);
+    if (myGamesModalCloseBtn) myGamesModalCloseBtn.addEventListener("click", closeMyGamesModal);
+    if (myGamesModalOverlay) {
+      myGamesModalOverlay.addEventListener("click", function (e) {
+        if (e.target === myGamesModalOverlay) closeMyGamesModal();
+      });
+    }
+
+    if (myGamesSearchInput) {
+      myGamesSearchInput.addEventListener("input", function () {
+        myGamesSearchQuery = myGamesSearchInput.value.trim().toLowerCase();
+        renderMyGamesLibrary();
+      });
+    }
+
+    if (myGamesSortChipsEl) {
+      myGamesSortChipsEl.addEventListener("click", function (e) {
+        var chip = e.target.closest(".asset-filter-chip[data-my-games-sort]");
+        if (!chip) return;
+        myGamesSortOrder = chip.getAttribute("data-my-games-sort");
+        var chips = myGamesSortChipsEl.querySelectorAll(".asset-filter-chip");
+        for (var i = 0; i < chips.length; i++) {
+          chips[i].setAttribute("aria-pressed", chips[i] === chip ? "true" : "false");
+        }
+        renderMyGamesLibrary();
+      });
+    }
+
+    // Tek bir delege edilmiş click handler — kart/menü/aksiyon butonlarının
+    // hepsi burada, grid her renderMyGamesLibrary() çağrısında YENİDEN
+    // oluşturulduğu için event listener'ları tek tek yeniden bağlamaya
+    // GEREK YOK (delegasyon deseni, mevcut Asset Browser ile AYNI).
+    if (myGamesGridEl) {
+      myGamesGridEl.addEventListener("click", function (e) {
+        var createBtn = e.target.closest("#my-games-empty-create-btn");
+        if (createBtn) {
+          closeMyGamesModal();
+          promptInput.focus();
+          return;
+        }
+
+        var menuToggle = e.target.closest("[data-my-games-menu-toggle]");
+        if (menuToggle) {
+          var id = menuToggle.getAttribute("data-my-games-menu-toggle");
+          myGamesOpenMenuId = myGamesOpenMenuId === id ? null : id;
+          renderMyGamesLibrary();
+          return;
+        }
+
+        var openBtn = e.target.closest("[data-my-games-open]");
+        if (openBtn) {
+          openGameFromLibrary(openBtn.getAttribute("data-my-games-open"));
+          return;
+        }
+        var dupBtn = e.target.closest("[data-my-games-duplicate]");
+        if (dupBtn) {
+          duplicateGame(dupBtn.getAttribute("data-my-games-duplicate"));
+          return;
+        }
+        var renameBtn = e.target.closest("[data-my-games-rename]");
+        if (renameBtn) {
+          myGamesOpenMenuId = null;
+          renderMyGamesLibrary();
+          openRenameModal(renameBtn.getAttribute("data-my-games-rename"));
+          return;
+        }
+        var deleteBtn = e.target.closest("[data-my-games-delete]");
+        if (deleteBtn) {
+          myGamesOpenMenuId = null;
+          renderMyGamesLibrary();
+          openDeleteModal(deleteBtn.getAttribute("data-my-games-delete"));
+          return;
+        }
+      });
+    }
+
+    if (myGamesRenameSaveBtn) myGamesRenameSaveBtn.addEventListener("click", saveRename);
+    if (myGamesRenameCancelBtn) myGamesRenameCancelBtn.addEventListener("click", closeRenameModal);
+    if (myGamesRenameCloseBtn) myGamesRenameCloseBtn.addEventListener("click", closeRenameModal);
+    if (myGamesRenameModalOverlay) {
+      myGamesRenameModalOverlay.addEventListener("click", function (e) {
+        if (e.target === myGamesRenameModalOverlay) closeRenameModal();
+      });
+    }
+    if (myGamesRenameInput) {
+      myGamesRenameInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") saveRename();
+      });
+    }
+
+    if (myGamesDeleteConfirmBtn) myGamesDeleteConfirmBtn.addEventListener("click", confirmDelete);
+    if (myGamesDeleteCancelBtn) myGamesDeleteCancelBtn.addEventListener("click", closeDeleteModal);
+    if (myGamesDeleteCloseBtn) myGamesDeleteCloseBtn.addEventListener("click", closeDeleteModal);
+    if (myGamesDeleteModalOverlay) {
+      myGamesDeleteModalOverlay.addEventListener("click", function (e) {
+        if (e.target === myGamesDeleteModalOverlay) closeDeleteModal();
+      });
+    }
+
+    // Menü açıkken dışarı tıklayınca kapansın (delegasyon: herhangi bir
+    // menu-wrap DIŞINA tıklama).
+    document.addEventListener("click", function (e) {
+      if (myGamesOpenMenuId && !e.target.closest(".my-games-menu-wrap")) {
+        myGamesOpenMenuId = null;
+        renderMyGamesLibrary();
+      }
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if (myGamesDeleteModalOverlay && !myGamesDeleteModalOverlay.classList.contains("hidden")) {
+        closeDeleteModal();
+        return;
+      }
+      if (myGamesRenameModalOverlay && !myGamesRenameModalOverlay.classList.contains("hidden")) {
+        closeRenameModal();
+        return;
+      }
+      if (myGamesOpenMenuId) {
+        myGamesOpenMenuId = null;
+        renderMyGamesLibrary();
+        return;
+      }
+      if (isMyGamesModalOpen()) closeMyGamesModal();
+    });
   }
 
   // ================== init ==================
@@ -1899,4 +3896,19 @@
   // /api/assets'ten gerçek veriyi çekip geldiğinde aynı fonksiyonları TEKRAR
   // çalıştırarak gerçek 95 assetlik veriyle değiştirir.
   loadAssetLibrary();
+  // AI MODEL SELECTOR round — GET /api/models'i çeker, dropdown'ı doldurur
+  // ve tıklama/klavye/dış-tık davranışını bağlar. Başarısız olursa mevcut
+  // "…" rozeti aynen görünmeye devam eder (bkz. initModelSelector içindeki
+  // .catch).
+  initModelSelector();
+  // CUSTOM ASSET LIBRARY round — Upload butonunun click/change handler'larını
+  // bağlar (bkz. initAssetLibraryUpload). GET /api/assets zaten yukarıdaki
+  // loadAssetLibrary() ile çekiliyor — customLibraries alanı ORADA işlenir.
+  initAssetLibraryUpload();
+  // ROUND I — GAME LIBRARY: sayfa yüklenirken (varsa) localStorage'daki
+  // kayıtlı oyunları oku, sidebar sayacını gerçek sayıyla doldur ve My Games
+  // modal'ının event handler'larını bağla.
+  loadGameLibrary();
+  updateSidebarMyGamesCount();
+  initMyGamesLibrary();
 })();

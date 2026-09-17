@@ -1,3 +1,9 @@
+# CUSTOM ASSET LIBRARY round — şirketlerin yüklediği asset ZIP'lerinden
+# çıkarılan dosyalar + registry.json burada oluşur (bkz.
+# server/services/customAssetLibrary.js). Bunlar kullanıcı tarafından
+# yüklenen, dev/runtime'a özgü veriler — repoya commit edilmemeli.
+public/uploads/
+
 node_modules/
 .env
 *.log

@@ -56,10 +56,31 @@
           <span class="sidebar-link-icon">🎮</span><span class="sidebar-link-text">Game Library</span>
         </a>
 
+        <!-- ROUND I — GAME LIBRARY: "Game Library" (üstteki) mevcut, gerçek
+             bir özellik olan hazır ŞABLON galerisi ("Use This Template") —
+             HİÇ değişmedi/dokunulmadı. Bu ise TAMAMEN AYRI, YENİ bir şey:
+             kullanıcının KENDİ ürettiği oyunların gerçek listesi. İkisini
+             karıştırmamak için ayrı bir "Library" bölümü + "My Games" adı
+             kullanıldı (bkz. app.js openMyGamesModal). Bir <a href> DEĞİL,
+             bir <button> — çünkü bir sayfa içi panele kaydırmıyor, gerçek
+             bir modal/ekran açıyor (bkz. #my-games-modal-overlay). -->
+        <div class="sidebar-section-label"><span class="label-text">Library</span><span class="label-line" aria-hidden="true"></span></div>
+        <button class="sidebar-link" type="button" id="sidebar-my-games-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="my-games-modal-overlay">
+          <span class="sidebar-link-icon">🎮</span><span class="sidebar-link-text">My Games</span>
+          <span class="sidebar-link-count" id="sidebar-count-my-games">—</span>
+        </button>
+
         <!-- Kategori linkleri gerçek: tıklanınca sayfadaki mevcut Asset
              Library'e kaydırır (bkz. app.js). Sayılar ASSET_LIBRARY'den
-             (tek doğruluk kaynağı) gelir, burada hardcode edilmedi. -->
+             (tek doğruluk kaynağı) gelir, burada hardcode edilmedi.
+             ROUND H: "All" linki eklendi — Asset Browser'daki kategori
+             filtresini sıfırlayıp (bkz. app.js assetCategoryFilter) TÜM
+             kategorileri gösterir; sayısı da gerçek ASSET_LIBRARY.length. -->
         <div class="sidebar-section-label"><span class="label-text">Assets</span><span class="label-line" aria-hidden="true"></span></div>
+        <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="all">
+          <span class="sidebar-link-icon">▦</span><span class="sidebar-link-text">All Assets</span>
+          <span class="sidebar-link-count" id="sidebar-count-all">—</span>
+        </a>
         <a class="sidebar-link" href="#asset-library-panel" data-sidebar-asset-link="character">
           <span class="sidebar-link-icon">🧑</span><span class="sidebar-link-text">Characters</span>
           <span class="sidebar-link-count" id="sidebar-count-character">—</span>
@@ -89,11 +110,15 @@
           <span class="sidebar-link-count" id="sidebar-count-ui">—</span>
         </a>
 
-        <!-- OUTPUT — gerçek, çalışan bağlantılar: sayfa içi ilgili panele
-             kaydırır (native anchor scroll, ekstra JS gerekmiyor). Uydurma
-             bir "route" değil, aynı sayfadaki gerçek Live Preview / Generated
-             Output bölümlerine kısayol. -->
-        <div class="sidebar-section-label"><span class="label-text">Output</span><span class="label-line" aria-hidden="true"></span></div>
+        <!-- CURRENT GAME (eski adıyla "Output") — gerçek, çalışan
+             bağlantılar: sayfa içi ilgili panele kaydırır (native anchor
+             scroll, ekstra JS gerekmiyor). Uydurma bir "route" değil, aynı
+             sayfadaki gerçek Live Preview / Generated Output bölümlerine
+             kısayol.
+             ROUND H: bölüm etiketi "Current Game" olarak yeniden adlandırıldı
+             (Selin'in önerdiği IA'ya uygun) — linklerin kendisi/href/id hiç
+             değişmedi, sadece grup başlığı daha açık. -->
+        <div class="sidebar-section-label"><span class="label-text">Current Game</span><span class="label-line" aria-hidden="true"></span></div>
         <a class="sidebar-link" href="#live-preview-panel">
           <span class="sidebar-link-icon">▶</span><span class="sidebar-link-text">My Game</span>
         </a>
@@ -101,13 +126,11 @@
           <span class="sidebar-link-icon">&lt;/&gt;</span><span class="sidebar-link-text">Code</span>
         </a>
 
-        <div class="sidebar-section-label"><span class="label-text">Tools</span><span class="label-line" aria-hidden="true"></span></div>
-        <a class="sidebar-link" href="#" tabindex="-1" aria-disabled="true" title="Coming soon">
-          <span class="sidebar-link-icon">🔍</span><span class="sidebar-link-text">Asset Inspector</span><span class="soon-tag">Soon</span>
-        </a>
-        <a class="sidebar-link" href="#" tabindex="-1" aria-disabled="true" title="Coming soon">
-          <span class="sidebar-link-icon">⚙</span><span class="sidebar-link-text">Game Settings</span><span class="soon-tag">Soon</span>
-        </a>
+        <!-- ROUND H: "Tools" bölümü (Asset Inspector / Game Settings, ikisi
+             de hiçbir zaman çalışan bir özelliğe sahip olmadı) TAMAMEN
+             kaldırıldı — kullanıcıya çalışmayan bir özelliği aktif
+             navigation öğesi gibi göstermemek için. Bu iki özelliğin arkasına
+             gerçek bir işlev eklenmeden navigasyona geri dönmeyecekler. -->
       </nav>
 
       <!-- ROUND 11: orman/ay siluetinin yerini alan tamamen geometrik
@@ -140,10 +163,212 @@
           </div>
         </div>
         <div class="page-header-right">
-          <span class="badge" id="mode-badge">…</span>
+          <!-- AI MODEL SELECTOR round — eski statik <span class="badge">
+               burada bir <button>'e dönüştürüldü: mode-badge'in KENDİSİ
+               (id/class geçişleri) hiç değişmedi (bkz. app.js setBadge),
+               SADECE metin artık bir alt span'e (mode-badge-text) taşındı
+               ki caret ikonu textContent atamalarıyla silinmesin. Tıklanınca
+               server/config/models.js'ten (GET /api/models) gelen GERÇEK
+               model listesini gösteren bir dropdown açılır (bkz. app.js
+               initModelSelector). Seçim değişmeden önceki HİÇBİR görsel
+               durum (…/MOCK MODE/LIVE — <model>) değişmedi. -->
+          <div class="model-selector" id="model-selector">
+            <!-- MODEL SELECTOR DISCOVERABILITY round — kapalı seçici artık
+                 SADECE "…" yazan çıplak bir rozet değil: küçük bir AI/sparkle
+                 ikonu ("✦", brand.js'teki sparkle glifiyle AYNI motif —
+                 yeni bir ikon kütüphanesi eklenmedi, mevcut unicode-glif
+                 konvansiyonu — bkz. sidebar-link-icon'lar) + sabit "AI Model"
+                 etiketi + seçili modelin GERÇEK adı (mode-badge-text, id
+                 DEĞİŞMEDİ) + caret, hep aynı satırda (rozet YÜKSEKLİĞİ hiç
+                 büyümedi, header yüksekliği #help-btn ile aynı kalmaya devam
+                 ediyor). "AI Model" etiketi sadece ÇOK dar ekranlarda
+                 (≤480px) gizlenir, ikon+model adı+caret HER ZAMAN kalır —
+                 hiçbir genişlikte YALNIZCA "…" görünmez (bkz. style.css).
+                 Buton'un id/class geçişleri (badge/badge mock/badge live) ve
+                 mode-badge-text id'si app.js'teki setBadge/setModeBadgeText
+                 ile BİREBİR AYNI kaldı — sadece İÇİNE yeni kardeş span'ler
+                 eklendi. -->
+            <button
+              type="button"
+              class="badge"
+              id="mode-badge"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="model-dropdown"
+            >
+              <span class="model-badge-icon" aria-hidden="true">✦</span>
+              <span class="model-badge-label">AI Model</span>
+              <span id="mode-badge-text">…</span>
+              <span class="model-selector-caret" aria-hidden="true">▾</span>
+            </button>
+            <!-- MODEL SELECTOR UI/UX POLISH round — dropdown üç sabit
+                 bölgeye ayrıldı: (1) sticky üst (başlık+arama, hiç
+                 kaymaz), (2) ortada SADECE model listesinin scroll olduğu
+                 bir gövde (görev md.1: sabit max-height + kendi içinde
+                 scroll — sayfa asla uzamaz), (3) BYOK satırı için ayrı,
+                 scroll alanının DIŞINDA sabit bir alt bölge (görev md.6:
+                 "model listesinin içinde kaybolmamalı"). Fonksiyonel
+                 hiçbir şey değişmedi — SADECE yapı/görsel, id'ler aynı
+                 kaldı (bkz. app.js). -->
+            <div class="model-dropdown hidden" id="model-dropdown" role="listbox" aria-label="AI Model">
+              <div class="model-dropdown-sticky-top">
+                <!-- DISCOVERABILITY round — küçük bir alt başlık eklendi
+                     ("Choose the AI model for your generation"); .model-
+                     dropdown-label'ın KENDİSİ (id yok, sadece class) ve
+                     altındaki search/scroll/grup/BYOK yapısı BİREBİR aynı
+                     kaldı — sadece üstüne bir açıklama satırı eklendi. -->
+                <div class="model-dropdown-titlebar">
+                  <div class="model-dropdown-label">AI Model</div>
+                  <div class="model-dropdown-subtitle">Choose the AI model for your generation</div>
+                </div>
+                <!-- OPENROUTER MODEL CATALOG + BYOK round — arama kutusu:
+                     sadece istemci tarafında AVAILABLE_MODELS'i filtreler
+                     (bkz. app.js getFilteredModels/renderModelDropdown),
+                     hiçbir ağ isteği tetiklemez. -->
+                <div class="model-dropdown-search-wrap">
+                  <input
+                    type="text"
+                    id="model-search-input"
+                    class="model-dropdown-search"
+                    placeholder="Search models…"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="Search models"
+                  />
+                </div>
+              </div>
+              <div class="model-dropdown-scroll" id="model-dropdown-scroll">
+                <div class="model-dropdown-list" id="model-dropdown-list">
+                  <!-- app.js -> renderModelDropdown() ile GET /api/models'ten
+                       gelen gerçek modellerle (gruplu/düz) dolduruluyor. -->
+                </div>
+              </div>
+              <!-- BYOK: kullanıcı kendi OpenRouter key'ini girebilsin diye
+                   küçük bir popover/modal açan satır (bkz. #byok-modal-backdrop
+                   aşağıda, dropdown'ın DIŞINDA — position:fixed olduğu için
+                   dropdown'ı asla taşırmaz). BİLEREK model listesinden
+                   AYRI/sabit bir alt bölge — scroll edilse bile hep görünür. -->
+              <div class="model-dropdown-byok-row">
+                <button type="button" class="model-byok-btn" id="model-byok-btn">
+                  <span class="model-option-check" aria-hidden="true">🔑</span>
+                  <span id="model-byok-btn-label">Use your own API key</span>
+                </button>
+              </div>
+            </div>
+          </div>
           <button class="icon-btn" id="help-btn" type="button" title="Help">?</button>
         </div>
       </header>
+
+      <!-- OPENROUTER MODEL CATALOG + BYOK round — BYOK popover/modal.
+           BİLEREK .model-dropdown'ın DIŞINDA, page-header'ın kardeşi olarak
+           duruyor: position:fixed + inset:0 ile TÜM viewport'u kaplayan bir
+           backdrop kullanıyor, bu yüzden nerede tanımlı olduğu görsel
+           konumunu etkilemiyor ve dropdown'ın 200px genişliğine SIKIŞMIYOR
+           (görev md.4/md.12: "popover dropdown'ı taşırmasın"). Key input'u
+           type="password" + autocomplete="off" (görev md.4) — hiçbir zaman
+           düz metin olarak gösterilmiyor. -->
+      <div class="byok-modal-backdrop hidden" id="byok-modal-backdrop">
+        <div class="byok-modal" role="dialog" aria-modal="true" aria-labelledby="byok-modal-title">
+          <div class="byok-modal-title" id="byok-modal-title">OpenRouter API Key</div>
+          <input
+            type="password"
+            id="byok-key-input"
+            class="byok-key-input"
+            placeholder="sk-or-..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <div class="byok-modal-note">Your key is used for this session only. It is never saved to disk or sent anywhere except OpenRouter.</div>
+          <div class="byok-modal-status" id="byok-modal-status" aria-live="polite"></div>
+          <div class="byok-modal-actions">
+            <button type="button" class="byok-btn byok-btn-secondary" id="byok-cancel-btn">Cancel</button>
+            <button type="button" class="byok-btn byok-btn-primary" id="byok-use-btn">Use API Key</button>
+          </div>
+          <button type="button" class="byok-clear-link hidden" id="byok-clear-btn">Clear key</button>
+        </div>
+      </div>
+
+      <!-- ROUND G — IMPROVE WITH AI modal. .byok-modal-backdrop/.asset-modal-
+           overlay İLE AYNI position:fixed + inset:0, TÜM viewport'a göre
+           ortalanan bağımsız katman deseni (görev md.12/13: 390px'de
+           taşmama). #improve-toggle-btn tıklanınca açılır (bkz. app.js).
+           Seçenekler ÇOKLU seçilebilir (aria-pressed toggle) + opsiyonel
+           custom textarea; "Improve Game" isteği mevcut Generate ile AYNI
+           model-selection sistemini (selected model + BYOK/ENV key) kullanır
+           — burada AYRI bir model state YOK (bkz. app.js handleImproveSubmit). -->
+      <div class="improve-modal-backdrop hidden" id="improve-modal-backdrop">
+        <div class="improve-modal" role="dialog" aria-modal="true" aria-labelledby="improve-modal-title">
+          <div class="improve-modal-header">
+            <div class="improve-modal-title" id="improve-modal-title">✦ Improve with AI</div>
+            <button type="button" class="improve-modal-close" id="improve-modal-close-btn" aria-label="Close">✕</button>
+          </div>
+          <p class="improve-modal-subtitle">What would you like to improve?</p>
+
+          <div class="improve-options" id="improve-options" role="group" aria-label="Improvement options">
+            <button type="button" class="improve-option" data-improve-key="visual" aria-pressed="false">
+              <span class="improve-option-icon" aria-hidden="true">🎨</span>
+              <span class="improve-option-text">
+                <span class="improve-option-title">Visual Quality</span>
+                <span class="improve-option-desc">Make the game more polished and visually appealing.</span>
+              </span>
+              <span class="improve-option-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="improve-option" data-improve-key="gameplay" aria-pressed="false">
+              <span class="improve-option-icon" aria-hidden="true">🎮</span>
+              <span class="improve-option-text">
+                <span class="improve-option-title">Gameplay</span>
+                <span class="improve-option-desc">Improve controls, interactions and game feel.</span>
+              </span>
+              <span class="improve-option-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="improve-option" data-improve-key="fun" aria-pressed="false">
+              <span class="improve-option-icon" aria-hidden="true">⚡</span>
+              <span class="improve-option-text">
+                <span class="improve-option-title">Make It More Fun</span>
+                <span class="improve-option-desc">Add more engaging interactions, feedback and variety.</span>
+              </span>
+              <span class="improve-option-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="improve-option" data-improve-key="challenge" aria-pressed="false">
+              <span class="improve-option-icon" aria-hidden="true">🔥</span>
+              <span class="improve-option-text">
+                <span class="improve-option-title">Increase Challenge</span>
+                <span class="improve-option-desc">Make the gameplay more challenging while keeping it fair.</span>
+              </span>
+              <span class="improve-option-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="improve-option" data-improve-key="effects" aria-pressed="false">
+              <span class="improve-option-icon" aria-hidden="true">✨</span>
+              <span class="improve-option-text">
+                <span class="improve-option-title">Add Effects</span>
+                <span class="improve-option-desc">Add visual feedback, particles, animations and polish.</span>
+              </span>
+              <span class="improve-option-check" aria-hidden="true">✓</span>
+            </button>
+            <button type="button" class="improve-option" data-improve-key="content" aria-pressed="false">
+              <span class="improve-option-icon" aria-hidden="true">🗺️</span>
+              <span class="improve-option-text">
+                <span class="improve-option-title">Add More Content</span>
+                <span class="improve-option-desc">Add more levels, obstacles, collectibles or gameplay variety where appropriate.</span>
+              </span>
+              <span class="improve-option-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+
+          <div class="improve-custom">
+            <label class="improve-custom-label" for="improve-custom-input">✏️ Custom Improvement</label>
+            <textarea id="improve-custom-input" class="improve-custom-input" maxlength="500" placeholder="Make the game faster and add more obstacles..."></textarea>
+          </div>
+
+          <p class="improve-modal-status" id="improve-modal-status" aria-live="polite"></p>
+
+          <div class="improve-modal-actions">
+            <button type="button" class="byok-btn byok-btn-secondary" id="improve-cancel-btn">Cancel</button>
+            <button type="button" class="byok-btn byok-btn-primary" id="improve-submit-btn">Improve Game</button>
+          </div>
+        </div>
+      </div>
 
       <ol class="workflow-steps" aria-label="How it works">
         <li class="workflow-step">
@@ -395,10 +620,15 @@
       <!-- AI Validation Pipeline + Quality Score (gerçek skor). quality-ring,
            SADECE aynı gerçek validation.score değerinin görsel bir
            conic-gradient halkası — yeni/uydurma bir veri değil. PHASE 4
-           polish: 16 check pill'i artık varsayılan gizli — tek satır gerçek
-           özet (ör. "14/16 checks passed") ön planda, tam liste "Details"
-           ile açılıyor (bkz. app.js quality-details-toggle). Veri DEĞİŞMEDİ,
-           sadece varsayılan yoğunluk azaltıldı. -->
+           polish: check pill'leri (#quality-checks) varsayılan gizli, tek
+           satır gerçek özet (ör. "14/16 checks passed") ön planda. ROUND J —
+           QUALITY SCORE DETAILS: "Details" butonu (#quality-details-toggle,
+           AYNI id/element, davranışı zenginleşti) artık bu pill'leri inline
+           açıp kapamıyor — bunun yerine kategorilere ayrılmış, gerçek
+           validation verisinden üretilen "Quality Score Details" modalını
+           açıyor (bkz. #quality-details-modal-overlay, sayfanın altında).
+           #quality-checks HÂLÂ (değişmeden) hesaplanıyor, sadece artık bu
+           yolla gösterilmiyor — veri kaybı/regresyon yok. -->
       <div class="quality-card" id="quality-card">
         <div class="quality-card-header">
           <span class="quality-title">AI Quality Score</span>
@@ -420,20 +650,15 @@
         <div class="quality-actions" id="quality-actions"></div>
       </div>
 
-      <!-- Improve with AI -->
+      <!-- ROUND G — IMPROVE WITH AI. Eski (Phase 4) inline "chip + textarea +
+           Apply" paneli kaldırıldı — buton artık gerçek bir modal açıyor
+           (bkz. #improve-modal-backdrop, page-header'ın kardeşi olarak
+           aşağıda tanımlı — .byok-modal-backdrop/.asset-modal-overlay İLE
+           AYNI position:fixed + inset:0 deseni, görev md.12/13). Butonun
+           KENDİSİ (id/disabled-toggle mantığı, bkz. app.js applyNewResult)
+           HİÇ değişmedi — generated game yokken disabled, varsa aktif. -->
       <div class="improve-block">
-        <button class="secondary-btn full" id="improve-toggle-btn" type="button" disabled>✦ Improve with AI</button>
-        <div class="improve-panel hidden" id="improve-panel">
-          <div class="chip-row" id="improve-chips">
-            <button class="chip" type="button" data-instruction="Make it faster">Make it faster</button>
-            <button class="chip" type="button" data-instruction="Add a stronger CTA">Add a stronger CTA</button>
-            <button class="chip" type="button" data-instruction="Make the interaction easier">Make the interaction easier</button>
-            <button class="chip" type="button" data-instruction="Make the game more engaging">Make the game more engaging</button>
-          </div>
-          <textarea id="improve-input" maxlength="300" placeholder="Describe how to improve this playable ad…"></textarea>
-          <button class="primary-btn small" id="improve-submit-btn" type="button">Apply</button>
-          <p class="status-line" id="improve-status"></p>
-        </div>
+        <button class="secondary-btn full" id="improve-toggle-btn" type="button" disabled aria-haspopup="dialog" aria-expanded="false" aria-controls="improve-modal-backdrop">✦ Improve with AI</button>
       </div>
     </aside>
 
@@ -533,12 +758,45 @@
             <!-- ROUND 12: gerçek, çalışan arama — bkz. app.js
                  assetSearchInput/renderAssetLibrary. Sahte/dekoratif bir
                  kutu değil, ASSET_LIBRARY üzerinde gerçekten filtreliyor. -->
+            <!-- ROUND H: arama artık sadece isim/kategoriye değil, id/tag/kit
+                 alanlarına da bakıyor (bkz. app.js renderAssetLibrary) — kutu
+                 ve id/aria-label HİÇ değişmedi, sadece placeholder bunu
+                 yansıtacak şekilde güncellendi. -->
             <label class="asset-search" for="asset-search-input">
               <span class="asset-search-icon" aria-hidden="true">🔍</span>
-              <input type="search" id="asset-search-input" class="asset-search-input" placeholder="Search assets…" aria-label="Search assets" />
+              <input type="search" id="asset-search-input" class="asset-search-input" placeholder="Search by name, tag, kit…" aria-label="Search assets by name, tag, or kit" />
             </label>
             <span class="asset-count" id="asset-count">— assets available</span>
+            <!-- CUSTOM ASSET LIBRARY round — şirketin kendi asset ZIP'ini
+                 yükleyebilmesi için buton + gizli file input. Mevcut arama/
+                 sayaç/ızgara HİÇ değişmedi, bu sadece aynı header satırına
+                 EKLENDİ. Yükleme mantığı/state'leri bkz. app.js
+                 initAssetLibraryUpload(). -->
+            <div class="asset-upload" id="asset-upload">
+              <input type="file" id="asset-upload-input" accept=".zip,application/zip" hidden />
+              <button type="button" class="text-btn asset-upload-btn" id="asset-upload-btn">+ Upload Asset Library</button>
+            </div>
           </div>
+          <!-- ROUND H — ASSET BROWSER: kategori filtre çipleri. Sidebar'daki
+               "All/Characters/Enemies/..." linkleriyle İKİ YÖNLÜ senkron
+               (bkz. app.js: bir çipe tıklamak assetCategoryFilter'ı değiştirir
+               VE sidebar'daki ilgili linki active yapar; sidebar linkine
+               tıklamak da buradaki ilgili çipi aktif eder). Yeni bir route/
+               state sistemi DEĞİL — mevcut client-side assetCategoryFilter
+               state'inin sadece görünür bir kontrolü. -->
+          <div class="asset-filter-chips" id="asset-filter-chips" role="group" aria-label="Filter assets by category">
+            <button type="button" class="asset-filter-chip" data-asset-filter="all" aria-pressed="true">All</button>
+            <button type="button" class="asset-filter-chip" data-asset-filter="character" aria-pressed="false">Characters</button>
+            <button type="button" class="asset-filter-chip" data-asset-filter="enemy" aria-pressed="false">Enemies</button>
+            <button type="button" class="asset-filter-chip" data-asset-filter="object" aria-pressed="false">Objects</button>
+            <button type="button" class="asset-filter-chip" data-asset-filter="effect" aria-pressed="false">Effects</button>
+            <button type="button" class="asset-filter-chip" data-asset-filter="background" aria-pressed="false">Backgrounds</button>
+            <button type="button" class="asset-filter-chip" data-asset-filter="ui" aria-pressed="false">UI</button>
+          </div>
+          <p class="status-line" id="asset-upload-status"></p>
+          <!-- app.js -> renderCustomLibrariesSummary() ile dolduruluyor;
+               hiç custom library yüklenmemişse boş/gizli kalır. -->
+          <div class="asset-custom-libraries hidden" id="asset-custom-libraries"></div>
           <div class="asset-selection-summary" id="asset-selection-summary"></div>
           <div class="asset-library-grid" id="asset-library-grid">
             <!-- app.js -> renderAssetLibrary() ile dolduruluyor -->
@@ -626,6 +884,130 @@
         <button class="asset-modal-close" id="asset-modal-close" type="button" aria-label="Close">✕</button>
       </div>
       <div class="asset-modal-grid" id="asset-modal-grid"></div>
+    </div>
+  </div>
+
+  <!-- ROUND H — ASSET BROWSER: gerçek asset detay modalı. Yukarıdaki
+       #asset-modal-overlay ("+N View All" popover'ı) İLE KARIŞTIRILMASIN —
+       o hâlâ AYNEN eskisi gibi çalışıyor, bu TAMAMEN AYRI, YENİ bir modal
+       (bkz. app.js openAssetDetailModal/closeAssetDetailModal). Sadece
+       gerçek metadata alanları gösterilir (Name/Category/Tags/Kit/Source);
+       mevcut sistemin sağlamadığı hiçbir alan uydurulmaz — eksikse "—" ya
+       da dürüst bir açıklama metni gösterilir. "Use in Game" butonu, YENİ
+       bir mekanizma DEĞİL: mevcut, gerçek toggleAssetSelection() /
+       selectedAssets / buildPromptWithAssets() zincirini (Generate isteğine
+       zaten bağlı) tetikler — bkz. app.js yorumu orada. -->
+  <div class="asset-detail-modal-overlay hidden" id="asset-detail-modal-overlay">
+    <div class="asset-detail-modal" id="asset-detail-modal" role="dialog" aria-modal="true" aria-labelledby="asset-detail-modal-title">
+      <div class="asset-detail-modal-header">
+        <span id="asset-detail-modal-title">Asset Details</span>
+        <button class="asset-modal-close" id="asset-detail-modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="asset-detail-modal-body">
+        <div class="asset-detail-preview" id="asset-detail-preview"></div>
+        <dl class="asset-detail-fields">
+          <div class="asset-detail-field"><dt>Name</dt><dd id="asset-detail-name">—</dd></div>
+          <div class="asset-detail-field"><dt>Category</dt><dd id="asset-detail-category">—</dd></div>
+          <div class="asset-detail-field"><dt>Tags</dt><dd id="asset-detail-tags">—</dd></div>
+          <div class="asset-detail-field"><dt>Kit</dt><dd id="asset-detail-kit">—</dd></div>
+          <div class="asset-detail-field"><dt>Source</dt><dd id="asset-detail-source">—</dd></div>
+        </dl>
+      </div>
+      <div class="asset-detail-modal-actions">
+        <p class="asset-detail-use-note">Selected assets are suggested to the AI as preferred assets for your next generation.</p>
+        <button type="button" class="byok-btn byok-btn-primary" id="asset-detail-use-btn" aria-pressed="false">+ Use in Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUND I — GAME LIBRARY: kullanıcının kendi ürettiği/kaydettiği
+       oyunların gerçek listesi. Mevcut mimari YENİDEN KULLANILIYOR — yeni
+       bir backend/database YOK, sadece localStorage'da tutulan bir Game
+       record dizisi (bkz. app.js GAME_LIBRARY_STORAGE_KEY). Görsel dil,
+       diğer modallarla (.byok-modal/.asset-detail-modal) AYNI — sadece daha
+       geniş bir "ekran" hissi için .my-games-modal daha büyük. -->
+  <div class="my-games-modal-overlay hidden" id="my-games-modal-overlay">
+    <div class="my-games-modal" id="my-games-modal" role="dialog" aria-modal="true" aria-labelledby="my-games-modal-title">
+      <div class="my-games-modal-header">
+        <div>
+          <span id="my-games-modal-title">My Games</span>
+          <p class="my-games-modal-subtitle">Your generated playable games</p>
+        </div>
+        <button class="asset-modal-close" id="my-games-modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="my-games-toolbar">
+        <label class="asset-search my-games-search" for="my-games-search-input">
+          <span class="asset-search-icon" aria-hidden="true">🔍</span>
+          <input type="search" id="my-games-search-input" class="asset-search-input" placeholder="Search games…" aria-label="Search your games by title, prompt, game type, or model" />
+        </label>
+        <div class="asset-filter-chips" id="my-games-sort-chips" role="group" aria-label="Sort games">
+          <button type="button" class="asset-filter-chip" data-my-games-sort="newest" aria-pressed="true">Newest</button>
+          <button type="button" class="asset-filter-chip" data-my-games-sort="oldest" aria-pressed="false">Oldest</button>
+        </div>
+      </div>
+
+      <div class="my-games-grid" id="my-games-grid">
+        <!-- app.js -> renderMyGamesLibrary() ile dolduruluyor -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Rename — küçük, odaklı bir modal (yeni bir isim uydurma sistemi
+       DEĞİL, sadece mevcut game.title alanını günceller). -->
+  <div class="my-games-rename-modal-overlay hidden" id="my-games-rename-modal-overlay">
+    <div class="my-games-rename-modal" role="dialog" aria-modal="true" aria-labelledby="my-games-rename-title">
+      <div class="asset-detail-modal-header">
+        <span id="my-games-rename-title">Rename Game</span>
+        <button class="asset-modal-close" id="my-games-rename-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <label class="my-games-rename-label" for="my-games-rename-input">Name</label>
+      <input type="text" id="my-games-rename-input" class="my-games-rename-input" maxlength="80" aria-label="Game name" />
+      <p class="my-games-rename-status" id="my-games-rename-status"></p>
+      <div class="asset-detail-modal-actions my-games-rename-actions">
+        <button type="button" class="byok-btn byok-btn-secondary" id="my-games-rename-cancel">Cancel</button>
+        <button type="button" class="byok-btn byok-btn-primary" id="my-games-rename-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirmation — destructive action, geri alınamaz olduğu
+       açıkça belirtiliyor (görev md.13). -->
+  <div class="my-games-rename-modal-overlay hidden" id="my-games-delete-modal-overlay">
+    <div class="my-games-rename-modal" role="alertdialog" aria-modal="true" aria-labelledby="my-games-delete-title">
+      <div class="asset-detail-modal-header">
+        <span id="my-games-delete-title">Delete Game</span>
+        <button class="asset-modal-close" id="my-games-delete-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <p class="my-games-delete-message" id="my-games-delete-message">Delete this game? This action cannot be undone.</p>
+      <div class="asset-detail-modal-actions my-games-rename-actions">
+        <button type="button" class="byok-btn byok-btn-secondary" id="my-games-delete-cancel">Cancel</button>
+        <button type="button" class="byok-btn byok-btn-danger" id="my-games-delete-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUND J — QUALITY SCORE DETAILS: mevcut, GERÇEK validation.checks
+       verisinden (bkz. server/services/validation/checks.js) türetilmiş,
+       kategorilere ayrılmış bir kalite döküm modalı. YENİ bir scoring
+       sistemi YOK — sadece var olan pass/warning/fail check sonuçlarının
+       kategorilere göre gruplanmış, salt deterministik bir sunumu (bkz.
+       app.js buildQualityCategories/buildQualityPositiveSignals/
+       buildQualityWarnings). Görsel dil, .my-games-modal İLE AYNI (yeni bir
+       tasarım dili icat edilmedi) — sadece içerik alanı kendi sınıfını
+       (.quality-details-modal/-body) taşıyor. -->
+  <div class="my-games-modal-overlay hidden" id="quality-details-modal-overlay">
+    <div class="my-games-modal quality-details-modal" id="quality-details-modal" role="dialog" aria-modal="true" aria-labelledby="quality-details-modal-title">
+      <div class="my-games-modal-header">
+        <div>
+          <span id="quality-details-modal-title">Quality Score Details</span>
+          <p class="my-games-modal-subtitle" id="quality-details-modal-subtitle">— / 100</p>
+        </div>
+        <button class="asset-modal-close" id="quality-details-modal-close" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="quality-details-body" id="quality-details-body">
+        <!-- app.js -> renderQualityDetailsModal() ile dolduruluyor -->
+      </div>
     </div>
   </div>
 

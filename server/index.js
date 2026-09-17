@@ -7,6 +7,11 @@ const autofixRouter = require("./routes/autofix");
 const improveRouter = require("./routes/improve");
 // PHASE 5: salt-okunur GET /api/assets — bkz. routes/assets.js
 const assetsRouter = require("./routes/assets");
+// AI MODEL SELECTOR round: salt-okunur GET /api/models — bkz. routes/models.js
+const modelsRouter = require("./routes/models");
+// CUSTOM ASSET LIBRARY round: POST/GET /api/assets/libraries — bkz.
+// routes/assetLibraries.js
+const assetLibrariesRouter = require("./routes/assetLibraries");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +23,8 @@ app.use("/api", generateRouter);
 app.use("/api", autofixRouter);
 app.use("/api", improveRouter);
 app.use("/api", assetsRouter);
+app.use("/api", modelsRouter);
+app.use("/api", assetLibrariesRouter);
 
 // Statik frontend (public/)
 app.use(express.static(path.join(__dirname, "..", "public")));

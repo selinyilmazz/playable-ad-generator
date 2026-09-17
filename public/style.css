@@ -505,6 +505,350 @@ button { font-family: inherit; }
 .badge.mock { color: var(--warning); border-color: rgba(221, 154, 61, 0.34); background: var(--warning-soft); }
 .badge.live { color: var(--success); border-color: rgba(72, 189, 130, 0.34); background: var(--success-soft); }
 
+/* AI MODEL SELECTOR round — mode-badge artık bir <button>, mevcut .badge/
+   .badge.mock/.badge.live renk kuralları (yukarıda) HİÇ değişmeden AYNEN
+   uygulanmaya devam ediyor (buton olması SADECE cursor/font-family sıfırlama
+   + tıklanabilirlik ekliyor, renk/boyut/şekil BİREBİR aynı kaldı). */
+.model-selector { position: relative; }
+.model-selector .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.model-selector .badge:hover { border-color: var(--border-strong); }
+.model-selector .badge:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+
+.model-selector-caret {
+  font-size: 8px;
+  opacity: 0.65;
+  transition: transform 0.15s var(--ease-premium);
+}
+.model-selector .badge[aria-expanded="true"] .model-selector-caret { transform: rotate(180deg); }
+
+/* MODEL SELECTOR DISCOVERABILITY round — kapalı rozetin İÇİNDEKİ yeni iki
+   kardeş span (ikon + sabit "AI Model" etiketi). .model-selector .badge'in
+   MEVCUT display:inline-flex/gap:6px kuralı (yukarıda) bu iki yeni span'ı
+   da otomatik olarak aynı tek satırda, aynı boşlukla diziyor — rozetin
+   KENDİSİNİN boyut/padding/şekil kuralları (.badge, satır ~494) hiç
+   değişmedi, bu yüzden header yüksekliği #help-btn (32px) ile aynı kalmaya
+   devam ediyor. */
+.model-badge-icon {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--gold-soft);
+  flex-shrink: 0;
+}
+.model-badge-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+/* Rozet açıkken (dropdown görünürken) mevcut mock/live renk kurallarından
+   (.badge.mock/.badge.live, satır ~505-506) BAĞIMSIZ, dropdown'ın kendi
+   border-strong/shadow-float diliyle eşleşen belirgin bir "açık/aktif"
+   durumu — kapalı seçici ile açık dropdown'ın AYNI bileşen gibi
+   görünmesini sağlıyor (görev: altın çerçeve/hafif parıltı). Üç sınıf
+   seçicili olduğu için (.model-selector .badge[aria-expanded]) mock/live
+   tek-sınıflı kurallardan daha spesifik — açıkken HER zaman kazanır, ama
+   mock/live'ın arka plan/metin rengini DEĞİŞTİRMİYOR, sadece çerçeve/gölge
+   ekliyor. */
+.model-selector .badge[aria-expanded="true"] {
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 1px rgba(232, 185, 77, 0.28), 0 0 14px rgba(232, 185, 77, 0.16);
+}
+@media (max-width: 480px) {
+  /* 390px dahil dar ekranlarda "AI Model" metin etiketi gizlenir — ikon
+     TEK BAŞINA seçici semantiğini korumaya devam eder (görev: "..." asla
+     tek başına görünmemeli; ikon+model adı+caret her zaman kalır). */
+  .model-badge-label { display: none; }
+}
+
+/* MODEL SELECTOR UI/UX POLISH round — dropdown artık 3 sabit bölgeli bir
+   flex-column: sticky üst (başlık+arama), ortada TEK SCROLL eden gövde
+   (görev md.1: masaüstünde ~420-480px üst sınır, kendi içinde scroll —
+   sayfa hiç uzamaz), altta BYOK için ayrı/sabit bir satır (görev md.6).
+   Renk/border/radius/shadow token'ları (var(--surface-raised) vb.)
+   MEVCUT tasarım diliyle BİREBİR aynı — sadece iç yapı/boyutlandırma
+   değişti. */
+.model-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 220px;
+  max-width: min(300px, calc(100vw - 24px));
+  max-height: min(460px, calc(100vh - 88px));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float);
+  z-index: 60;
+  overflow: hidden;
+}
+.model-dropdown.hidden { display: none; }
+
+.model-dropdown-sticky-top { flex-shrink: 0; padding: 6px 6px 4px; }
+
+/* DISCOVERABILITY round — başlık ("AI Model") + yeni bir alt başlık
+   ("Choose the AI model for your generation") artık ortak bir sarmalayıcıda
+   (.model-dropdown-titlebar); border-bottom AYRIM ÇİZGİSİ .model-dropdown-
+   label'dan bu sarmalayıcıya taşındı ki iki satır TEK bir blok gibi
+   görünsün. .model-dropdown-label'ın kendi font/renk kuralları (küçük,
+   kalın, uppercase, --text-faint) HİÇ değişmedi. */
+.model-dropdown-titlebar { padding: 4px 2px 7px; border-bottom: 1px solid var(--border-soft); }
+.model-dropdown-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.model-dropdown-subtitle {
+  margin-top: 2px;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-dim);
+}
+
+/* md.1: SADECE bu bölge scroll olur — başlık/arama üstte sabit kalır,
+   BYOK satırı altta sabit kalır. min-height:0, flex içinde scroll'un
+   gerçekten çalışması için gerekli (Firefox/Chrome ortak gotcha). */
+.model-dropdown-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.model-dropdown-scroll::-webkit-scrollbar { width: 6px; }
+.model-dropdown-scroll::-webkit-scrollbar-track { background: transparent; }
+.model-dropdown-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+.model-dropdown-scroll::-webkit-scrollbar-thumb:hover { background: var(--gold-deep); }
+
+.model-dropdown-list { display: flex; flex-direction: column; gap: 2px; }
+
+/* md.4: sağlayıcıya göre kompakt/bounded gruplama başlığı (Recommended +
+   birkaç büyük sağlayıcı + Other — bkz. app.js buildGroupedSections).
+   Görsel olarak .model-dropdown-label'dan daha hafif, listeyi gereksiz
+   uzatmayacak kadar küçük. */
+.model-group-header {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 8px 6px 3px;
+}
+.model-group-header:first-child { padding-top: 3px; }
+
+.model-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.model-option:hover, .model-option:focus-visible { background: var(--ink-soft); color: var(--text); outline: none; }
+.model-option.selected { color: var(--gold-soft); background: var(--ink-mid); }
+
+.model-option-check {
+  width: 12px;
+  flex-shrink: 0;
+  font-size: 11px;
+  opacity: 0;
+}
+.model-option.selected .model-option-check { opacity: 1; }
+
+.model-dropdown-search-wrap { padding: 6px 0 0; }
+.model-dropdown-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 9px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+.model-dropdown-search::placeholder { color: var(--text-faint); }
+.model-dropdown-search:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 1px; }
+
+.model-option-name-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+.model-option-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-option-provider {
+  font-size: 10px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-dropdown-empty { padding: 16px 8px; font-size: 12px; color: var(--text-faint); text-align: center; }
+
+/* md.6: BYOK satırı SCROLL ALANININ DIŞINDA, üstten ince bir çizgiyle
+   ayrılmış sabit bir bölge — model listesi ne kadar uzarsa uzasın hep
+   görünür kalır. */
+.model-dropdown-byok-row {
+  flex-shrink: 0;
+  padding: 6px;
+  border-top: 1px solid var(--border-soft);
+}
+.model-byok-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--gold-soft);
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.model-byok-btn .model-option-check { width: 14px; font-size: 12px; opacity: 1; flex-shrink: 0; }
+.model-byok-btn:hover, .model-byok-btn:focus-visible { background: var(--ink-soft); outline: none; }
+.model-byok-btn.selected { color: var(--success); }
+
+@media (max-width: 480px) {
+  .model-dropdown {
+    right: -8px;
+    min-width: 200px;
+    max-height: min(420px, calc(100vh - 72px));
+  }
+}
+
+/* md.7: rozet kapalıyken seçilen model adı okunaklı görünsün — önceki
+   dar max-width (130px) "LIVE — <model adı>" metnini erken kırpıp "..."
+   haline getiriyordu; genişletildi ki tipik isimler (ör. "LIVE — DeepSeek
+   V4 Flash") TAM sığsın, sadece OpenRouter'ın GERÇEKTEN çok uzun isimleri
+   ellipsis ile kırpılsın. .badge'in KENDİSİNİN boyut/renk kuralları hiç
+   değişmedi. */
+#mode-badge-text {
+  display: inline-block;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+@media (max-width: 480px) {
+  #mode-badge-text { max-width: 140px; }
+}
+
+/* OPENROUTER MODEL CATALOG + BYOK round — BYOK popover/modal. position:fixed
+   + inset:0 backdrop KULLANILIYOR (dropdown'ın 200-280px genişliğine değil,
+   TÜM viewport'a göre ortalanıyor) — böylece 390px genişlikte bile asla
+   taşmaz (görev md.12), .model-dropdown'ın max-width kısıtından TAMAMEN
+   bağımsızdır. */
+.byok-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 13, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.byok-modal-backdrop.hidden { display: none; }
+.byok-modal {
+  width: 100%;
+  max-width: min(320px, calc(100vw - 32px));
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-float);
+  padding: 16px;
+  box-sizing: border-box;
+}
+.byok-modal-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+}
+.byok-key-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+.byok-key-input::placeholder { color: var(--text-faint); }
+.byok-key-input:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 1px; }
+.byok-modal-note { font-size: 11px; color: var(--text-faint); line-height: 1.45; margin-bottom: 10px; }
+.byok-modal-status { font-size: 11.5px; min-height: 14px; margin-bottom: 8px; }
+.byok-modal-status.error { color: var(--danger); }
+.byok-modal-status.success { color: var(--success); }
+.byok-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.byok-btn {
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-dim);
+}
+.byok-btn-primary { background: var(--gold-soft); color: #1a1408; border-color: transparent; font-weight: 600; }
+.byok-btn-primary:hover { filter: brightness(1.05); }
+.byok-btn-secondary:hover { border-color: var(--border-strong); color: var(--text); }
+.byok-clear-link {
+  display: block;
+  margin: 10px 0 0;
+  background: none;
+  border: none;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.byok-clear-link.hidden { display: none; }
+
 .icon-btn {
   width: 32px;
   height: 32px;
@@ -1838,21 +2182,121 @@ button { font-family: inherit; }
 .improve-block { display: flex; flex-direction: column; gap: 10px; }
 .secondary-btn.full { width: 100%; }
 
-.improve-panel {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--surface-inset);
-  padding: 14px;
+.primary-btn.small { padding: 9px 14px; font-size: 12.5px; box-shadow: none; }
+
+/* ROUND G — IMPROVE WITH AI modal. AYNI position:fixed + inset:0 backdrop
+   deseni (.byok-modal-backdrop / .asset-modal-overlay — görev md.12: "mevcut
+   tasarımın spacing/typography/borders/gold accent/dark navy surface
+   dilini kullan") — TÜM viewport'a göre ortalanır, hiçbir üst öğenin
+   genişliğine sıkışmaz (görev md.13: 390px'de taşmama). */
+.improve-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 7, 13, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 210;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.improve-modal-backdrop.hidden { display: none; }
+
+@keyframes improve-modal-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.improve-modal {
+  width: 100%;
+  max-width: min(440px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 48px));
+  overflow-y: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  padding: 18px;
+  box-sizing: border-box;
+  animation: improve-modal-in 0.18s var(--ease-premium);
+}
+
+.improve-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
 }
-.improve-panel.hidden { display: none; }
+.improve-modal-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--gold-soft);
+  letter-spacing: 0.01em;
+}
+.improve-modal-close {
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: var(--radius-sm);
+  width: 26px;
+  height: 26px;
+  flex: none;
+  cursor: pointer;
+  font-size: 11px;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.improve-modal-close:hover { color: var(--gold-soft); border-color: var(--border-strong); }
 
-#improve-input {
+.improve-modal-subtitle { margin: 10px 0 12px; font-size: 12px; color: var(--text-faint); }
+
+.improve-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.improve-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.improve-option:hover { border-color: var(--border-strong); background: var(--surface); }
+.improve-option:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 1px; }
+.improve-option[aria-pressed="true"] {
+  border-color: rgba(232, 185, 77, 0.55);
+  background: linear-gradient(160deg, rgba(232, 185, 77, 0.14), rgba(255, 157, 82, 0.05));
+  color: var(--text);
+}
+.improve-option-icon { font-size: 15px; line-height: 1.2; flex-shrink: 0; }
+.improve-option-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.improve-option-title { font-size: 12px; font-weight: 700; color: var(--text); }
+.improve-option-desc { font-size: 10.5px; line-height: 1.35; color: var(--text-faint); }
+.improve-option-check {
+  flex-shrink: 0;
+  width: 13px;
+  font-size: 11px;
+  color: var(--gold-soft);
+  opacity: 0;
+}
+.improve-option[aria-pressed="true"] .improve-option-check { opacity: 1; }
+
+.improve-custom { margin-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.improve-custom-label { font-size: 11.5px; font-weight: 700; color: var(--text-faint); }
+.improve-custom-input {
   width: 100%;
   min-height: 64px;
   resize: vertical;
+  box-sizing: border-box;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -1862,14 +2306,27 @@ button { font-family: inherit; }
   line-height: 1.5;
   font-family: inherit;
 }
-#improve-input::placeholder { color: var(--text-faint); }
-#improve-input:focus {
+.improve-custom-input::placeholder { color: var(--text-faint); }
+.improve-custom-input:focus {
   outline: none;
   border-color: rgba(232, 185, 77, 0.5);
   box-shadow: 0 0 0 3px rgba(232, 185, 77, 0.14);
 }
 
-.primary-btn.small { padding: 9px 14px; font-size: 12.5px; box-shadow: none; }
+.improve-modal-status { min-height: 15px; margin: 12px 0 0; font-size: 11.5px; color: var(--text-dim); }
+.improve-modal-status.error { color: var(--danger); }
+.improve-modal-status.success { color: var(--success); }
+
+.improve-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+/* Sadece bu modal İÇİNDEKİ .byok-btn'lere uygulanır (BYOK modalını
+   ETKİLEMEZ) — Improve/Cancel butonları loading sırasında disabled olabilir
+   (görev md.6: "aynı anda ikinci improve isteği gönderilemesin"). */
+.improve-modal .byok-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 480px) {
+  .improve-options { grid-template-columns: 1fr; }
+  .improve-modal { padding: 14px; }
+}
 
 /* ---------- Asset Library ---------- */
 
@@ -2012,6 +2469,47 @@ button { font-family: inherit; }
 .asset-search-empty { padding: 26px 12px; text-align: center; font-size: 12.5px; color: var(--text-faint); grid-column: 1 / -1; }
 
 .asset-count { font-size: 11.5px; color: var(--text-faint); font-weight: 600; flex-shrink: 0; }
+
+/* CUSTOM ASSET LIBRARY round — Upload butonu mevcut .text-btn stilini
+   (gold text, arka plansız) TEKRAR KULLANIYOR, sadece ince bir kesikli
+   çerçeve ekleyerek "buraya tıkla, bir şey yükle" hissi veriyor; mevcut
+   .text-btn tanımı (renk/hover/disabled) hiç değişmedi. */
+.asset-upload { flex-shrink: 0; }
+.asset-upload-btn {
+  border: 1px dashed var(--border-strong) !important;
+  border-radius: 999px;
+  padding: 6px 12px !important;
+}
+.asset-upload-btn:hover { border-color: var(--gold-soft) !important; background: var(--surface-inset); }
+.asset-upload-btn:disabled { border-style: solid; }
+
+/* .status-line zaten generate akışında tanımlı (bkz. yukarısı) — burada
+   SADECE upload alanına özel küçük bir üst boşluk ekleniyor, renk/boyut
+   kuralları (.error/.success dahil) AYNEN paylaşılıyor. */
+#asset-upload-status { margin-top: -4px; }
+#asset-upload-status:empty { display: none; }
+
+.asset-custom-libraries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.asset-custom-libraries.hidden { display: none; }
+.asset-custom-libraries .custom-library-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.asset-custom-libraries .custom-library-pill::before { content: "🏷️"; font-size: 10px; }
 
 .asset-selection-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .asset-selection-summary.hidden { display: none; }
@@ -2257,6 +2755,175 @@ button { font-family: inherit; }
 .asset-modal-close:hover { color: var(--gold-soft); border-color: var(--border-strong); }
 
 .asset-modal-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* ---------- ROUND H — Asset Browser: category filter chips ----------
+   Sidebar kategori linkleriyle iki yönlü senkron (bkz. app.js). Mevcut
+   .improve-option'daki gold-tint "seçili" dilini tekrar kullanıyor, yeni bir
+   renk/gradyan İCAT ETMİYOR — restraint gereksinimi (görev md.14). */
+.asset-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 2px;
+}
+.asset-filter-chip {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+.asset-filter-chip:hover { color: var(--text); border-color: var(--border-strong); }
+.asset-filter-chip:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.asset-filter-chip[aria-pressed="true"] {
+  color: var(--gold-soft);
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(232, 185, 77, 0.19), rgba(232, 185, 77, 0.03) 70%);
+  border-color: rgba(232, 185, 77, 0.55);
+}
+
+/* ---------- ROUND H — Asset Browser: per-thumb info affordance + CUSTOM badge ----------
+   .asset-thumb bir <button> olduğu için içine ikinci bir <button>
+   YERLEŞTİRİLEMEZ (geçersiz HTML) — bu yüzden renderThumbs() artık her
+   thumb'ı ince bir .asset-thumb-wrap içine alıyor; .asset-thumb'ın kendisi
+   (id/class/click-delegasyonu — bkz. app.js closest(".asset-thumb")) HİÇ
+   değişmedi, sadece yanına küçük, ayrı bir "ⓘ" butonu eklendi. */
+.asset-thumb-wrap { position: relative; display: inline-flex; width: 52px; height: 52px; }
+.asset-thumb-wrap .asset-thumb { width: 100%; height: 100%; }
+
+.asset-thumb-info {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-strong);
+  color: var(--text-faint);
+  font-size: 9.5px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.asset-thumb-wrap:hover .asset-thumb-info,
+.asset-thumb-wrap:focus-within .asset-thumb-info,
+.asset-thumb-info:focus-visible {
+  opacity: 1;
+}
+.asset-thumb-info:hover { color: var(--gold-soft); border-color: rgba(232, 185, 77, 0.55); }
+.asset-thumb-info:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+.asset-thumb-custom-badge {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #241605;
+  background: var(--gold-soft);
+  border-radius: 4px;
+  padding: 1.5px 3px;
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--surface-inset);
+}
+
+/* ---------- ROUND H — Asset Browser: asset detail modal ----------
+   .asset-modal-overlay/.asset-modal (yukarıda, "+N View All" popover'ı) İLE
+   AYNI görsel dili paylaşıyor ama TAMAMEN AYRI bir modal — o popover'ın
+   markup/JS'i hiç değişmedi (bkz. index.html notu). */
+.asset-detail-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(4, 5, 11, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.asset-detail-modal-overlay.hidden { display: none; }
+
+.asset-detail-modal {
+  width: 100%;
+  max-width: min(400px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 48px));
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6);
+  padding: 18px;
+  animation: asset-modal-in 0.18s var(--ease-premium);
+}
+
+.asset-detail-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.asset-detail-modal-body { display: flex; gap: 14px; margin-bottom: 14px; }
+
+.asset-detail-preview {
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+.asset-detail-preview img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+
+.asset-detail-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.asset-detail-field { display: flex; flex-direction: column; gap: 1px; }
+.asset-detail-field dt {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+.asset-detail-field dd { font-size: 12px; color: var(--text-dim); margin: 0; word-break: break-word; }
+.asset-detail-field dd.is-custom-source { color: var(--gold-soft); font-weight: 600; }
+
+.asset-detail-modal-actions { border-top: 1px solid var(--border-soft); padding-top: 12px; }
+.asset-detail-use-note { font-size: 10.5px; color: var(--text-faint); line-height: 1.4; margin: 0 0 8px; }
+#asset-detail-use-btn { width: 100%; justify-content: center; }
+#asset-detail-use-btn[aria-pressed="true"] {
+  background: rgba(232, 185, 77, 0.16);
+  color: var(--gold-soft);
+  border-color: rgba(232, 185, 77, 0.55);
+}
+
+@media (max-width: 480px) {
+  .asset-detail-modal { padding: 14px; }
+  .asset-detail-modal-body { gap: 10px; }
+  .asset-detail-preview { width: 56px; height: 56px; }
+}
 
 /* ---------- Game Library (istek #6) ----------
    Yeni, saf UI/UX bölümü: gerçek public/assets görsellerinden kompoze
@@ -2701,4 +3368,305 @@ button { font-family: inherit; }
   .asset-library-grid { grid-template-columns: 1fr; }
   .preset-grid { grid-template-columns: 1fr; }
   .game-library-grid { grid-template-columns: 1fr; }
+}
+
+/* ================== ROUND I — GAME LIBRARY (My Games) ==================
+   Görsel dil AYNEN mevcut modallardan (.byok-modal/.asset-detail-modal)
+   miras alınıyor — yeni bir renk/gradyan/tasarım dili İCAT EDİLMİYOR, sadece
+   daha büyük bir "ekran" hissi için .my-games-modal daha geniş. */
+
+.byok-btn-danger {
+  background: rgba(255, 90, 90, 0.14);
+  color: var(--danger);
+  border-color: rgba(255, 90, 90, 0.4);
+  font-weight: 600;
+}
+.byok-btn-danger:hover { background: rgba(255, 90, 90, 0.22); border-color: rgba(255, 90, 90, 0.6); }
+
+.my-games-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(4, 5, 11, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.my-games-modal-overlay.hidden { display: none; }
+
+.my-games-modal {
+  width: 100%;
+  max-width: min(920px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 48px));
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6);
+  padding: 22px;
+  animation: asset-modal-in 0.18s var(--ease-premium);
+}
+
+.my-games-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.my-games-modal-header #my-games-modal-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  letter-spacing: 0.02em;
+}
+.my-games-modal-subtitle { margin: 4px 0 0; font-size: 12px; color: var(--text-faint); }
+
+.my-games-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.my-games-search { flex: 1; min-width: 200px; }
+#my-games-sort-chips { margin: 0; }
+
+.my-games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.my-games-card {
+  position: relative;
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.my-games-card:hover, .my-games-card:focus-within {
+  border-color: rgba(232, 185, 77, 0.4);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+.my-games-card.is-current { border-color: var(--gold); box-shadow: 0 0 0 1px rgba(232, 185, 77, 0.35); }
+
+/* Gerçek bir screenshot/thumbnail mekanizması YOK (yeni dependency
+   kurulmadı, görev md.6) — bu yüzden sahte bir görsel yerine, gameType'a
+   göre değişen dürüst/temiz bir sembolik önizleme kullanılıyor. Kırık
+   image ikonu YOK çünkü hiç <img> KULLANILMIYOR. */
+.my-games-thumb {
+  height: 96px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: linear-gradient(135deg, rgba(126, 110, 214, 0.22), rgba(232, 185, 77, 0.12) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  color: var(--gold-soft);
+  flex-shrink: 0;
+}
+
+.my-games-card-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.my-games-card-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.my-games-card-meta { display: flex; flex-wrap: wrap; gap: 5px 8px; font-size: 10.5px; color: var(--text-faint); }
+.my-games-card-meta .quality-good { color: var(--success); }
+.my-games-card-meta .quality-bad { color: var(--danger); }
+.my-games-card-date { font-size: 10px; color: var(--text-faint); margin-top: 1px; }
+
+.my-games-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.my-games-open-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(232, 185, 77, 0.4);
+  background: rgba(232, 185, 77, 0.12);
+  color: var(--gold-soft);
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.my-games-open-btn:hover { background: rgba(232, 185, 77, 0.2); }
+
+.my-games-menu-wrap { position: relative; flex-shrink: 0; }
+.my-games-menu-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+.my-games-menu-btn:hover { color: var(--gold-soft); border-color: var(--border-strong); }
+
+.my-games-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  min-width: 130px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  padding: 4px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+}
+.my-games-menu.hidden { display: none; }
+.my-games-menu button {
+  text-align: left;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.my-games-menu button:hover, .my-games-menu button:focus-visible { background: var(--ink-soft); color: var(--text); outline: none; }
+.my-games-menu button.is-danger { color: var(--danger); }
+.my-games-menu button.is-danger:hover { background: rgba(255, 90, 90, 0.12); }
+
+.my-games-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-faint);
+}
+.my-games-empty p { margin: 0 0 14px; font-size: 13px; }
+.my-games-empty .byok-btn { display: inline-block; }
+
+/* ---------- Rename / Delete (small, focused modals) ---------- */
+.my-games-rename-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(4, 5, 11, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.my-games-rename-modal-overlay.hidden { display: none; }
+.my-games-rename-modal {
+  width: 100%;
+  max-width: min(360px, calc(100vw - 32px));
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.6);
+  padding: 18px;
+  animation: asset-modal-in 0.18s var(--ease-premium);
+}
+.my-games-rename-label { display: block; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 6px; }
+.my-games-rename-input {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+}
+.my-games-rename-input:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 1px; }
+.my-games-rename-status { min-height: 15px; margin: 8px 0 0; font-size: 11.5px; color: var(--danger); }
+.my-games-rename-actions { border-top: none; padding-top: 14px; justify-content: flex-end; display: flex; gap: 8px; }
+.my-games-delete-message { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+@media (max-width: 480px) {
+  .my-games-modal { padding: 14px; }
+  .my-games-modal-header #my-games-modal-title { font-size: 17px; }
+  .my-games-toolbar { flex-direction: column; align-items: stretch; }
+  .my-games-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .my-games-thumb { height: 72px; font-size: 24px; }
+  .my-games-rename-modal { padding: 14px; }
+}
+
+/* ================== ROUND J — QUALITY SCORE DETAILS ==================
+   Görsel dil .my-games-modal İLE AYNI (yeni bir tasarım dili icat
+   edilmedi) — sadece daha dar bir genişlik (bu, bir kart ızgarası değil,
+   metin/liste ağırlıklı bir içerik) ve kendi iç bileşenleri (kategori
+   satırları, sinyal listeleri). Renkler/eşikler score-good/score-mid/
+   score-bad İLE AYNI (bkz. app.js scoreClass) — yeni bir renk skalası yok. */
+.quality-details-modal {
+  max-width: min(560px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 48px));
+}
+.my-games-modal-header #quality-details-modal-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--gold-soft);
+  letter-spacing: 0.02em;
+}
+.my-games-modal-subtitle.score-good { color: var(--success); }
+.my-games-modal-subtitle.score-mid { color: var(--warning); }
+.my-games-modal-subtitle.score-bad { color: var(--danger); }
+
+.quality-details-section { margin-bottom: 18px; }
+.quality-details-section:last-child { margin-bottom: 0; }
+.quality-details-section-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.quality-category-row { margin-bottom: 14px; }
+.quality-category-row:last-child { margin-bottom: 0; }
+.quality-category-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.quality-category-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.quality-category-score { font-size: 12px; font-weight: 700; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.quality-category-score.score-good { color: var(--success); }
+.quality-category-score.score-mid { color: var(--warning); }
+.quality-category-score.score-bad { color: var(--danger); }
+.quality-category-bar-track { margin-top: 6px; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
+.quality-category-bar-fill { height: 100%; border-radius: 999px; background: var(--text-faint); transition: width 0.3s var(--ease-premium); }
+.quality-category-bar-fill.score-good { background: linear-gradient(90deg, #2f9163, var(--success)); }
+.quality-category-bar-fill.score-mid { background: linear-gradient(90deg, #a9781f, var(--warning)); }
+.quality-category-bar-fill.score-bad { background: linear-gradient(90deg, #ac4a3a, var(--danger)); }
+.quality-category-explanation { margin: 6px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-faint); }
+
+.quality-signal-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.quality-signal-item { font-size: 12.5px; line-height: 1.45; }
+.quality-signal-item.positive { color: var(--success); }
+.quality-signal-item.warning { color: var(--warning); }
+.quality-details-empty { font-size: 12.5px; color: var(--text-faint); }
+
+@media (max-width: 480px) {
+  .quality-details-modal { padding: 14px; }
+  .my-games-modal-header #quality-details-modal-title { font-size: 16px; }
 }

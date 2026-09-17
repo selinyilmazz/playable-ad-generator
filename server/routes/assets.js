@@ -14,13 +14,25 @@
  */
 const express = require("express");
 const { ASSET_MANIFEST_ENRICHED, ASSET_GROUPS } = require("../config/assetManifest");
+// CUSTOM ASSET LIBRARY round — additive: default 181 asset (yukarıdaki
+// ASSET_MANIFEST_ENRICHED) HİÇ değişmedi/dokunulmadı. Yüklenmiş custom
+// library'lerin assetleri AYNI `assets` dizisine, SADECE SONUNA eklenir —
+// frontend'in mevcut kategori/grup render mantığı (public/app.js
+// renderAssetLibrary) hiçbir değişiklik gerektirmeden bunları otomatik
+// doğru kategori altında gösterir (her ikisi de aynı category/group şemasını
+// paylaşıyor, bkz. customAssetLibrary.js).
+const customAssetLibrary = require("../services/customAssetLibrary");
 
 const router = express.Router();
 
 router.get("/assets", function (req, res) {
   res.json({
-    assets: ASSET_MANIFEST_ENRICHED,
+    assets: ASSET_MANIFEST_ENRICHED.concat(customAssetLibrary.listAllCustomAssets()),
     groups: ASSET_GROUPS,
+    // additive alan — frontend'in "Custom Libraries" özet satırını
+    // (bkz. app.js) doldurmak için; assets dizisini PARSE ETMEYE gerek
+    // kalmadan library adı/sayısı burada hazır.
+    customLibraries: customAssetLibrary.listLibraries(),
   });
 });
 

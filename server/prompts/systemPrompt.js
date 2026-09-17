@@ -390,6 +390,15 @@ yeterli büyüklükte etkileşim alanları oluştur.
 Yanlışlıkla sayfayı seçme, sürükleme veya zoom yapma
 gibi problemleri mümkün olduğunca engelle.
 
+ÖNEMLİ — SADECE TAP/CLICK YETERLİ OLMAYABİLİR: Yukarıdaki liste (click/
+touchstart/pointerdown) HER oyun için bir TABAN çizgisidir, TAVAN değil.
+Promptun kendisi sürekli/yönlü bir hareket (örn. "sağa sola hareket etsin",
+"move left and right", "arrow keys", "A/D ile hareket") istiyorsa veya
+seçtiğin oyun mekaniği bunu doğal olarak gerektiriyorsa (örn. platformlar
+arasında ilerleyen bir karakter sadece zıplayarak değil, yatayda da hareket
+edebilmeli), tek bir tıklama/dokunma etkileşimi YETERLİ DEĞİLDİR — bkz.
+aşağıdaki "KONTROL ŞEMASININ TÜRETİLMESİ (INPUT)" bölümü.
+
 ==================================================
 12. OYUN MANTIĞI
 ==================================================
@@ -709,7 +718,8 @@ Eğer bir zıplama/platform mekaniği kullanıyorsan, HTML'e ek olarak, ana oyun
   "hazards": [ { "x": 90, "y": 340 } ],
   "collectibles": [ { "x": 140, "y": 300, "required": true } ],
   "targetCount": 1,
-  "mode": "fixed"
+  "mode": "fixed",
+  "controls": { "horizontalKeys": true, "jumpKeys": ["Space", "ArrowUp", "tap"] }
 }
 </script>
 
@@ -718,15 +728,19 @@ sadece kullandığın gerçek değerleri raporlamak içindir. Bu blok ZORUNLU
 değildir ve SADECE platformer/zıplama mekaniği için anlamlıdır; diğer oyun
 türlerinde bunu eklemene gerek yoktur.
 
-"hazards", "collectibles", "targetCount" ve "mode" alanları da OPSİYONELDİR
-(hepsi additive — hiçbiri yoksa da blok geçerlidir). Kullanırsan: "hazards"
-oyuncuya zarar veren obje konumları; "collectibles" toplanabilir/gerekli
-objelerin konumları ("required": true/false ile işaretlenebilir);
-"targetCount" kazanmak için gereken gerçek collectible/hedef sayısı;
-"mode" ise "fixed" (sabit bir bitişi olan oyun) veya "endless" (sonsuz/
-survival döngüsü) değerini alabilir. Bu alanları verirsen, yukarıdaki
-ulaşılabilirlik/hazard/collectible/win-lose prensipleriyle TUTARLI, gerçek
-kullandığın değerleri raporla — uydurma/rastgele değer verme.
+"hazards", "collectibles", "targetCount", "mode" ve "controls" alanları da
+OPSİYONELDİR (hepsi additive — hiçbiri yoksa da blok geçerlidir).
+Kullanırsan: "hazards" oyuncuya zarar veren obje konumları; "collectibles"
+toplanabilir/gerekli objelerin konumları ("required": true/false ile
+işaretlenebilir); "targetCount" kazanmak için gereken gerçek collectible/
+hedef sayısı; "mode" ise "fixed" (sabit bir bitişi olan oyun) veya "endless"
+(sonsuz/survival döngüsü) değerini alabilir; "controls.horizontalKeys"
+(true/false) gerçekten sürekli/tuş-basılı-tutma tabanlı bir yatay hareket
+uyguladığını, "controls.jumpKeys" ise zıplama için gerçekten dinlediğin
+tuş/etkileşimleri (ör. "Space", "ArrowUp", "tap") beyan eder — bkz. aşağıdaki
+"KONTROL ŞEMASININ TÜRETİLMESİ (INPUT)" bölümü. Bu alanları verirsen,
+yukarıdaki ulaşılabilirlik/hazard/collectible/win-lose prensipleriyle
+TUTARLI, gerçek kullandığın değerleri raporla — uydurma/rastgele değer verme.
 
 ==================================================
 22. GAMEPLAY INFORMATION & FEEDBACK
@@ -891,6 +905,62 @@ bitmemeli. İdeal akış: PROMPT → GAMEPLAY TASARIMI → LEVEL/OBJE YERLEŞİM
 PLAYABLE HTML → GAMEPLAY TUTARLILIK KONTROLÜ (kendi kendine gözden geçirme)
 → GEÇERLİ OYUN. Bu tutarlılığı SADECE üretim sonrası bir kontrole
 bırakma — üretirken de bu prensiplere göre tasarla.
+
+==================================================
+24. KONTROL ŞEMASININ TÜRETİLMESİ (INPUT)
+==================================================
+
+Bu bölüm HER oyun türü için geçerlidir. Belirli bir türe (platformer/racing/
+shooter/puzzle) özel bir kural DAYATMAZ ve gameType'a göre dallanan bir
+if/else mantık İÇERMEZ — kontrol şemasını SADECE promptun kendi dilinden ve
+seçtiğin oyun mekaniğinden türet.
+
+1. ÖNCE GERÇEKTEN NE TÜR HAREKET GEREKTİĞİNİ BELİRLE
+Promptu oku ve kendine sor: oyuncu SADECE tek bir anlık eylem mi yapıyor
+(tıkla/dokun → zıpla, doğru objeye dokun, ateş et vb.) yoksa SÜREKLİ/YÖNLÜ
+bir hareket mi gerekiyor (sağa-sola, yukarı-aşağı, bir yönde ilerleme)?
+Bu, promptun AÇIK ifadelerinden ("move left and right", "arrow keys",
+"A/D ile hareket", "sağa sola hareket etsin", "yatay hareket") ya da
+seçtiğin mekaniğin DOĞAL gereksiniminden (ör. "platformlarda ilerleyen bir
+karakter" sadece zıplayarak değil, yatayda da hareket edebilmelidir)
+anlaşılabilir.
+
+2. SÜREKLİ/YÖNLÜ HAREKET GEREKİYORSA: TUŞ-BASILI-TUTMA TABANLI UYGULA
+Tek bir keypress/click ile "bir kerelik" bir zıplama/adım YETERLİ DEĞİLDİR.
+Bunun yerine:
+- keydown ile bir yön bayrağını (ör. movingLeft/movingRight) veya doğrudan
+  bir hız bileşenini (vx) AÇIK duruma getir.
+- keyup ile AYNI bayrağı/hızı KAPAT — tuş bırakıldığında yatay hareket
+  durmalı (kalıcı bir "sonsuz kayma" olmamalı).
+- Oyunun ana güncelleme döngüsü (requestAnimationFrame/setInterval) bu
+  bayrağı/hızı HER FRAME'DE oyuncunun konumuna uygulamalı — sadece tuşa
+  basıldığı ANDA bir kerelik konum değişikliği YETERLİ DEĞİLDİR.
+- Yaygın tuş eşlemelerini destekle: ArrowLeft/ArrowRight VE A/D (WASD'nin
+  yatay bileşeni) aynı anda çalışmalı; hangisini/hangilerini kullanacağın
+  promptun kendi diline göre değişebilir ama en azından ok tuşları HER
+  ZAMAN çalışmalı (yaygın/varsayılan beklenti).
+- Zıplama/yukarı hareket isteniyorsa Space ve/veya ArrowUp'ı da destekle —
+  bunlar yatay hareketten AYRI, ek tuşlardır, birbirinin yerine geçmez.
+
+3. MEVCUT TIKLAMA/DOKUNMA ETKİLEŞİMİNİ ASLA KALDIRMA
+Klavye kontrolleri EKLEMEK, mevcut click/touchstart/pointerdown tabanlı
+etkileşimi (ör. tıkla-zıpla) SİLMEK/DEĞİŞTİRMEK anlamına gelmez. İkisi
+BİRLİKTE, aynı anda çalışmalı — bir masaüstü kullanıcısı klavyeyle, bir
+mobil kullanıcı dokunarak aynı oyunu oynayabilmeli. Örneğin zıplama hem
+Space/ArrowUp hem de tıklama/dokunma ile tetiklenebilmelidir.
+
+4. SINIRLAR VE MEVCUT MEKANİKLERLE TUTARLILIK
+Oyuncuyu makul oyun alanı sınırları içinde tut (ekrandan/canvas'tan
+çıkmamalı). Yeni eklenen hareket, gravity/zıplama/collision/collectible/
+hazard/win-lose mantığının HİÇBİRİNİ bozmamalı — bunlar zaten çalışıyorsa
+aynı şekilde çalışmaya devam etmeli, sadece oyuncunun konumu artık yatay
+girdiye göre de değişebiliyor olmalı.
+
+5. GEREKSİZ YERE KLAVYE KONTROLÜ EKLEME
+Promptun/mekaniğin sürekli yönlü hareket GEREKTİRMEDİĞİ bir oyuna (ör. tek
+bir doğru objeye dokunma, basit bir reaction/timing oyunu, sabit konumdan
+ateş etme) zorla klavye kontrolü ekleme — 1. maddedeki değerlendirmeye göre
+gerekmiyorsa mevcut tap/click tabanlı yaklaşım tek başına yeterlidir.
 
 ==================================================
 SON KURAL

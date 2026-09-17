@@ -68,10 +68,18 @@ function assertRealAssetsOnly(html) {
   return paths;
 }
 
+// ROUND L — bu fonksiyon HEM eski genel tap-grid şablonunun (buildMockGameHtml
+// — hâlâ DEĞİŞMEDİ, D/E senaryoları hâlâ buraya düşüyor) HEM YENİ mekanik-özel
+// şablonların (mockGameplayTemplates.js — A/B/C artık buraya düşüyor) ortak,
+// GERÇEKTEN paylaştığı asgari sözleşmeyi doğrular. "timer-bar" id'si SADECE
+// eski genel şablonun kendi iç implementasyon detayıydı (bir countdown-bar
+// div'i) — yeni mekanik şablonların HİÇBİRİ bunu kullanmıyor (bazılarının
+// hiç zamanlayıcısı yok, ör. memory/math/dungeon skor+ilerleme tabanlı) —
+// bu yüzden BİLEREK genel kontrolden ÇIKARILDI, iki grubun da GERÇEKTEN
+// sağladığı garantiler (etkileşim + skor + kazan/kaybet + güvenlik) kaldı.
 function assertPlayableBasics(html) {
-  assert.match(html, /addEventListener\(.click./);
-  assert.match(html, /Score:/);
-  assert.match(html, /timer-bar/);
+  assert.match(html, /addEventListener\(.click.|addEventListener\(.keydown./);
+  assert.match(html, /Score:|Destroyed:|Moves:/);
   assert.match(html, /You Win!/);
   assert.match(html, /Game Over/);
   assert.match(html, /Play Again/);

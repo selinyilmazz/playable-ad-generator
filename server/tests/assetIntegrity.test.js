@@ -38,10 +38,14 @@ test("Quality Score: yeni asset-integrity check'i sayıma dahil oluyor (16 -> 17
   var result = validatePlayable(htmlWithAsset("/assets/objects/star.svg"), "");
   // ROUND 21: gameplay consistency check'i eklenmesiyle toplam 17 -> 18 oldu
   // (bkz. checks.js "platformer-gameplay-consistency"). ROUND F: yeni
-  // "level-length-consistency" check'i eklenmesiyle 18 -> 19 oldu — bu
-  // testin amacı asset-integrity'nin sayıma dahil olduğunu doğrulamak,
+  // "level-length-consistency" check'i eklenmesiyle 18 -> 19 oldu.
+  // HORIZONTAL MOVEMENT FIX: yeni "movement-input-consistency" check'i
+  // eklenmesiyle 19 -> 20 oldu. ROUND M: yeni "gameplay-config-valid" check'i
+  // + 7 yeni mekanik-özel check (racing/space-shooter/collection/memory/
+  // math/cooking/dungeon-gameplay-consistency) eklenmesiyle 20 -> 28 oldu —
+  // bu testin amacı asset-integrity'nin sayıma dahil olduğunu doğrulamak,
   // mutlak sayı değil; sayı buradan güncellendi ki gerçek CHECKS
   // uzunluğuyla senkron kalsın.
-  assert.equal(result.checks.length, 19);
+  assert.equal(result.checks.length, 28);
   assert.ok(result.checks.some(function (c) { return c.key === "asset-integrity"; }));
 });

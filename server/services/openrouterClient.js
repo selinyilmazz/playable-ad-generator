@@ -38,16 +38,34 @@ function extractRawContent(message) {
 
 /**
  * messages: [{ role: "system"|"user", content: string }, ...]
- * Dönüş: { html, model } ya da (key yoksa) null.
+ * modelOverride (AI MODEL SELECTOR round, OPSİYONEL 2. parametre): GERİYE
+ * DÖNÜK UYUMLU — verilmezse (autofix/improve gibi mevcut çağıranlar HİÇ
+ * DEĞİŞMEDİ) davranış BİREBİR ÖNCEKİ round'la aynı: modelConfig.model
+ * (.env OPENROUTER_MODEL override'ı dahil mevcut varsayılan) kullanılır.
+ * Verilirse (routes/generate.js'in ZATEN server/config/models.js'in
+ * isSupportedModel()/resolveRequestedModel() ile DOĞRULADIĞI bir id) o
+ * kullanılır — bu fonksiyonun KENDİSİ ayrıca bir doğrulama YAPMAZ (güvenme
+ * sınırı çağıranda, tek bir yerde: models.js).
+ * apiKeyOverride (OPENROUTER MODEL CATALOG + BYOK round, OPSİYONEL 3.
+ * parametre): GERİYE DÖNÜK UYUMLU — verilmezse (autofix/improve gibi mevcut
+ * TÜM çağıranlar HİÇ DEĞİŞMEDİ) davranış BİREBİR ÖNCEKİ round'la aynı:
+ * process.env.OPENROUTER_API_KEY kullanılır. Verilirse (kullanıcının kendi
+ * BYOK key'i — routes/generate.js req.body.apiKey'den okuyup geçirir) O
+ * kullanılır. Bu key ASLA loglanmaz/response'a yazılmaz/saklanmaz — sadece
+ * bu fonksiyonun yaşam süresi boyunca, tek bir Authorization başlığı
+ * oluşturmak için bellekte tutulur (görev md.16).
+ * Dönüş: { html, model, finishReason } ya da (hiçbir key yoksa) null.
  */
-async function callOpenRouterForHtml(messages) {
-  var apiKey = process.env.OPENROUTER_API_KEY;
+async function callOpenRouterForHtml(messages, modelOverride, apiKeyOverride) {
+  var apiKey = apiKeyOverride || process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     return null;
   }
 
+  var effectiveModel = modelOverride || modelConfig.model;
+
   var body = {
-    model: modelConfig.model,
+    model: effectiveModel,
     temperature: modelConfig.temperature,
     max_tokens: modelConfig.max_tokens,
     messages: messages,
@@ -123,7 +141,11 @@ async function callOpenRouterForHtml(messages) {
     // <html>...</html> çıkarma + head-script taşıma). Oyunun kod mantığına
     // dokunulmuyor, sadece güvenli yapısal normalization.
     html: normalizeGeneratedHtml(rawContent),
-    model: modelConfig.model,
+    // AI MODEL SELECTOR round — body.model'in KENDİSİ (effectiveModel)
+    // döndürülür (modelConfig.model DEĞİL) — böylece frontend'e/meta'ya
+    // giden `model` alanı OpenRouter'a GERÇEKTEN gönderilen id'yi yansıtır.
+    // modelOverride verilmediyse ikisi zaten AYNI (mevcut davranış korunur).
+    model: effectiveModel,
     finishReason: finishReason,
   };
 }

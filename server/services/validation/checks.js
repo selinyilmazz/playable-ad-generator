@@ -13,6 +13,14 @@
 const fs = require("fs");
 const path = require("path");
 const { getKnownAssetPaths } = require("../assetContext");
+// ROUND M — VALIDATION & QUALITY SCORE ACCURACY: aynı, DEĞİŞMEMİŞ mekanik
+// dedektörünü (Round L) ve sayı çıkarımını (Round L) yeniden kullanıyoruz —
+// ikinci bir dedektör/algoritma İCAT ETMİYORUZ, sadece validation katmanının
+// KENDİ SORUSUNU ("bu prompt hangi mekaniği istiyor, ve o mekanik üretilen
+// HTML'de GERÇEKTEN var mı?") cevaplamak için mevcut, saf/deterministik
+// yardımcı fonksiyonları çağırıyoruz.
+const { detectGameplayMechanic } = require("../mockGameplayIntent");
+const { extractCountNear } = require("../countExtraction");
 
 // PHASE 5 — Asset Integrity: asset-paths-valid'in "bu path manifestte var
 // mı?" sorusundan farklı olarak, "bu path GERÇEKTEN diskte, desteklenen bir
@@ -91,6 +99,35 @@ function extractLevelLengthSignals(prompt) {
   };
 }
 
+// ================== MOVEMENT INPUT SIGNAL (Horizontal Movement Fix) ==================
+// PROBLEM: prompt sürekli/yönlü (continuous/directional) bir hareket
+// istiyorsa (örn. "sağa ve sola hareket etsin", "move left and right",
+// "arrow keys", "A/D ile hareket", "move horizontally"), üretilen oyunun
+// GERÇEKTEN klavye/tuş-basılı-tutma tabanlı bir yatay hareket uygulaması
+// beklenir — tek bir tıklama/dokunma (sadece zıplama) YETERLİ DEĞİLDİR.
+// `extractLevelLengthSignals` ile TAMAMEN AYNI, zaten kabul edilmiş desen:
+// gameType'a göre DALLANMIYOR, sadece promptun kendi dilini (generic
+// keyword/regex) okuyor — üretilen HTML'i değil.
+var MOVEMENT_SIGNAL_RE = new RegExp(
+  "(" +
+    "sağ[a-zçğıöşü]*\\s+(?:ve\\s+)?sol[a-zçğıöşü]*" + "|" +
+    "sol[a-zçğıöşü]*\\s+(?:ve\\s+)?sağ[a-zçğıöşü]*" + "|" +
+    "move\\s+(?:left\\s+and\\s+right|right\\s+and\\s+left|horizontally)" + "|" +
+    "\\bleft\\s+and\\s+right\\b" + "|" +
+    "\\barrow\\s*keys?\\b" + "|" +
+    "\\ba\\s*\\/\\s*d\\b" + "|" +
+    "\\bwasd\\b" + "|" +
+    "klavye" + "|" +
+    "yön\\s*tuş" +
+  ")",
+  "i"
+);
+
+function extractMovementInputSignal(prompt) {
+  if (!prompt) return { requiresHorizontalMovement: false };
+  return { requiresHorizontalMovement: MOVEMENT_SIGNAL_RE.test(prompt) };
+}
+
 // ================== GAMEPLAY CONSISTENCY (Round 21) ==================
 // systemPrompt.js'teki yeni, additive "21. GAMEPLAY CONSISTENCY" bölümü
 // LLM'e opsiyonel olarak, ana oyun <script>'ine KARIŞMAYAN, inert bir
@@ -124,6 +161,35 @@ var JUMP_TOLERANCE = 1.18; // ~%18 tolerans (istenen %15-20 aralığında) — s
 // gravity/jumpVelocity/moveSpeed/platforms şart koşuyor). "İki nokta
 // pratikte aynı yerde mi?" sorusu için kaba bir piksel toleransı.
 var HAZARD_OVERLAP_TOLERANCE = 24; // px — bir hazard/collectible'ın bir platform/spawn/goal noktasıyla "çakıştığı" kabul edilen mesafe
+
+// ================== SCRIPT TYPE HELPERS (ROUND M) ==================
+// KÖK SORUN (Round L'de keşfedildi, burada düzeltiliyor): hem "has-js" hem
+// "js-syntax-valid", type attribute'una BAKMAKSIZIN HER <script> etiketini
+// "bu JavaScript'tir" varsayarak ele alıyordu. Ama systemPrompt.js'in
+// belgelediği <script type="application/json" id="gameplay-config">
+// self-report bloğu bir JSON OBJECT LITERAL'dır — `new Function(code)` ile
+// bir JS PROGRAM GÖVDESİ olarak parse edilmeye çalışıldığında ("Unexpected
+// token ':'") KESİN olarak SyntaxError fırlatır. Sonuç: bu (opsiyonel,
+// belgelenmiş, zararsız) blok var olduğu sürece js-syntax-valid HER ZAMAN
+// kritik olarak fail ediyordu — gerçek oyun kodu tamamen sağlam olsa bile.
+// Düzeltme: SADECE "veri" tipi script blokları (application/json,
+// application/ld+json ve benzeri "*/*+json" type'lar) hem has-js hem
+// js-syntax-valid'in JS-parse taramasının DIŞINA çıkarılıyor — bunlar zaten
+// AYRI bir check'te (gameplay-config-valid, aşağıda) kendi JSON-özel
+// kurallarıyla doğrulanıyor. type attribute'u YOKSA veya bilinen bir JS
+// type'sa (text/javascript, application/javascript, module, vb.) davranış
+// BİREBİR ÖNCEKİ GİBİ kalır (taranır/parse edilir) — mevcut hiçbir gerçek
+// oyun script'i bu değişiklikten etkilenmez.
+var NON_JS_SCRIPT_TYPE_RE = /^(?:[a-z0-9.+-]+\/(?:ld\+)?json)$/i;
+
+function getScriptTagType(openTagAttrs) {
+  var m = (openTagAttrs || "").match(/\btype\s*=\s*["']([^"']+)["']/i);
+  return m ? m[1].trim().toLowerCase() : "";
+}
+
+function isNonJsScriptType(type) {
+  return !!type && NON_JS_SCRIPT_TYPE_RE.test(type);
+}
 
 function isFiniteNumber(n) {
   return typeof n === "number" && isFinite(n);
@@ -284,6 +350,236 @@ function evaluatePlatformerReachability(cfg) {
   };
 }
 
+// ================== ROUND M — MECHANIC-SPECIFIC GAMEPLAY VALIDATION ==================
+// KÖK SORUN (Round K'de kanıtlandı): teknik check'lerin (valid HTML/JS,
+// interactive, no-storage, vb.) hepsi geçse bile, üretilen oyun TALEP
+// EDİLEN mekaniği (platformer/racing/shooter/vb.) HİÇ İÇERMEYEBİLİR — ve
+// eskiden buna bakan HİÇBİR check yoktu, bu yüzden "Ormanda...WASD...
+// yıldız...düşman" gibi bir prompt, gerçekte jenerik bir tap-grid şablonuna
+// düşse bile 95/100 "Excellent" alabiliyordu.
+//
+// Bu bölüm, promptun HANGİ mekaniği işaret ettiğine (mockGameplayIntent.js
+// — Round L'nin AYNI, DEĞİŞMEMİŞ dedektörü, İKİNCİ bir dedektör İCAT
+// EDİLMEDİ) bakıp, üretilen HTML'de o mekanik için GERÇEKTEN beklenen,
+// tamamen deterministik (regex/substring, HİÇBİR semantik/AI değerlendirmesi
+// yok — görev md.7) kod/metin sinyallerinin var olup olmadığını tarar.
+//
+// Felsefe (mevcut platformer-gameplay-consistency/level-length-consistency/
+// movement-input-consistency ile AYNI): HER ZAMAN non-critical (asla
+// .valid'i false yapmaz — sadece skor + detay); mekanik bu promptla
+// alakasızsa (ctx.gameplayMechanic bu check'in mekaniğiyle eşleşmiyorsa)
+// SESSİZCE "pass" (görev md.6: "Do NOT require every signal for every
+// game"); bir sayı istenmemişse numeric sinyal sayıma HİÇ dahil edilmez
+// (görev md.8: "Do not penalize games where the prompt did not specify a
+// number"). Skorlama: uygulanabilir sinyallerin TAMAMI bulunursa pass,
+// HİÇBİRİ bulunamazsa fail (güçlü kanıt: talep edilen mekanik AÇIKÇA yok),
+// aradaki her şey warning.
+var MOVE_KEY_SUBSTRINGS_4DIR = ["arrowup", "arrowdown", "arrowleft", "arrowright", "keyw", "keya", "keys", "keyd"];
+var MOVE_KEY_SUBSTRINGS_LR = ["arrowleft", "arrowright", "keya", "keyd"];
+
+function hasAny(haystack, needles) {
+  return needles.some(function (n) { return haystack.indexOf(n) !== -1; });
+}
+
+function hasKeyListener(h) {
+  return /addeventlistener\s*\(\s*['"](keydown|keyup)['"]/i.test(h);
+}
+
+// ctx, TEK bir validatePlayable() çağrısı boyunca TÜM check'ler arasında
+// AYNI obje örneği olarak paylaşılıyor (bkz. ../validate.js) — mekanik
+// tespiti promptun kendisinden (HTML'den değil) türetildiği için sabittir,
+// bu yüzden ctx üzerinde bir kez hesaplanıp önbelleğe alınır (8 ayrı check
+// aynı promptu 8 kez yeniden taramaz).
+function getMechanic(ctx) {
+  if (ctx.__mechanicCache === undefined) {
+    ctx.__mechanicCache = detectGameplayMechanic(ctx.userPrompt || "").mechanic;
+  }
+  return ctx.__mechanicCache;
+}
+
+// signals: [{ label, ok, applicable? }] — applicable:false olan sinyaller
+// (ör. promptta hiç sayı istenmemişse numeric sinyal) sayıma HİÇ dahil
+// edilmez.
+function summarizeSignals(mechanicLabel, signals) {
+  var applicable = signals.filter(function (s) { return s.applicable !== false; });
+  if (applicable.length === 0) {
+    return { status: "pass", detail: mechanicLabel + ": doğrulanacak somut/sayısal bir sinyal yok (pass)." };
+  }
+  var found = applicable.filter(function (s) { return s.ok; });
+  var missing = applicable.filter(function (s) { return !s.ok; });
+
+  if (missing.length === 0) {
+    return {
+      status: "pass",
+      detail: mechanicLabel + ": beklenen tüm gerçek sinyaller bulundu (" +
+        found.map(function (s) { return s.label; }).join(", ") + ").",
+    };
+  }
+  if (found.length === 0) {
+    return {
+      status: "fail",
+      detail: mechanicLabel + ": prompt bu mekaniği açıkça istiyor ama üretilen HTML'de " +
+        "HİÇBİR beklenen sinyal (" + missing.map(function (s) { return s.label; }).join(", ") +
+        ") bulunamadı — güçlü kanıt: gerekli oynanış eksik.",
+    };
+  }
+  return {
+    status: "warning",
+    detail: mechanicLabel + ": " + found.length + "/" + applicable.length +
+      " beklenen sinyal bulundu. Eksik/doğrulanamayan: " +
+      missing.map(function (s) { return s.label; }).join(", ") + ".",
+  };
+}
+
+// Reuse: countExtraction.js (Round L, GENERATION için) — burada AYNI saf
+// fonksiyon, VALİDASYON tarafında "promptun istediği sayı, üretilen HTML'de
+// bir yerde geçiyor mu?" sorusu için kullanılıyor (görev md.8).
+//
+// ROUND M DÜZELTMESİ (canlı sanity-check sırasında BULUNDU): sayının HTML
+// içinde SADECE "bir yerde" (\bNUMBER\b, bağlamdan bağımsız) geçmesini
+// aramak YANLIŞ POZİTİF üretiyordu — ör. "10 düşman yok et" isteyen ama
+// GERÇEKTE düşman/ateş mantığı içermeyen jenerik bir oyun, sırf skor eşiği
+// için `if (score >= 10)` gibi ALAKASIZ bir "10" içerdiği için bu sinyali
+// yanlışlıkla "bulundu" sayıyordu (bkz. final rapor "SCORE SANITY CHECK").
+// Düzeltme: countExtraction.js'in prompt tarafında zaten uyguladığı "noun
+// context" prensibinin AYNISI, HTML tarafına da uygulanıyor — sayı, bu
+// mekaniğin kendi bağlam kelimelerinden (contextTokens; verilmezse nouns'un
+// kendisi + evrensel "target" — üretim şablonlarının hepsi hedef sayısını
+// `TARGET`/`targetCount` adıyla tutuyor) BİRİNE yakın (≤30 karakter) olarak
+// geçmiyorsa artık "bulunamadı" sayılır. İkinci, ayrı bir sayı-çıkarma
+// sistemi İCAT EDİLMEDİ — sadece AYNI yakınlık prensibi iki tarafa da
+// (prompt VE html) uygulanıyor.
+function escapeRegExpLiteral(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function numericSignal(prompt, html, nouns, label, contextTokens) {
+  var requested = extractCountNear(prompt, nouns);
+  if (requested == null) return { label: label, ok: false, applicable: false };
+  var tokens = (contextTokens || nouns).concat(["target"]);
+  var tokenPattern = tokens.map(escapeRegExpLiteral).join("|");
+  var numPattern = escapeRegExpLiteral(String(requested));
+  var re = new RegExp(
+    "(?:" + tokenPattern + ")[^<>]{0,30}\\b" + numPattern + "\\b" +
+      "|\\b" + numPattern + "\\b[^<>]{0,30}(?:" + tokenPattern + ")",
+    "i"
+  );
+  return { label: label + " (" + requested + ")", ok: re.test(html), applicable: true };
+}
+
+function evaluatePlatformerTextSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "yön hareketi (keydown/keyup + sol/sağ tuş)", ok: hasKeyListener(h) && hasAny(h, MOVE_KEY_SUBSTRINGS_LR) },
+    { label: "zıplama (jump)", ok: hasAny(h, ["jump", "zıpla"]) && hasKeyListener(h) },
+    { label: "platform referansı", ok: hasAny(h, ["platform"]) },
+    numericSignal(ctx.userPrompt, ctx.html, ["yıldız", "star", "coin", "coins"], "toplanabilir sayısı"),
+  ];
+}
+
+function evaluateRacingSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "direksiyon/şerit değiştirme (keydown/keyup + sol/sağ tuş)", ok: hasKeyListener(h) && hasAny(h, MOVE_KEY_SUBSTRINGS_LR) },
+    { label: "engel/rakip araç referansı", ok: hasAny(h, ["traffic", "obstacle", "opponent", "engel", "araç", "rakip"]) },
+    { label: "skor/süre göstergesi", ok: hasAny(h, ["score", "time"]) },
+  ];
+}
+
+function evaluateSpaceShooterSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "hareket (keydown/keyup + sol/sağ tuş)", ok: hasKeyListener(h) && hasAny(h, MOVE_KEY_SUBSTRINGS_LR) },
+    { label: "ateş etme/mermi", ok: hasAny(h, ["fire", "shoot", "bullet", "mermi", "ateş", "lazer", "laser"]) },
+    { label: "düşman/enemy referansı", ok: hasAny(h, ["enem", "düşman", "alien", "asteroid", "ufo"]) },
+    numericSignal(ctx.userPrompt, ctx.html, ["düşman", "enemy", "enemies"], "düşman hedef sayısı"),
+  ];
+}
+
+function evaluateCollectionSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "4 yönlü hareket (keydown/keyup + yön tuşları)", ok: hasKeyListener(h) && hasAny(h, MOVE_KEY_SUBSTRINGS_4DIR) },
+    { label: "toplanabilir referansı", ok: hasAny(h, ["collect", "topla", "meyve", "fruit", "coin", "star", "yıldız", "altın"]) },
+    { label: "skor göstergesi", ok: hasAny(h, ["score"]) },
+    numericSignal(ctx.userPrompt, ctx.html, ["meyve", "yıldız", "altın", "coin", "gem", "fruit", "star"], "toplanabilir hedef sayısı"),
+  ];
+}
+
+function evaluateMemorySignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "kart referansı", ok: hasAny(h, ["card", "kart"]) },
+    { label: "çevirme/eşleştirme", ok: hasAny(h, ["reveal", "flip", "match", "eşleş"]) },
+    { label: "hamle sayacı", ok: hasAny(h, ["move", "hamle"]) },
+  ];
+}
+
+function evaluateMathSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "soru referansı", ok: hasAny(h, ["question", "soru"]) },
+    { label: "cevap/seçenek referansı", ok: hasAny(h, ["answer", "cevap", "option", "seçenek"]) },
+    { label: "skor göstergesi", ok: hasAny(h, ["score"]) },
+    numericSignal(ctx.userPrompt, ctx.html, ["soru", "question", "questions"], "soru sayısı"),
+  ];
+}
+
+function evaluateCookingSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "malzeme referansı", ok: hasAny(h, ["ingredient", "malzeme"]) },
+    { label: "tarif/sıra referansı", ok: hasAny(h, ["recipe", "tarif", "step", "sıra"]) },
+    { label: "doğru/yanlış değerlendirmesi", ok: hasAny(h, ["correct", "wrong", "doğru", "yanlış"]) },
+  ];
+}
+
+function evaluateDungeonSignals(ctx) {
+  var h = ctx.lowerHtml;
+  return [
+    { label: "4 yönlü hareket (keydown/keyup + yön tuşları)", ok: hasKeyListener(h) && hasAny(h, MOVE_KEY_SUBSTRINGS_4DIR) },
+    // NOT: bare "key" alt-dizesi BİLEREK kullanılmıyor — "keydown"/"keyup"
+    // TÜM oyunların paylaşılan runtime'ında zaten HER ZAMAN mevcut, bu
+    // yüzden \bkey\b (kelime sınırı) kullanılıyor: "keydown" içinde "key"
+    // ile "down" arasında kelime sınırı YOK (ikisi de \w), bu yüzden EŞLEŞMEZ
+    // — ama "key-item" gibi kendi sınıf adımızda (tire kelime sınırı sayılır)
+    // DOĞRU şekilde eşleşir. mockGameplayIntent.js'in AYNI sınıf hatayı
+    // ("keywords" içindeki bare "key") bulup düzelttiği Round L'deki
+    // mantıkla birebir aynı.
+    { label: "anahtar (key) referansı", ok: /\bkey\b/i.test(h) || h.indexOf("anahtar") !== -1 },
+    { label: "kapı (door) referansı", ok: hasAny(h, ["door", "kapı"]) },
+    { label: "çıkış (exit) referansı", ok: hasAny(h, ["exit", "çıkış"]) },
+  ];
+}
+
+var MECHANIC_CHECK_DEFS = [
+  { key: "racing-gameplay-consistency", name: "Racing Gameplay Consistency", mechanic: "racing", label: "Racing", evaluate: evaluateRacingSignals },
+  { key: "space-shooter-gameplay-consistency", name: "Space Shooter Gameplay Consistency", mechanic: "space-shooter", label: "Space Shooter", evaluate: evaluateSpaceShooterSignals },
+  { key: "collection-gameplay-consistency", name: "Collection Gameplay Consistency", mechanic: "collection", label: "Collection", evaluate: evaluateCollectionSignals },
+  { key: "memory-gameplay-consistency", name: "Memory Gameplay Consistency", mechanic: "memory", label: "Memory", evaluate: evaluateMemorySignals },
+  { key: "math-gameplay-consistency", name: "Math Quiz Gameplay Consistency", mechanic: "math", label: "Math Quiz", evaluate: evaluateMathSignals },
+  { key: "cooking-gameplay-consistency", name: "Cooking Gameplay Consistency", mechanic: "cooking", label: "Cooking", evaluate: evaluateCookingSignals },
+  { key: "dungeon-gameplay-consistency", name: "Dungeon Gameplay Consistency", mechanic: "dungeon", label: "Dungeon", evaluate: evaluateDungeonSignals },
+];
+
+var MECHANIC_CHECKS = MECHANIC_CHECK_DEFS.map(function (def) {
+  return {
+    key: def.key,
+    name: def.name,
+    critical: false,
+    run: function (ctx) {
+      var mechanic = getMechanic(ctx);
+      if (mechanic !== def.mechanic) {
+        return {
+          status: "pass",
+          detail: "Bu promptun tespit edilen mekaniği '" + def.mechanic + "' değil — bu check'in kapsamı dışında (pass).",
+        };
+      }
+      return summarizeSignals(def.label, def.evaluate(ctx));
+    },
+  };
+});
+
 var CHECKS = [
   {
     key: "valid-html",
@@ -304,8 +600,20 @@ var CHECKS = [
     name: "Has JavaScript",
     critical: true,
     run: function (ctx) {
-      var match = ctx.html.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
-      if (match && match[1].trim().length > 10) return { status: "pass" };
+      // ROUND M: type="application/json" (ör. gameplay-config self-report)
+      // bir <script> bloğu, dolu olsa bile GERÇEK oyun kodu SAYILMAZ —
+      // aksi halde ana oyun <script>'i tamamen boş/eksik olsa bile, ÖNÜNDEKİ
+      // bir JSON config bloğu yüzünden yanlışlıkla "has-js: pass" dönebilirdi
+      // (js-syntax-valid'deki KÖK SORUNLA aynı hata sınıfı — bkz. yukarıdaki
+      // SCRIPT TYPE HELPERS notu). /g ile TÜM script etiketleri taranıyor
+      // (eskiden SADECE ilki taranıyordu).
+      var re = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
+      var match;
+      while ((match = re.exec(ctx.html)) !== null) {
+        var type = getScriptTagType(match[1]);
+        if (isNonJsScriptType(type)) continue;
+        if (match[2] && match[2].trim().length > 10) return { status: "pass" };
+      }
       return { status: "fail", detail: "<script> etiketi bulunamadı veya boş." };
     },
   },
@@ -325,12 +633,23 @@ var CHECKS = [
       // fonksiyon hiç çağrılmıyor) — bu yüzden güvenlidir, LLM çıktısını
       // sunucuda execute etmiyoruz; solver/oyun mantığına da dokunmuyor,
       // sadece mevcut kodun parse edilip edilemediğini okuyor.
-      var re = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+      //
+      // ROUND M: type="application/json"/"application/ld+json" (veri
+      // blokları, ör. gameplay-config self-report) artık BU taramanın
+      // DIŞINDA — bunlar GEÇERLİ bir JS PROGRAM GÖVDESİ olmak ZORUNDA
+      // değildir (ve JSON object literal syntax'i zaten JS ifadesi olarak
+      // parse EDİLEMEZ). Kendi JSON geçerliliği AYRI bir check'te
+      // (gameplay-config-valid, aşağıda) doğrulanıyor — bu check SADECE
+      // gerçek oyun kodunun (type yok / text/javascript / application/
+      // javascript / module vb.) sözdizimsel olarak geçerli olduğuna bakar.
+      var re = /<script([^>]*)>([\s\S]*?)<\/script>/gi;
       var match;
       var found = false;
       var firstError = null;
       while ((match = re.exec(ctx.html)) !== null) {
-        var code = match[1];
+        var type = getScriptTagType(match[1]);
+        if (isNonJsScriptType(type)) continue;
+        var code = match[2];
         if (!code || !code.trim()) continue;
         found = true;
         try {
@@ -593,6 +912,16 @@ var CHECKS = [
       var extracted = extractGameplayConfigJson(ctx.html);
 
       if (!extracted.found) {
+        // ROUND M: config yoksa artık körü körüne "pass" DENMİYOR — eğer bu
+        // PROMPT açıkça platformer/zıplama mekaniği istiyorsa (görev md.4),
+        // üretilen HTML'de GERÇEK metinsel/kod sinyallerine (hareket,
+        // zıplama, platform referansı, istenen toplanabilir sayısı) bakılır.
+        // Mekanik platformer DEĞİLSE (veya tespit edilemiyorsa) davranış
+        // BİREBİR ÖNCEKİ GİBİ kalır: "pass, doğrulanamıyor" (opsiyonel
+        // özellik, zorunlu değil) — mevcut testler bu yüzden korunuyor.
+        if (getMechanic(ctx) === "platformer") {
+          return summarizeSignals("Platformer", evaluatePlatformerTextSignals(ctx));
+        }
         return {
           status: "pass",
           detail:
@@ -611,6 +940,14 @@ var CHECKS = [
 
       var cfg = extracted.parsed;
       if (!isPlatformerConfig(cfg)) {
+        // ROUND M: config VAR ama platformer reachability alanlarını
+        // içermiyor — promptun mekaniği yine de platformer'sa metinsel
+        // sinyallere bakılır (config eksik/yanlış şekilli olsa bile GERÇEK
+        // oyun kodu doğru olabilir — ya da tam tersi, config yokken kod da
+        // yoksa bu artık yakalanır).
+        if (getMechanic(ctx) === "platformer") {
+          return summarizeSignals("Platformer", evaluatePlatformerTextSignals(ctx));
+        }
         return {
           status: "pass",
           detail:
@@ -643,6 +980,46 @@ var CHECKS = [
         detail:
           "Self-reported gameplay-config üzerinden YAKLAŞIK kontrol (kesin bir physics simülasyonu değildir): " +
           allProblems.length + " gameplay tutarlılık sorunu bulundu -> " + allProblems.join(" | "),
+      };
+    },
+  },
+  {
+    key: "gameplay-config-valid",
+    name: "Gameplay Config Valid",
+    critical: false,
+    run: function (ctx) {
+      // ROUND M — görev md.3: <script type="application/json" id=
+      // "gameplay-config"> bloğu VARSA, onu (SADECE JSON.parse ile, ASLA
+      // eval/new Function ile) güvenle ayrıştırıp temel yapısını doğrulayan,
+      // mekanikten BAĞIMSIZ, genel bir check. Bloğun mevcudiyeti TEK BAŞINA
+      // "gameplay çalışıyor" ANLAMINA GELMEZ (bkz. platformer-gameplay-
+      // consistency ve mekanik-özel check'ler — GERÇEK oynanış sinyalini
+      // onlar değerlendirir); bu check SADECE "bu self-report bloğu, VARSA,
+      // en azından GEÇERLİ ve KULLANILABİLİR bir JSON mi?" sorusuna bakar.
+      var extracted = extractGameplayConfigJson(ctx.html);
+      if (!extracted.found) {
+        return {
+          status: "pass",
+          detail: "gameplay-config bloğu yok — opsiyonel bir özellik, doğrulanacak bir şey yok (pass).",
+        };
+      }
+      if (extracted.parseError) {
+        return {
+          status: "warning",
+          detail:
+            "gameplay-config bloğu bulundu ama geçerli JSON değil (" + extracted.parseError +
+            ") — pipeline ÇÖKMEDİ, sadece bu self-report sinyali kullanılamadı.",
+        };
+      }
+      if (!extracted.parsed || typeof extracted.parsed !== "object" || Array.isArray(extracted.parsed)) {
+        return {
+          status: "warning",
+          detail: "gameplay-config geçerli JSON ama beklenen obje ({...}) yapısında değil.",
+        };
+      }
+      return {
+        status: "pass",
+        detail: "gameplay-config geçerli JSON ve bir obje — mekanik-özel check'ler tarafından (varsa) ek, güçlü bir sinyal olarak kullanılabilir.",
       };
     },
   },
@@ -721,7 +1098,53 @@ var CHECKS = [
       return { status: "warning", detail: problems.join(" | ") };
     },
   },
-];
+  {
+    key: "movement-input-consistency",
+    name: "Movement Input Consistency",
+    critical: false,
+    run: function (ctx) {
+      // HORIZONTAL MOVEMENT FIX — `level-length-consistency` ile AYNI
+      // felsefe: prompt sürekli/yönlü bir hareket istemiyorsa hiçbir şey
+      // kontrol edilmez (pass). İstiyorsa ve kanıt bulunamıyorsa SADECE
+      // "warning" döner (asla fail) — bu kesin bir runtime simülasyonu
+      // değil, en iyi çabayla bir hatırlatma/tutarlılık kontrolüdür.
+      // gameType'a göre dallanma YOK — sadece promptun kendi dili + (varsa)
+      // LLM'in kendi beyan ettiği gameplay-config.controls kullanılıyor.
+      var signal = extractMovementInputSignal(ctx.userPrompt);
+      if (!signal.requiresHorizontalMovement) {
+        return { status: "pass" };
+      }
+
+      // 1) Güçlü sinyal (self-reported): gameplay-config.controls.horizontalKeys
+      var extracted = extractGameplayConfigJson(ctx.html);
+      var cfg = extracted.found && !extracted.parseError ? extracted.parsed : null;
+      if (cfg && cfg.controls && cfg.controls.horizontalKeys === true) {
+        return { status: "pass" };
+      }
+
+      // 2) Metinsel fallback: gerçek bir keydown/keyup dinleyicisi VE en az
+      // bir yatay tuş referansı (ArrowLeft/ArrowRight/KeyA/KeyD veya
+      // key==='a'/'d' karşılaştırması) birlikte var mı? Tek başına
+      // "keydown" veya tek başına "ArrowLeft" yeterli değil.
+      var hasKeyListener = /addeventlistener\s*\(\s*['"](keydown|keyup)['"]/i.test(ctx.html);
+      var hasHorizontalKeyRef =
+        /arrowleft|arrowright|keya\b|keyd\b|["'`]a["'`]\s*\)|["'`]d["'`]\s*\)/i.test(ctx.html);
+
+      if (hasKeyListener && hasHorizontalKeyRef) {
+        return { status: "pass" };
+      }
+
+      return {
+        status: "warning",
+        detail:
+          "Prompt sürekli/yönlü bir hareket istiyor (örn. sağa/sola, arrow keys, A/D) " +
+          "ama üretilen oyunda klavye tabanlı (keydown/keyup + ArrowLeft/ArrowRight/A/D) " +
+          "bir yatay hareket implementasyonu tespit edilemedi — sadece tıklama/dokunma " +
+          "yeterli olmayabilir (elle kontrol önerilir).",
+      };
+    },
+  },
+].concat(MECHANIC_CHECKS); // ROUND M — 7 yeni mekanik-özel check, additive.
 
 module.exports = {
   CHECKS: CHECKS,
@@ -735,4 +1158,20 @@ module.exports = {
   // Round F — test edilebilirlik için additive export (mevcut hiçbir
   // export değişmedi/kaldırılmadı).
   extractLevelLengthSignals: extractLevelLengthSignals,
+  // Horizontal Movement Fix — test edilebilirlik için additive export
+  // (mevcut hiçbir export değişmedi/kaldırılmadı).
+  extractMovementInputSignal: extractMovementInputSignal,
+  // ROUND M — test edilebilirlik için additive export'lar (mevcut hiçbir
+  // export değişmedi/kaldırılmadı).
+  isNonJsScriptType: isNonJsScriptType,
+  getScriptTagType: getScriptTagType,
+  evaluatePlatformerTextSignals: evaluatePlatformerTextSignals,
+  evaluateRacingSignals: evaluateRacingSignals,
+  evaluateSpaceShooterSignals: evaluateSpaceShooterSignals,
+  evaluateCollectionSignals: evaluateCollectionSignals,
+  evaluateMemorySignals: evaluateMemorySignals,
+  evaluateMathSignals: evaluateMathSignals,
+  evaluateCookingSignals: evaluateCookingSignals,
+  evaluateDungeonSignals: evaluateDungeonSignals,
+  summarizeSignals: summarizeSignals,
 };
