@@ -95,6 +95,20 @@ function withNoEnvKey() {
   };
 }
 
+// PRODUCTION BYOK SECURITY FIX — bkz. modelSelector.test.js'teki aynı adlı
+// yardımcının yorumu: apiKey HİÇ gönderilmeden env key fallback'ini test
+// eden senaryolar artık bunu SADECE ALLOW_SERVER_API_KEY==="true" iken
+// gözlemleyebilir (production-safe yeni varsayılan). withFakeEnvKey() İLE
+// BİRLİKTE kullanılır.
+function withAllowServerKey(value) {
+  var previous = process.env.ALLOW_SERVER_API_KEY;
+  process.env.ALLOW_SERVER_API_KEY = value;
+  return function restore() {
+    if (previous === undefined) delete process.env.ALLOW_SERVER_API_KEY;
+    else process.env.ALLOW_SERVER_API_KEY = previous;
+  };
+}
+
 function fakeChatCompletionResponse() {
   return {
     ok: true,
@@ -362,8 +376,9 @@ test("/api/generate: kullanıcının kendi apiKey'i ENV key hiç TANIMLI OLMASA 
 // -----------------------------------------------------------------------
 // 10) ENV key fallback'i (apiKey verilmezse) BOZULMADI
 // -----------------------------------------------------------------------
-test("/api/generate: apiKey alanı hiç gönderilmezse MEVCUT ENV key fallback'i ÇALIŞMAYA devam eder (regresyon yok)", async function () {
+test("/api/generate: apiKey alanı hiç gönderilmezse, ALLOW_SERVER_API_KEY=true İKEN MEVCUT ENV key fallback'i ÇALIŞMAYA devam eder (regresyon yok)", async function () {
   var restoreEnv = withFakeEnvKey();
+  var restoreFlag = withAllowServerKey("true");
   var calls = [];
   var restoreFetch = stubFetchByUrl(
     [{ match: /chat\/completions$/, respond: function () { return fakeChatCompletionResponse(); } }],
@@ -380,6 +395,7 @@ test("/api/generate: apiKey alanı hiç gönderilmezse MEVCUT ENV key fallback'i
     ctx.server.close();
     restoreFetch();
     restoreEnv();
+    restoreFlag();
   }
 });
 
@@ -550,10 +566,11 @@ test("/api/generate: ne ENV key ne kullanıcı apiKey'i varsa MEVCUT mock mod da
 // -----------------------------------------------------------------------
 // 17) Mevcut generation akışı (dinamik katalog/BYOK olmadan) BOZULMADI
 // -----------------------------------------------------------------------
-test("/api/generate: modelCatalog/BYOK değişiklikleri sonrası, HİÇ önbellek/apiKey olmadan eski davranış (varsayılan olmayan model seçimi) BİREBİR ÇALIŞIYOR", async function () {
+test("/api/generate: modelCatalog/BYOK değişiklikleri sonrası, ALLOW_SERVER_API_KEY=true İKEN HİÇ önbellek/apiKey olmadan eski davranış (varsayılan olmayan model seçimi) BİREBİR ÇALIŞIYOR", async function () {
   modelCatalog._resetCacheForTests(); // hiç GET /api/models çağrılmamış gibi
   var nonDefault = modelConfig.models.filter(function (m) { return m.id !== modelConfig.defaultModel; })[0];
   var restoreEnv = withFakeEnvKey();
+  var restoreFlag = withAllowServerKey("true");
   var calls = [];
   var restoreFetch = stubFetchByUrl(
     [{ match: /chat\/completions$/, respond: function () { return fakeChatCompletionResponse(); } }],
@@ -573,5 +590,6 @@ test("/api/generate: modelCatalog/BYOK değişiklikleri sonrası, HİÇ önbelle
     ctx.server.close();
     restoreFetch();
     restoreEnv();
+    restoreFlag();
   }
 });

@@ -76,6 +76,19 @@ function withNoEnvKey() {
   };
 }
 
+// PRODUCTION BYOK SECURITY FIX — bkz. modelSelector.test.js/modelCatalogByok.test.js'teki
+// aynı adlı yardımcının yorumu: apiKey hiç gönderilmeden env key fallback'ini
+// test eden senaryo artık SADECE ALLOW_SERVER_API_KEY==="true" iken geçerli
+// (production-safe yeni varsayılan). withFakeEnvKey() İLE BİRLİKTE kullanılır.
+function withAllowServerKey(value) {
+  var previous = process.env.ALLOW_SERVER_API_KEY;
+  process.env.ALLOW_SERVER_API_KEY = value;
+  return function restore() {
+    if (previous === undefined) delete process.env.ALLOW_SERVER_API_KEY;
+    else process.env.ALLOW_SERVER_API_KEY = previous;
+  };
+}
+
 function fakeChatCompletionResponse(html) {
   return {
     ok: true,
@@ -316,8 +329,9 @@ test("/api/improve: kullanıcının BYOK apiKey'i ENV key olmasa bile GERÇEKTEN
 // -----------------------------------------------------------------------
 // 8) ENV key fallback'i (apiKey verilmezse) çalışıyor
 // -----------------------------------------------------------------------
-test("/api/improve: apiKey hiç gönderilmezse mevcut ENV key fallback'i çalışır", async function () {
+test("/api/improve: apiKey hiç gönderilmezse, ALLOW_SERVER_API_KEY=true İKEN mevcut ENV key fallback'i çalışır", async function () {
   var restoreEnv = withFakeEnvKey();
+  var restoreFlag = withAllowServerKey("true");
   var calls = [];
   var restoreFetch = stubFetchByUrl(
     [{ match: /chat\/completions$/, respond: function () { return fakeChatCompletionResponse(); } }],
@@ -338,6 +352,7 @@ test("/api/improve: apiKey hiç gönderilmezse mevcut ENV key fallback'i çalı�
     ctx.server.close();
     restoreFetch();
     restoreEnv();
+    restoreFlag();
   }
 });
 

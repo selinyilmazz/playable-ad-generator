@@ -30,11 +30,26 @@ app.use("/api", assetLibrariesRouter);
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.listen(PORT, function () {
+  // PRODUCTION BYOK SECURITY FIX — bu log artık ALLOW_SERVER_API_KEY'i de
+  // hesaba katıyor: .env'de OPENROUTER_API_KEY tanımlı olması ARTIK TEK
+  // BAŞINA "gerçek LLM çağrıları yapılacak" anlamına gelmiyor (bkz.
+  // openrouterClient.resolveEffectiveApiKey) — flag açık değilse (production
+  // varsayılanı) server-side key HİÇBİR isteğe otomatik kullanılmaz, SADECE
+  // kullanıcının kendi BYOK key'i ile gerçek çağrı yapılabilir. Bu, hiçbir
+  // davranışı DEĞİŞTİRMİYOR, sadece başlangıç logunun artık YANILTICI
+  // olmamasını sağlıyor.
   var hasKey = !!process.env.OPENROUTER_API_KEY;
+  var allowServerKey = process.env.ALLOW_SERVER_API_KEY === "true";
   console.log("Playable Ad Generator http://localhost:" + PORT + " adresinde çalışıyor.");
-  console.log(
-    hasKey
-      ? "OpenRouter key bulundu -> gerçek LLM çağrıları yapılacak."
-      : "OpenRouter key YOK -> mock mod aktif (generate/autofix/improve mock davranışına düşecek)."
-  );
+  if (allowServerKey && hasKey) {
+    console.log("OpenRouter server-side key AKTİF (ALLOW_SERVER_API_KEY=true) -> BYOK olmadan da gerçek LLM çağrıları yapılabilir.");
+  } else if (hasKey) {
+    console.log(
+      "OpenRouter key .env'de var ama ALLOW_SERVER_API_KEY=true DEĞİL -> server-side key KULLANILMAYACAK " +
+        "(production-safe varsayılan). Gerçek LLM çağrısı SADECE kullanıcının kendi BYOK key'iyle yapılabilir; " +
+        "BYOK yoksa generate/autofix/improve mock davranışına düşer."
+    );
+  } else {
+    console.log("OpenRouter key YOK -> mock mod aktif (BYOK yoksa generate/autofix/improve mock davranışına düşecek).");
+  }
 });

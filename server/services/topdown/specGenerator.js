@@ -17,6 +17,17 @@
 const modelConfig = require("../../config/models");
 const { buildMockSpec } = require("./mockSpecGenerator");
 const { TOPDOWN_SPEC_SYSTEM_PROMPT } = require("../../prompts/topDownSpecPrompt");
+// PRODUCTION BYOK SECURITY FIX — bu dosyanın kendi, ayrı OpenRouter çağrısı
+// (bkz. dosya başı notu) eskiden `apiKeyOverride || process.env.OPENROUTER_API_KEY`
+// satırını openrouterClient.js'ten BAĞIMSIZ, KENDİ KOPYASI olarak tutuyordu —
+// bu, aynı güvenlik açığının (server-side key'in explicit onay olmadan
+// kullanılması) burada AYRI/sessizce hayatta kalmasına yol açıyordu. Artık
+// TEK, merkezi kuralı (openrouterClient.resolveEffectiveApiKey) İTHAL edip
+// kullanıyor — bu dosyanın kendi OpenRouter fetch/JSON mantığına (görev
+// gereği openrouterClient.js'e dokunmadan, HTML-normalize etmeyen ayrı bir
+// çağrı olarak kalmasına) HİÇ dokunulmadı, sadece key ÇÖZÜMLEME satırı
+// paylaşılan kaynağa taşındı.
+const { resolveEffectiveApiKey } = require("../openrouterClient");
 
 var MAX_POINT_ARRAY_LENGTH = 50;
 
@@ -94,12 +105,15 @@ function extractContent(message) {
  * OpenRouter çağrısı, SADECE aynı model seçimi mantığını PAYLAŞIYOR.
  *
  * apiKeyOverride (OPENROUTER MODEL CATALOG + BYOK round, OPSİYONEL 3.
- * parametre): openrouterClient.js'in apiKeyOverride'ı İLE AYNI desen —
- * verilmezse process.env.OPENROUTER_API_KEY (ÖNCEKİ round'la birebir aynı),
- * verilirse kullanıcının BYOK key'i kullanılır. Loglanmaz/saklanmaz.
+ * parametre): verilirse (kullanıcının BYOK key'i) HER ZAMAN o kullanılır.
+ * Verilmezse openrouterClient.resolveEffectiveApiKey() KARARINA göre ya
+ * process.env.OPENROUTER_API_KEY (SADECE ALLOW_SERVER_API_KEY==="true"
+ * iken — bkz. PRODUCTION BYOK SECURITY FIX notu, o dosyada) ya da null
+ * (production varsayılanı — bu durumda generateTopDownSpec() ZATEN
+ * mevcut, DEĞİŞMEMİŞ mock spec fallback'ine düşer). Loglanmaz/saklanmaz.
  */
 async function callLlmForSpec(prompt, modelOverride, apiKeyOverride) {
-  var apiKey = apiKeyOverride || process.env.OPENROUTER_API_KEY;
+  var apiKey = resolveEffectiveApiKey(apiKeyOverride);
   if (!apiKey) return null;
 
   var effectiveModel = modelOverride || modelConfig.model;

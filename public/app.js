@@ -2716,6 +2716,11 @@
     setStatus("Running Fix with AI…");
 
     try {
+      // PRODUCTION BYOK SECURITY FIX — autofix, generate/improve İLE AYNI
+      // BYOK deseni: getUserApiKey() kullanıcı bir key GİRMEDİYSE null
+      // döner ve `apiKey` hiç gönderilmez (backend bu durumda mevcut mock
+      // fallback davranışına düşer). Key SADECE bellekte tutulan
+      // getUserApiKey()'den okunur — hiçbir yeni saklama eklenmedi.
       var res = await fetch("/api/autofix", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2723,6 +2728,7 @@
           html: lastResult.html,
           prompt: lastResult.prompt,
           checks: lastResult.validation.checks,
+          apiKey: getUserApiKey() || undefined,
         }),
       });
       var data = await res.json();

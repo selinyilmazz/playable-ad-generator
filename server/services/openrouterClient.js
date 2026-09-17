@@ -37,6 +37,52 @@ function extractRawContent(message) {
 }
 
 /**
+ * PRODUCTION BYOK SECURITY FIX — TEK, MERKEZİ API key çözümleme kuralı.
+ *
+ * ÖNCEKİ (GÜVENSİZ) davranış: `apiKeyOverride || process.env.OPENROUTER_API_KEY`
+ * — kullanıcı kendi key'ini girmediğinde (BYOK yok) server, KOŞULSUZ olarak
+ * .env'deki OPENROUTER_API_KEY'e (sahibinin kendi, ücretli OpenRouter
+ * hesabı) düşüyordu. Production'da bu, siteye giren HERKESİN, hiçbir key
+ * girmeden, sahibinin hesabından generation yapabilmesi demekti (kritik
+ * maliyet/güvenlik açığı).
+ *
+ * YENİ davranış: server-side key'in kullanılabilmesi artık EXPLICIT bir
+ * opt-in flag'e (ALLOW_SERVER_API_KEY==="true") bağlı:
+ *   - apiKeyOverride varsa (kullanıcının kendi BYOK key'i) HER ZAMAN o
+ *     kullanılır — bu, ALLOW_SERVER_API_KEY'den bağımsız, hiç değişmedi.
+ *   - apiKeyOverride YOKSA (veya boş/whitespace-only bir string'se, ki
+ *     "" değeri zaten falsy olduğu için aşağıdaki || bunu otomatik
+ *     kapsar), server-side OPENROUTER_API_KEY SADECE
+ *     ALLOW_SERVER_API_KEY==="true" iken kullanılır; aksi halde (flag
+ *     false/undefined — PRODUCTION VARSAYILANI) null döner ve çağıran
+ *     taraf (generatePlayableAd/refinePlayableAd/generateTopDownSpec)
+ *     ZATEN MEVCUT olan "key yok -> mock moda düş" davranışına güvenli
+ *     şekilde düşer — mock mod hiçbir gerçek/ücretli AI çağrısı yapmaz,
+ *     bu yüzden BYOK'suz kullanıcılar için davranış hâlâ "çöker" değil
+ *     "mock'a düşer" (mevcut, DEĞİŞMEMİŞ mimari).
+ *   - Local development'ta .env'e ALLOW_SERVER_API_KEY=true eklenerek
+ *     ESKİ (server key fallback'li) davranış BİLİNÇLİ OLARAK geri
+ *     açılabilir — bu, geliştiricinin kendi makinesinde/kendi key'iyle
+ *     hâlâ eskisi gibi çalışabilmesini sağlar.
+ *
+ * callOpenRouterForHtml() (bu dosya) VE server/services/topdown/
+ * specGenerator.js'in callLlmForSpec()'i (KENDİ, AYRI bir OpenRouter
+ * çağrısı — bkz. o dosyanın başındaki not, callOpenRouterForHtml'i
+ * KASITLI OLARAK kullanmıyor çünkü dönen içerik HTML değil ham JSON)
+ * AYNI bu fonksiyonu çağırır — kural TEK bir yerde tanımlı, iki yerde
+ * KOPYALANMIYOR (bu, tam da bu güvenlik açığının aynı hatanın ikinci bir
+ * kopyasında sessizce hayatta kalmasını önler).
+ *
+ * apiKey hiçbir şekilde loglanmaz/response'a yazılmaz/saklanmaz — bu
+ * fonksiyon SADECE hangi string'in (override/env/null) kullanılacağına
+ * karar verir, değeri hiçbir yere yazmaz.
+ */
+function resolveEffectiveApiKey(apiKeyOverride) {
+  if (apiKeyOverride) return apiKeyOverride;
+  return process.env.ALLOW_SERVER_API_KEY === "true" ? process.env.OPENROUTER_API_KEY : null;
+}
+
+/**
  * messages: [{ role: "system"|"user", content: string }, ...]
  * modelOverride (AI MODEL SELECTOR round, OPSİYONEL 2. parametre): GERİYE
  * DÖNÜK UYUMLU — verilmezse (autofix/improve gibi mevcut çağıranlar HİÇ
@@ -57,7 +103,7 @@ function extractRawContent(message) {
  * Dönüş: { html, model, finishReason } ya da (hiçbir key yoksa) null.
  */
 async function callOpenRouterForHtml(messages, modelOverride, apiKeyOverride) {
-  var apiKey = apiKeyOverride || process.env.OPENROUTER_API_KEY;
+  var apiKey = resolveEffectiveApiKey(apiKeyOverride);
   if (!apiKey) {
     return null;
   }
@@ -150,4 +196,11 @@ async function callOpenRouterForHtml(messages, modelOverride, apiKeyOverride) {
   };
 }
 
-module.exports = { callOpenRouterForHtml: callOpenRouterForHtml, extractRawContent: extractRawContent };
+module.exports = {
+  callOpenRouterForHtml: callOpenRouterForHtml,
+  extractRawContent: extractRawContent,
+  // PRODUCTION BYOK SECURITY FIX — dışa açılıyor ki server/services/topdown/
+  // specGenerator.js (KENDİ, ayrı OpenRouter çağrısı) AYNI güvenlik kuralını
+  // KOPYALAMADAN, buradan İTHAL ederek kullansın (merkezi çözüm).
+  resolveEffectiveApiKey: resolveEffectiveApiKey,
+};

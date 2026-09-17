@@ -125,6 +125,23 @@ function withFakeApiKey() {
   };
 }
 
+// PRODUCTION BYOK SECURITY FIX — bu dosyadaki bazı testler, apiKey HİÇ
+// gönderilmeden (BYOK olmadan) env key'in gerçekten kullanıldığını
+// doğruluyor (yerel geliştirme senaryosu). openrouterClient.resolveEffectiveApiKey()
+// artık bunu SADECE ALLOW_SERVER_API_KEY==="true" iken kabul ediyor —
+// aksi halde (yeni, production-safe varsayılan) bu istekler mock'a düşer.
+// Bu yardımcı, o testlerin AYNI senaryoyu (yerel dev + env key) yeni,
+// doğru gate ile devam ettirmesini sağlar; withFakeApiKey() İLE BİRLİKTE
+// kullanılır.
+function withAllowServerKey(value) {
+  var previous = process.env.ALLOW_SERVER_API_KEY;
+  process.env.ALLOW_SERVER_API_KEY = value;
+  return function restore() {
+    if (previous === undefined) delete process.env.ALLOW_SERVER_API_KEY;
+    else process.env.ALLOW_SERVER_API_KEY = previous;
+  };
+}
+
 // -----------------------------------------------------------------------
 // 1) GET /api/models — başarılı + doğru şekil
 // -----------------------------------------------------------------------
@@ -208,6 +225,7 @@ test("/api/generate: geçerli, varsayılan olmayan bir model seçilirse OpenRout
   assert.ok(nonDefault, "test için varsayılan-olmayan en az bir desteklenen model gerekli");
 
   var restoreKey = withFakeApiKey();
+  var restoreFlag = withAllowServerKey("true");
   var capturedBodies = [];
   var restoreFetch = stubFetch(capturedBodies);
   var ctx = await startServer(generateRouter);
@@ -224,6 +242,7 @@ test("/api/generate: geçerli, varsayılan olmayan bir model seçilirse OpenRout
     ctx.server.close();
     restoreFetch();
     restoreKey();
+    restoreFlag();
   }
 });
 
@@ -233,6 +252,7 @@ test("/api/generate: geçerli, varsayılan olmayan bir model seçilirse OpenRout
 // -----------------------------------------------------------------------
 test("/api/generate: geçersiz/uydurma bir model id'si request'i ÇÖKERTMEZ, sessizce varsayılan modele düşer", async function () {
   var restoreKey = withFakeApiKey();
+  var restoreFlag = withAllowServerKey("true");
   var capturedBodies = [];
   var restoreFetch = stubFetch(capturedBodies);
   var ctx = await startServer(generateRouter);
@@ -249,11 +269,13 @@ test("/api/generate: geçersiz/uydurma bir model id'si request'i ÇÖKERTMEZ, se
     ctx.server.close();
     restoreFetch();
     restoreKey();
+    restoreFlag();
   }
 });
 
 test("/api/generate: model alanı hiç gönderilmezse (undefined/eksik) request ÇÖKMEZ, varsayılan model kullanılır", async function () {
   var restoreKey = withFakeApiKey();
+  var restoreFlag = withAllowServerKey("true");
   var capturedBodies = [];
   var restoreFetch = stubFetch(capturedBodies);
   var ctx = await startServer(generateRouter);
@@ -266,6 +288,7 @@ test("/api/generate: model alanı hiç gönderilmezse (undefined/eksik) request 
     ctx.server.close();
     restoreFetch();
     restoreKey();
+    restoreFlag();
   }
 });
 
