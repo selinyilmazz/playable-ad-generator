@@ -257,6 +257,36 @@
             </div>
           </div>
           <button class="icon-btn" id="help-btn" type="button" title="Help">?</button>
+          <!-- SUPABASE AUTHENTICATION FOUNDATION round — hesap giriş noktası.
+               PHASE 4'ün "kullanıcı hesabı/avatar YOK" notu artık geçerli
+               değil, ama tasarım aynı .page-header-right sırasını/boyutunu
+               korur: model-selector + help-btn İLE AYNI yükseklikte tek bir
+               .icon-btn benzeri kontrol. Signed-out iken #account-signin-btn
+               görünür/#account-control gizli; signed-in iken tam tersi (bkz.
+               app.js renderAccountUI — hiçbiri model selector/help-btn
+               davranışına dokunmaz). -->
+          <button type="button" class="badge" id="account-signin-btn">
+            <span class="model-badge-icon" aria-hidden="true">👤</span>
+            <span>Sign In</span>
+          </button>
+          <div class="account-control hidden" id="account-control">
+            <button
+              type="button"
+              class="badge"
+              id="account-btn"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-controls="account-dropdown"
+            >
+              <span class="model-badge-icon" aria-hidden="true">👤</span>
+              <span id="account-btn-label">Account</span>
+              <span class="model-selector-caret" aria-hidden="true">▾</span>
+            </button>
+            <div class="model-dropdown account-dropdown hidden" id="account-dropdown" role="listbox" aria-label="Account">
+              <div class="account-dropdown-email" id="account-dropdown-email"></div>
+              <button type="button" class="byok-btn byok-btn-secondary account-signout-btn" id="account-signout-btn">Sign Out</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -286,6 +316,46 @@
             <button type="button" class="byok-btn byok-btn-primary" id="byok-use-btn">Use API Key</button>
           </div>
           <button type="button" class="byok-clear-link hidden" id="byok-clear-btn">Clear key</button>
+        </div>
+      </div>
+
+      <!-- SUPABASE AUTHENTICATION FOUNDATION round — Sign In / Sign Up modal.
+           #byok-modal-backdrop İLE BİREBİR AYNI deseni/CSS sınıflarını
+           (.byok-modal-backdrop/.byok-modal/.byok-modal-title/.byok-key-input/
+           .byok-modal-note/.byok-modal-status/.byok-modal-actions/.byok-btn*)
+           TEKRAR KULLANIR — yeni bir modal stili eklenmedi, sadece yeni
+           id'lerle aynı iskelet (bu, improve-modal'ın da AYNI şekilde
+           .byok-btn'i tekrar kullandığı, style.css'te belgelenen konvansiyonla
+           tutarlı). -->
+      <div class="byok-modal-backdrop hidden" id="auth-modal-backdrop">
+        <div class="byok-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+          <div class="byok-modal-title" id="auth-modal-title">Sign In</div>
+          <div class="auth-modal-tabs" role="tablist">
+            <button type="button" class="auth-tab-btn active" id="auth-tab-signin" role="tab" aria-selected="true">Sign In</button>
+            <button type="button" class="auth-tab-btn" id="auth-tab-signup" role="tab" aria-selected="false">Sign Up</button>
+          </div>
+          <input
+            type="email"
+            id="auth-email-input"
+            class="byok-key-input"
+            placeholder="you@example.com"
+            autocomplete="email"
+            spellcheck="false"
+          />
+          <input
+            type="password"
+            id="auth-password-input"
+            class="byok-key-input"
+            placeholder="Password"
+            autocomplete="current-password"
+            spellcheck="false"
+          />
+          <div class="byok-modal-note" id="auth-modal-note">Sign in to sync your account across devices.</div>
+          <div class="byok-modal-status" id="auth-modal-status" aria-live="polite"></div>
+          <div class="byok-modal-actions">
+            <button type="button" class="byok-btn byok-btn-secondary" id="auth-cancel-btn">Cancel</button>
+            <button type="button" class="byok-btn byok-btn-primary" id="auth-submit-btn">Sign In</button>
+          </div>
         </div>
       </div>
 
@@ -1011,6 +1081,13 @@
     </div>
   </div>
 
+  <!-- SUPABASE AUTHENTICATION FOUNDATION round — Supabase browser client'ı
+       (UMD build), resmi/dokümante edilen no-build entegrasyon yöntemi
+       (bu app'in Google Fonts'u zaten aynı şekilde CDN'den yüklediği
+       konvansiyonla AYNI). app.js'ten ÖNCE yüklenir ki initAuth() çalıştığı
+       anda window.supabase HAZIR olsun. Bir bundler/React EKLENMİYOR —
+       mevcut "sade <script> etiketleri" mimarisi korunuyor. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/dist/umd/supabase.js"></script>
   <script src="brand.js"></script>
   <script src="app.js"></script>
 </body>

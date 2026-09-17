@@ -37,6 +37,28 @@
   var byokCancelBtnEl = document.getElementById("byok-cancel-btn");
   var byokClearBtnEl = document.getElementById("byok-clear-btn");
 
+  // SUPABASE AUTHENTICATION FOUNDATION round — hesap UI referansları.
+  // Mevcut model-selector/BYOK elementlerinin HİÇBİRİ değişmedi, bunlar
+  // SADECE .page-header-right'a EKLENEN yeni account-control/auth-modal
+  // elementlerine referans (bkz. index.html).
+  var accountSigninBtnEl = document.getElementById("account-signin-btn");
+  var accountControlEl = document.getElementById("account-control");
+  var accountBtnEl = document.getElementById("account-btn");
+  var accountBtnLabelEl = document.getElementById("account-btn-label");
+  var accountDropdownEl = document.getElementById("account-dropdown");
+  var accountDropdownEmailEl = document.getElementById("account-dropdown-email");
+  var accountSignoutBtnEl = document.getElementById("account-signout-btn");
+  var authModalBackdropEl = document.getElementById("auth-modal-backdrop");
+  var authModalTitleEl = document.getElementById("auth-modal-title");
+  var authTabSigninEl = document.getElementById("auth-tab-signin");
+  var authTabSignupEl = document.getElementById("auth-tab-signup");
+  var authEmailInputEl = document.getElementById("auth-email-input");
+  var authPasswordInputEl = document.getElementById("auth-password-input");
+  var authModalNoteEl = document.getElementById("auth-modal-note");
+  var authModalStatusEl = document.getElementById("auth-modal-status");
+  var authCancelBtnEl = document.getElementById("auth-cancel-btn");
+  var authSubmitBtnEl = document.getElementById("auth-submit-btn");
+
   // ---------- UI elements from the previous redesign ----------
   var charCounter = document.getElementById("char-counter");
   var exampleChipsWrap = document.getElementById("example-chips");
@@ -930,6 +952,322 @@
         renderModelDropdown();
       })
       .catch(function () { /* offline/hata: selector sessizce işlevsiz kalır, mevcut rozet davranışı bozulmaz */ });
+  }
+
+  // ---------------------------------------------------------------------
+  // SUPABASE AUTHENTICATION FOUNDATION round.
+  //
+  // Kapsam (KESİN — görevin "Do NOT" listesi): SADECE Sign Up/Sign In/Sign
+  // Out/oturum kalıcılığı/top-right hesap UI. Games/API keys/Asset
+  // Libraries'in persist edilmesi, Game Library'nin localStorage'dan
+  // taşınması, generation/gameplay/model-selector/BYOK davranışlarının
+  // DEĞİŞTİRİLMESİ — HİÇBİRİ bu round'da YOK.
+  //
+  // GÜVENLİK/MİMARİ:
+  //  - Oturumun KENDİSİ (access/refresh token) SADECE Supabase JS SDK'sının
+  //    KENDİ normal persistence mekanizmasıyla (varsayılan: localStorage,
+  //    kendi anahtar adıyla) saklanır — burada elle AYRI bir depolama
+  //    KURULMUYOR/YÖNETİLMİYOR (görev md.4: "SDK'nın normal davranışı").
+  //    Bu, userApiKey'in BİLEREK bellek-dışına ASLA yazılmamasıyla FARKLI
+  //    bir risk sınıfı — bir Supabase oturum token'ının sayfa
+  //    yenilemelerinde kalıcı olması BEKLENEN/standart bir davranış.
+  //  - getAccessToken()/buildAuthHeaders() BURADA TANIMLANIYOR ama (görev
+  //    md.7 gereği) hiçbir MEVCUT fetch çağrısına (generate/autofix/
+  //    improve/models/assets) HENÜZ BAĞLANMIYOR — sadece ileride
+  //    kullanılabilecek KÜÇÜK, hazır bir mekanizma.
+  //  - Supabase client'ı YOKSA (CDN engellenmiş/offline/env yapılandırılmamış)
+  //    initAuth() SESSİZCE no-op olur: signed-out UI (Sign In butonu) aynen
+  //    görünmeye devam eder, anonim kullanım HİÇ etkilenmez.
+  // ---------------------------------------------------------------------
+  var supabaseClient = null;
+  var currentUser = null; // { id, email } | null — SADECE UI/getCurrentUser() için, ASLA bir API isteğine "userId" olarak elle eklenmez.
+  var authMode = "signin"; // "signin" | "signup"
+
+  function getCurrentUser() {
+    return currentUser;
+  }
+
+  // Promise<string|null> döner — geçerli bir Supabase oturumu yoksa (veya
+  // client hiç başlatılamadıysa) null'a çözülür, ASLA hata fırlatmaz.
+  function getAccessToken() {
+    if (!supabaseClient) return Promise.resolve(null);
+    return supabaseClient.auth
+      .getSession()
+      .then(function (result) {
+        var session = result && result.data && result.data.session;
+        return (session && session.access_token) || null;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  // md.7: "SADECE geçerli bir oturum varsa Authorization: Bearer <token>
+  // ekleyen, küçük ve tekrar kullanılabilir bir mekanizma" — anonim
+  // kullanıcı için Supabase token'ı ASLA gönderilmez (boş bir header objesi
+  // döner). Henüz hiçbir mevcut fetch çağrısına BAĞLANMADI (görev md.7:
+  // "her isteği şimdiden yeniden yazma").
+  function buildAuthHeaders() {
+    return getAccessToken().then(function (token) {
+      return token ? { Authorization: "Bearer " + token } : {};
+    });
+  }
+
+  function setAuthModalStatus(text, kind) {
+    if (!authModalStatusEl) return;
+    authModalStatusEl.textContent = text || "";
+    authModalStatusEl.className = "byok-modal-status" + (kind ? " " + kind : "");
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode === "signup" ? "signup" : "signin";
+    var isSignup = authMode === "signup";
+    if (authTabSigninEl) {
+      authTabSigninEl.classList.toggle("active", !isSignup);
+      authTabSigninEl.setAttribute("aria-selected", String(!isSignup));
+    }
+    if (authTabSignupEl) {
+      authTabSignupEl.classList.toggle("active", isSignup);
+      authTabSignupEl.setAttribute("aria-selected", String(isSignup));
+    }
+    if (authModalTitleEl) authModalTitleEl.textContent = isSignup ? "Sign Up" : "Sign In";
+    if (authSubmitBtnEl) authSubmitBtnEl.textContent = isSignup ? "Sign Up" : "Sign In";
+    if (authModalNoteEl) {
+      authModalNoteEl.textContent = isSignup
+        ? "Create an account to sync your account across devices."
+        : "Sign in to sync your account across devices.";
+    }
+    setAuthModalStatus("", "");
+  }
+
+  function isAuthModalOpen() {
+    return !!authModalBackdropEl && !authModalBackdropEl.classList.contains("hidden");
+  }
+
+  function openAuthModal() {
+    if (!authModalBackdropEl) return;
+    closeModelDropdown();
+    closeAccountDropdown();
+    setAuthMode("signin");
+    if (authEmailInputEl) authEmailInputEl.value = "";
+    if (authPasswordInputEl) authPasswordInputEl.value = "";
+    authModalBackdropEl.classList.remove("hidden");
+    if (authEmailInputEl) authEmailInputEl.focus();
+    document.addEventListener("keydown", handleAuthModalKeydown);
+  }
+
+  function closeAuthModal() {
+    if (!authModalBackdropEl) return;
+    authModalBackdropEl.classList.add("hidden");
+    // GÜVENLİK: parola input'u kapanışta temizlenir (BYOK'un key input'unu
+    // kapanışta temizlemesiyle AYNI önlem).
+    if (authPasswordInputEl) authPasswordInputEl.value = "";
+    document.removeEventListener("keydown", handleAuthModalKeydown);
+  }
+
+  function handleAuthModalKeydown(e) {
+    if (e.key === "Escape") closeAuthModal();
+  }
+
+  // Signed-out/signed-in iki durumu da tek bir yerden günceller — mevcut
+  // model-selector/help-btn'e HİÇ dokunmaz (görev md.5: "keep working").
+  function renderAccountUI() {
+    var signedIn = !!currentUser;
+    if (accountSigninBtnEl) accountSigninBtnEl.classList.toggle("hidden", signedIn);
+    if (accountControlEl) accountControlEl.classList.toggle("hidden", !signedIn);
+    if (signedIn) {
+      var label = currentUser.email || "Account";
+      if (accountBtnLabelEl) accountBtnLabelEl.textContent = label;
+      if (accountDropdownEmailEl) accountDropdownEmailEl.textContent = currentUser.email || "";
+    } else {
+      closeAccountDropdown();
+    }
+  }
+
+  function isAccountDropdownOpen() {
+    return !!accountDropdownEl && !accountDropdownEl.classList.contains("hidden");
+  }
+
+  function handleAccountDropdownOutsideClick(e) {
+    if (accountControlEl && !accountControlEl.contains(e.target)) {
+      closeAccountDropdown();
+    }
+  }
+
+  function handleAccountDropdownKeydown(e) {
+    if (e.key === "Escape") {
+      closeAccountDropdown();
+      if (accountBtnEl) accountBtnEl.focus();
+    }
+  }
+
+  function openAccountDropdown() {
+    if (!accountDropdownEl || !accountBtnEl) return;
+    accountDropdownEl.classList.remove("hidden");
+    accountBtnEl.setAttribute("aria-expanded", "true");
+    document.addEventListener("click", handleAccountDropdownOutsideClick, true);
+    document.addEventListener("keydown", handleAccountDropdownKeydown);
+  }
+
+  function closeAccountDropdown() {
+    if (!accountDropdownEl || !accountBtnEl) return;
+    accountDropdownEl.classList.add("hidden");
+    accountBtnEl.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", handleAccountDropdownOutsideClick, true);
+    document.removeEventListener("keydown", handleAccountDropdownKeydown);
+  }
+
+  function toggleAccountDropdown() {
+    if (isAccountDropdownOpen()) {
+      closeAccountDropdown();
+    } else {
+      openAccountDropdown();
+    }
+  }
+
+  async function handleAuthSubmit() {
+    if (!supabaseClient) {
+      setAuthModalStatus("Sign-in is not available right now.", "error");
+      return;
+    }
+    var email = authEmailInputEl ? authEmailInputEl.value.trim() : "";
+    var password = authPasswordInputEl ? authPasswordInputEl.value : "";
+    if (!email || !password) {
+      setAuthModalStatus("Please enter your email and password.", "error");
+      return;
+    }
+    setAuthModalStatus(authMode === "signup" ? "Creating account…" : "Signing in…", "");
+    authSubmitBtnEl.disabled = true;
+    try {
+      var result =
+        authMode === "signup"
+          ? await supabaseClient.auth.signUp({ email: email, password: password })
+          : await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+      var error = result && result.error;
+      var session = result && result.data && result.data.session;
+      var user = result && result.data && result.data.user;
+      if (error) {
+        setAuthModalStatus(error.message || "Authentication failed.", "error");
+        return;
+      }
+      if (authMode === "signup" && !session) {
+        // Supabase projesi email doğrulaması istiyor olabilir — bu durumda
+        // signUp() bir kullanıcı oluşturur ama oturum DÖNDÜRMEZ. Bu, proje
+        // ayarına bağlı NORMAL bir davranış; burada varsayım YAPILMIYOR,
+        // sadece dürüst bir bilgi mesajı gösteriliyor.
+        setAuthModalStatus("Account created. Check your email to confirm, then sign in.", "success");
+        return;
+      }
+      // onAuthStateChange dinleyicisi currentUser/renderAccountUI'yi zaten
+      // güncelleyecek (bkz. initAuth) — burada AYRICA elle set etmiyoruz,
+      // TEK bir doğruluk kaynağı (Supabase'in kendi state'i) korunuyor.
+      if (user) {
+        setAuthModalStatus("Signed in.", "success");
+      }
+      window.setTimeout(closeAuthModal, 400);
+    } catch (err) {
+      setAuthModalStatus("Could not reach the server to sign in.", "error");
+    } finally {
+      authSubmitBtnEl.disabled = false;
+    }
+  }
+
+  async function handleSignOut() {
+    closeAccountDropdown();
+    if (!supabaseClient) return;
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (err) {
+      /* çıkış API çağrısı başarısız olsa bile aşağıdaki onAuthStateChange
+         dinleyicisi/UI en azından yerel oturumu temizlemeye çalışır; anonim
+         kullanım HER durumda çalışmaya devam eder. */
+    }
+  }
+
+  // GÜVENLİK (görev md.3/md.9): kimlik BURADA da SADECE Supabase'in kendi
+  // doğrulanmış session/user objesinden türetilir — hiçbir yerde req.body
+  // veya URL'den okunan bir "userId" YOK (bu, tamamen frontend/istemci
+  // tarafı bir state, server tarafı attachUser middleware'i ZATEN kendi
+  // bağımsız doğrulamasını token'ın kendisiyle yapıyor).
+  async function initAuth() {
+    // md.5/md.9: Sign In giriş noktası HER ZAMAN görünür/tıklanabilir
+    // olmalı (Supabase henüz yapılandırılmamışken bile) — bu yüzden TÜM
+    // event listener bağlama işi bu try/catch'in DIŞINDA, koşulsuz
+    // çalışır. Supabase gerçekten kullanılamıyorsa (CDN engellenmiş/env
+    // yapılandırılmamış/ağ hatası) supabaseClient null KALIR ve
+    // handleAuthSubmit/handleSignOut zaten bunu kontrol edip modal
+    // İÇİNDE dürüst bir "Sign-in is not available right now." mesajı
+    // gösterir (bkz. handleAuthSubmit) — buton asla SESSİZCE ölü kalmaz.
+    if (window.supabase && typeof window.supabase.createClient === "function") {
+      try {
+        var configRes = await fetch("/api/auth/config");
+        var config = configRes.ok ? await configRes.json() : null;
+        if (config && config.configured && config.supabaseUrl && config.supabaseAnonKey) {
+          supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        }
+        // config yoksa/configured=false ise (ör. local dev/.env'de
+        // SUPABASE_URL/ANON_KEY yok) supabaseClient bilerek null kalır —
+        // mevcut app AYNEN (anonim) çalışmaya devam eder.
+      } catch (err) {
+        // Ağ hatası/CDN engellenmiş: supabaseClient null kalır.
+      }
+    }
+
+    if (supabaseClient) {
+      // Oturum kalıcılığı: SDK kendi (varsayılan localStorage tabanlı)
+      // mekanizmasıyla zaten yönetiyor — burada SADECE mevcut oturumu
+      // okuyup UI state'ini onunla eşitliyoruz (görev md.4: "session
+      // restoration").
+      try {
+        var sessionResult = await supabaseClient.auth.getSession();
+        var initialSession = sessionResult && sessionResult.data && sessionResult.data.session;
+        var initialUser = initialSession && initialSession.user;
+        currentUser = initialUser ? { id: initialUser.id, email: initialUser.email || null } : null;
+      } catch (err) {
+        currentUser = null;
+      }
+
+      // md.4: "auth state change handling" — sign in/sign out/token
+      // refresh/başka bir sekmede oturum değişimi gibi TÜM durumlarda TEK
+      // bir yerden currentUser + UI güncellenir.
+      supabaseClient.auth.onAuthStateChange(function (event, session) {
+        var user = session && session.user;
+        currentUser = user ? { id: user.id, email: user.email || null } : null;
+        renderAccountUI();
+      });
+    }
+    renderAccountUI();
+
+    if (accountSigninBtnEl) {
+      accountSigninBtnEl.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openAuthModal();
+      });
+    }
+    if (accountBtnEl) {
+      accountBtnEl.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleAccountDropdown();
+      });
+    }
+    if (accountSignoutBtnEl) accountSignoutBtnEl.addEventListener("click", handleSignOut);
+    if (authTabSigninEl) authTabSigninEl.addEventListener("click", function () { setAuthMode("signin"); });
+    if (authTabSignupEl) authTabSignupEl.addEventListener("click", function () { setAuthMode("signup"); });
+    if (authSubmitBtnEl) authSubmitBtnEl.addEventListener("click", handleAuthSubmit);
+    if (authCancelBtnEl) authCancelBtnEl.addEventListener("click", closeAuthModal);
+    if (authModalBackdropEl) {
+      authModalBackdropEl.addEventListener("click", function (e) {
+        if (e.target === authModalBackdropEl) closeAuthModal();
+      });
+    }
+    if (authPasswordInputEl) {
+      authPasswordInputEl.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleAuthSubmit();
+        }
+      });
+    }
   }
 
   // renderAssetLibrary() içinde, kütüphane GERÇEKTEN boşsa (arama sonucu boş
@@ -3917,4 +4255,9 @@
   loadGameLibrary();
   updateSidebarMyGamesCount();
   initMyGamesLibrary();
+  // SUPABASE AUTHENTICATION FOUNDATION round — hesap UI/oturum kurulumu.
+  // Supabase yapılandırılmamışsa veya CDN script'i yüklenemediyse SESSİZCE
+  // no-op olur (bkz. initAuth) — mevcut init sırasındaki HİÇBİR çağrıya
+  // (yukarıdaki) bağımlı değil, listenin EN SONUNA eklendi.
+  initAuth();
 })();

@@ -12,11 +12,26 @@ const modelsRouter = require("./routes/models");
 // CUSTOM ASSET LIBRARY round: POST/GET /api/assets/libraries — bkz.
 // routes/assetLibraries.js
 const assetLibrariesRouter = require("./routes/assetLibraries");
+// SUPABASE AUTHENTICATION FOUNDATION round — OPSİYONEL kimlik doğrulama.
+// attachUser HİÇBİR isteği reddetmez/bloklamaz, SADECE geçerli bir
+// Authorization: Bearer <token> varsa req.user/req.userId'i doldurur;
+// yoksa/geçersizse istek anonim olarak mevcut davranışıyla devam eder.
+// Bu yüzden mevcut router'lardan ÖNCE (görev md.3 gereği) ama onlarınla
+// AYNI güvenlik modelini bozmadan mount ediliyor.
+const { attachUser } = require("./middleware/attachUser");
+const authConfigRouter = require("./routes/authConfig");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: "2mb" }));
+
+// SUPABASE AUTHENTICATION FOUNDATION round — mevcut API router'larından
+// ÖNCE mount edilir (görev gereği), ama HİÇBİR mevcut route'u etkilemez:
+// attachUser sadece req.user/req.userId'i (opsiyonel) doldurur, hiçbir
+// isteği reddetmez.
+app.use("/api", attachUser);
+app.use("/api", authConfigRouter);
 
 // API rotaları
 app.use("/api", generateRouter);

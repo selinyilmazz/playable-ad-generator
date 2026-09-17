@@ -862,6 +862,78 @@ button { font-family: inherit; }
 }
 .icon-btn:hover { color: var(--gold-soft); border-color: var(--border-strong); box-shadow: 0 0 14px rgba(232, 185, 77, 0.14); }
 .icon-btn:disabled { cursor: not-allowed; opacity: 0.4; }
+
+/* SUPABASE AUTHENTICATION FOUNDATION round — hesap kontrolü. .badge'in
+   KENDİSİNİN boyut/renk kuralları (satır ~494) hiç değişmeden kullanılıyor;
+   burada SADECE .model-selector .badge'in (satır ~513) inline-flex/cursor
+   davranışını #account-signin-btn/#account-btn için TEKRARLIYORUZ (bunlar
+   .model-selector'ın İÇİNDE değil, page-header-right'ın DOĞRUDAN çocuğu —
+   bu yüzden o kural onlara otomatik uygulanmıyor). .account-dropdown,
+   .model-dropdown'ın (satır ~578) TÜM konumlandırma/boyut/scroll kurallarını
+   AYNEN devralır — sadece içerik (email + sign-out) için birkaç yeni kural
+   eklenir. */
+#account-signin-btn,
+#account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#account-signin-btn:hover,
+#account-btn:hover { border-color: var(--border-strong); }
+#account-signin-btn:focus-visible,
+#account-btn:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+#account-btn[aria-expanded="true"] .model-selector-caret { transform: rotate(180deg); }
+
+/* BUG FIX (authentication UI state round): #account-signin-btn'in az yukarıdaki
+   temel kuralı (display: inline-flex) HER ZAMAN uygulanıyordu — app.js'teki
+   renderAccountUI() zaten doğru şekilde signed-in olunca .hidden class'ını
+   EKLİYORDU (bkz. app.js), ama bu class'ı GERÇEKTEN display:none yapan bir
+   kural HİÇ YAZILMAMIŞTI (diğer TÜM .hidden kullanan elementlerin — bkz.
+   .model-dropdown.hidden/.byok-modal-backdrop.hidden/.account-control.hidden
+   yukarıda — kendi özel bir ".hidden" kuralı var, #account-signin-btn'inki
+   EKSİKTİ). Sonuç: Sign In butonu signed-in olduktan SONRA da inline-flex
+   ile görünmeye devam ediyordu, account-control'un YANINDA. Bu SADECE eksik
+   kuralı ekliyor — app.js'teki state/DOM güncelleme mantığına (TEK doğruluk
+   kaynağı: currentUser -> renderAccountUI()) HİÇ dokunulmadı, çünkü o zaten
+   doğruydu. */
+#account-signin-btn.hidden { display: none; }
+
+.account-control { position: relative; }
+.account-control.hidden { display: none; }
+
+.account-dropdown { padding: 10px; gap: 8px; display: flex; flex-direction: column; min-width: 200px; max-width: min(260px, calc(100vw - 24px)); }
+.account-dropdown-email {
+  font-size: 12px;
+  color: var(--text-dim);
+  word-break: break-all;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.account-signout-btn { width: 100%; }
+
+/* Sign In / Sign Up modal sekmeleri — mevcut .byok-btn* renk/şekil
+   kurallarını (satır ~826) temel alan, YENİ ama minimal bir tab çubuğu. */
+.auth-modal-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.auth-tab-btn {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-dim);
+}
+.auth-tab-btn.active { background: var(--gold-soft); color: #1a1408; border-color: transparent; font-weight: 600; }
+.auth-tab-btn:not(.active):hover { border-color: var(--border-strong); color: var(--text); }
+
+@media (max-width: 480px) {
+  .account-dropdown { right: -8px; }
+  #account-signin-btn span:not(.model-badge-icon) { display: none; }
+}
 .icon-btn:disabled:hover { color: var(--text-dim); border-color: var(--border); box-shadow: none; }
 
 /* ---------- Workflow stepper ---------- */
