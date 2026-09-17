@@ -20,6 +20,11 @@ const assetLibrariesRouter = require("./routes/assetLibraries");
 // AYNI güvenlik modelini bozmadan mount ediliyor.
 const { attachUser } = require("./middleware/attachUser");
 const authConfigRouter = require("./routes/authConfig");
+// PERSISTENT MY GAMES round — /api/games CRUD, sadece signed-in kullanıcılar
+// için (bkz. routes/games.js'in kendi requireAuth'u). attachUser'ın GENEL
+// "hiçbir isteği reddetme" kuralı DEĞİŞMEDİ — bu router KENDİ İÇİNDE 401
+// döner, diğer HİÇBİR route'u etkilemez.
+const gamesRouter = require("./routes/games");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +45,7 @@ app.use("/api", improveRouter);
 app.use("/api", assetsRouter);
 app.use("/api", modelsRouter);
 app.use("/api", assetLibrariesRouter);
+app.use("/api", gamesRouter);
 
 // Statik frontend (public/)
 app.use(express.static(path.join(__dirname, "..", "public")));

@@ -226,6 +226,18 @@
   var gameLibrary = [];
   var currentGameId = null;
   var gameLibraryPersistFailed = false;
+  // PERSISTENT MY GAMES round — signed-in bir kullanıcı için son
+  // GET /api/games denemesi başarısız olduysa dürüst bir mesaj (bkz.
+  // renderMyGamesLibrary'nin noticeHtml'i) — gameLibraryPersistFailed İLE
+  // AYNI amaç, sadece "yazma" yerine "okuma" hatası için ayrı bir bayrak
+  // (ikisi farklı, eşzamanlı olabilecek durumlar).
+  var gameLibraryLoadError = null;
+  // Auth durumu değiştiğinde (initAuth/onAuthStateChange) birden fazla
+  // GET /api/games isteği çakışabilir (ör. INITIAL_SESSION + SIGNED_IN
+  // art arda) — SADECE en son başlatılan isteğin sonucu uygulanır, daha
+  // ESKİ bir isteğin geç gelen yanıtı state'i GERİYE almaz (görev: "Do not
+  // cause duplicate fetches or race conditions during auth initialization").
+  var gameLibraryLoadToken = 0;
   var myGamesSearchQuery = "";
   var myGamesSortOrder = "newest";
   var myGamesOpenMenuId = null;
@@ -1229,14 +1241,27 @@
 
       // md.4: "auth state change handling" — sign in/sign out/token
       // refresh/başka bir sekmede oturum değişimi gibi TÜM durumlarda TEK
-      // bir yerden currentUser + UI güncellenir.
+      // bir yerden currentUser + UI güncellenir. PERSISTENT MY GAMES round:
+      // Game Library'nin de "doğru kaynağa" (local vs remote) geçmesi
+      // gerektiği TEK yer burası — refreshGameLibrary() kendi race-condition
+      // koruması (gameLibraryLoadToken) sayesinde, bu callback art arda/
+      // çakışan şekilde tetiklense bile (ör. INITIAL_SESSION + SIGNED_IN)
+      // sonuç DETERMİNİSTİK kalır (SADECE en son çağrının sonucu uygulanır).
       supabaseClient.auth.onAuthStateChange(function (event, session) {
         var user = session && session.user;
         currentUser = user ? { id: user.id, email: user.email || null } : null;
         renderAccountUI();
+        refreshGameLibrary();
       });
     }
     renderAccountUI();
+    // İlk auth durumu (sayfa yüklendiğinde: signed-out VEYA kalıcı bir
+    // oturumdan restore edilmiş signed-in) belirlendikten SONRA, Game
+    // Library'i o duruma göre senkronize et. loadGameLibrary() (init
+    // sırasında, initAuth'tan ÖNCE çağrılır) zaten localStorage'ı senkron
+    // okuyup ilk paint'i anlık gösteriyor — signed-in bir kullanıcı için bu
+    // çağrı, listeyi hemen ardından GERÇEK kaynağa (Supabase) geçirir.
+    refreshGameLibrary();
 
     if (accountSigninBtnEl) {
       accountSigninBtnEl.addEventListener("click", function (e) {
@@ -2478,11 +2503,21 @@
       // ROUND I (md.3/md.16): Generate HER ZAMAN yeni bir Game record
       // oluşturur (sadece geçerliyse — bkz. saveGeneratedGameAsNew'in kendi
       // validation.valid koruması); Improve/Fix with AI'dan FARKLI olarak
-      // mevcut bir kaydı GÜNCELLEMEZ.
-      saveGeneratedGameAsNew();
+      // mevcut bir kaydı GÜNCELLEMEZ. PERSISTENT MY GAMES round: signed-in
+      // iken bu bir /api/games POST'u -- await ediliyor ki başarısız olursa
+      // (Supabase geçici olarak erişilemezse) generation'ın KENDİSİ başarılı
+      // olduğu hâlde My Games'e kaydedilemediği AYRICA/dürüstçe bildirilsin.
+      var gameSaveResult = await saveGeneratedGameAsNew();
 
       if (data.validation.valid) {
-        setStatus("Playable ad generated ✔ — Quality score " + data.validation.score + "/100", "success");
+        if (gameSaveResult.ok) {
+          setStatus("Playable ad generated ✔ — Quality score " + data.validation.score + "/100", "success");
+        } else {
+          setStatus(
+            "Playable ad generated ✔ — Quality score " + data.validation.score + "/100, but couldn't save to My Games: " + gameSaveResult.error,
+            "error"
+          );
+        }
       } else {
         setStatus(
           "Generated, but some critical checks failed (score " + data.validation.score + "/100).",
@@ -3078,8 +3113,16 @@
         // yeni bir kopya oluşturmaz — syncCurrentGameAfterFixOrImprove
         // kendi içinde validation.valid === true kontrolünü yapıyor, bu
         // yüzden hâlâ geçersiz bir fix denemesi Library'yi ETKİLEMİYOR.
-        syncCurrentGameAfterFixOrImprove();
-        setStatus("Fix with AI applied ✔ — new score " + data.validation.score + "/100", "success");
+        // PERSISTENT MY GAMES round: signed-in iken bu bir /api/games PUT'u.
+        var gameSyncResult = await syncCurrentGameAfterFixOrImprove();
+        if (gameSyncResult.ok) {
+          setStatus("Fix with AI applied ✔ — new score " + data.validation.score + "/100", "success");
+        } else {
+          setStatus(
+            "Fix with AI applied ✔ — new score " + data.validation.score + "/100, but couldn't update My Games: " + gameSyncResult.error,
+            "error"
+          );
+        }
       } else {
         // Mock mode: architecture is wired end-to-end, but no real AI call was made.
         setStatus(data.message, null);
@@ -3273,8 +3316,16 @@
         applyNewResult(data.html, data.validation, updatedMeta, lastResult.prompt);
         // ROUND I (md.16/md.19/md.20): Improve MEVCUT current game'i
         // günceller (Game A -> Game A), yeni bir Game B OLUŞTURMAZ.
-        syncCurrentGameAfterFixOrImprove();
-        setImproveModalStatus("Improved ✔ — new score " + data.validation.score + "/100", "success");
+        // PERSISTENT MY GAMES round: signed-in iken bu bir /api/games PUT'u.
+        var improveGameSyncResult = await syncCurrentGameAfterFixOrImprove();
+        if (improveGameSyncResult.ok) {
+          setImproveModalStatus("Improved ✔ — new score " + data.validation.score + "/100", "success");
+        } else {
+          setImproveModalStatus(
+            "Improved ✔ — new score " + data.validation.score + "/100, but couldn't update My Games: " + improveGameSyncResult.error,
+            "error"
+          );
+        }
         window.setTimeout(closeImproveModal, 700);
       } catch (err) {
         // md.8: network/parse hatalarında da aynı, teknik olmayan mesaj —
@@ -3675,6 +3726,154 @@
   // { id, title, titleIsCustom, prompt, html, meta, validation,
   //   gameType, model, qualityScore, createdAt, updatedAt }
 
+  // ---------------------------------------------------------------------
+  // PERSISTENT MY GAMES round — kalıcılık soyutlaması.
+  //
+  // Yukarıdaki "yeni bir backend GEREKMEDİ" notu artık SADECE anonim
+  // kullanıcılar için geçerli. Signed-in bir kullanıcı için tek doğruluk
+  // kaynağı ARTIK Supabase `games` tablosu (server/routes/games.js ->
+  // server/services/gamePersistence.js, RLS auth.uid()=user_id ile
+  // korunuyor) — localStorage SADECE anonim kullanıcılar için hâlâ
+  // kullanılıyor (görev: "Keep the existing localStorage Game Library
+  // behavior exactly as it currently works" signed-out için).
+  //
+  // Bu bölümün ALTINDAKİ tüm fonksiyonlar (buildGameRecordFromResult,
+  // deriveGameTitle/Type/Model vb.) HİÇ DEĞİŞMEDİ — "game record" şeklini
+  // hesaplama mantığı AYNI kaldı, SADECE onu NEREYE yazdığımız/NEREDEN
+  // okuduğumuz (localStorage vs. /api/games) bu katmanda dallanıyor.
+  //
+  // isGameLibraryRemote() TEK karar noktası: getCurrentUser() (initAuth'un
+  // yönettiği, Supabase'in kendi doğrulanmış oturum state'i) — bu, "TEK bir
+  // doğruluk kaynağı" gereksinimini karşılıyor (auth state DEĞİŞTİĞİNDE
+  // refreshGameLibrary() çağrılır, bkz. initAuth).
+  // ---------------------------------------------------------------------
+  function isGameLibraryRemote() {
+    return !!getCurrentUser();
+  }
+
+  var GAMES_API_BASE = "/api/games";
+
+  // GÜVENLİK (görev md.2/md.7/md. Do NOT add a userId field): Authorization
+  // header'ı SADECE mevcut auth helper'ı (buildAuthHeaders -> getAccessToken)
+  // üzerinden eklenir — hiçbir fetch çağrısına ASLA bir userId alanı
+  // EKLENMEZ, kimlik SADECE server'ın kendi doğruladığı token'dan gelir.
+  function gamesApiFetch(path, options) {
+    return buildAuthHeaders().then(function (authHeaders) {
+      var headers = Object.assign({ "Content-Type": "application/json" }, authHeaders, (options && options.headers) || {});
+      return fetch(GAMES_API_BASE + path, Object.assign({}, options, { headers: headers }));
+    });
+  }
+
+  async function readJsonSafely(res) {
+    try {
+      return await res.json();
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Frontend game record -> /api/games POST/PUT body. SADECE bilinen
+  // alanlar gönderilir -- id/createdAt/updatedAt ASLA gönderilmez (bunlar
+  // server/DB tarafından atanır, bkz. görev "ID HANDLING": "Use the
+  // Supabase UUID as the persistent game ID").
+  function recordToPayload(record) {
+    return {
+      title: record.title,
+      titleIsCustom: !!record.titleIsCustom,
+      prompt: record.prompt,
+      html: record.html,
+      meta: record.meta,
+      validation: record.validation,
+      gameType: record.gameType,
+      model: record.model,
+      qualityScore: record.qualityScore,
+    };
+  }
+
+  async function remoteListGames() {
+    var res = await gamesApiFetch("", { method: "GET" });
+    var data = await readJsonSafely(res);
+    if (!res.ok) throw new Error((data && data.error) || "Could not load your games.");
+    return (data && Array.isArray(data.games)) ? data.games : [];
+  }
+
+  async function remoteCreateGame(record) {
+    var res = await gamesApiFetch("", { method: "POST", body: JSON.stringify(recordToPayload(record)) });
+    var data = await readJsonSafely(res);
+    if (!res.ok) throw new Error((data && data.error) || "Could not save this game.");
+    return data.game;
+  }
+
+  // payload burada BİLEREK "kısmi" olabilir (ör. sadece {title,
+  // titleIsCustom} -- Rename) -- server tarafı (gamePersistence.updateGame)
+  // sadece VERİLEN alanları uygular, geri kalanı (meta/validation gibi)
+  // MEVCUT satırdan korur.
+  async function remoteUpdateGame(id, payload) {
+    var res = await gamesApiFetch("/" + encodeURIComponent(id), { method: "PUT", body: JSON.stringify(payload) });
+    var data = await readJsonSafely(res);
+    if (!res.ok) throw new Error((data && data.error) || "Could not update this game.");
+    return data.game;
+  }
+
+  async function remoteDeleteGame(id) {
+    var res = await gamesApiFetch("/" + encodeURIComponent(id), { method: "DELETE" });
+    if (res.status === 204 || res.ok) return true;
+    var data = await readJsonSafely(res);
+    throw new Error((data && data.error) || "Could not delete this game.");
+  }
+
+  async function remoteDuplicateGame(id) {
+    var res = await gamesApiFetch("/" + encodeURIComponent(id) + "/duplicate", { method: "POST" });
+    var data = await readJsonSafely(res);
+    if (!res.ok) throw new Error((data && data.error) || "Could not duplicate this game.");
+    return data.game;
+  }
+
+  // Sadece anonim/local moddaki OKUMA -- mevcut loadGameLibrary()'nin
+  // ESKİ (Phase öncesi) gövdesiyle BİREBİR aynı, sadece bir dönüş değeri
+  // eklendi ki refreshGameLibrary() de kullanabilsin.
+  function loadGameLibraryLocal() {
+    try {
+      var raw = window.localStorage ? window.localStorage.getItem(GAME_LIBRARY_STORAGE_KEY) : null;
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      // Bozuk/eski-şekilli bir kayıt VARSA sessizce boş başla — asla çökme.
+      return [];
+    }
+  }
+
+  // md. SYNC BEHAVIOR: initAuth() ilk auth durumunu belirlediğinde VE her
+  // onAuthStateChange olayında (sign in/sign out) çağrılır -- Game
+  // Library'nin "doğru kaynağa" (local vs remote) geçişini TEK bir yerden
+  // yönetir. gameLibraryLoadToken, çakışan/geç gelen bir isteğin state'i
+  // GERİYE almasını engeller (race condition koruması).
+  async function refreshGameLibrary() {
+    var myToken = ++gameLibraryLoadToken;
+    if (isGameLibraryRemote()) {
+      try {
+        var remoteGames = await remoteListGames();
+        if (myToken !== gameLibraryLoadToken) return; // daha yeni bir çağrı bunu geçersiz kıldı
+        gameLibrary = remoteGames;
+        gameLibraryPersistFailed = false;
+        gameLibraryLoadError = null;
+      } catch (err) {
+        if (myToken !== gameLibraryLoadToken) return;
+        // md. ERROR HANDLING: "Do not crash... Show a clear user-facing
+        // error... Avoid destructive localStorage behavior" -- ESKİ liste
+        // (varsa) OLDUĞU GİBİ bırakılır, sadece dürüst bir hata bayrağı
+        // set edilir (renderMyGamesLibrary bunu gösterir).
+        gameLibraryLoadError = err.message || "Could not load your games right now.";
+      }
+    } else {
+      gameLibrary = loadGameLibraryLocal();
+      gameLibraryPersistFailed = false;
+      gameLibraryLoadError = null;
+    }
+    updateSidebarMyGamesCount();
+    if (isMyGamesModalOpen()) renderMyGamesLibrary();
+  }
+
   function loadGameLibrary() {
     try {
       var raw = window.localStorage ? window.localStorage.getItem(GAME_LIBRARY_STORAGE_KEY) : null;
@@ -3776,17 +3975,35 @@
     return idx === -1 ? null : gameLibrary[idx];
   }
 
-  function createGameFromResult(result) {
+  // PERSISTENT MY GAMES round: buildGameRecordFromResult (yukarıda, HİÇ
+  // değişmedi) her zaman TAM bir record hesaplar; signed-in iken bu record
+  // /api/games'e POST edilir ve server'ın DÖNDÜRDÜĞÜ (gerçek UUID/
+  // created_at/updated_at taşıyan) satır TEK doğruluk kaynağı olarak
+  // kullanılır (görev "ID HANDLING": localStorage id formatı DB UUID'si
+  // olarak VARSAYILMAZ) — client'ın kendi ürettiği id'nin kendisi ASLA
+  // sunucuya "bu benim id'im" diye dayatılmaz.
+  async function createGameFromResult(result) {
     var rec = buildGameRecordFromResult(result, null);
+    if (isGameLibraryRemote()) {
+      var saved = await remoteCreateGame(rec);
+      gameLibrary.push(saved);
+      return saved;
+    }
     gameLibrary.push(rec);
     persistGameLibrary();
     return rec;
   }
 
-  function updateGameFromResult(id, result) {
+  async function updateGameFromResult(id, result) {
     var idx = findGameIndexById(id);
     if (idx === -1) return createGameFromResult(result); // kayıt silinmiş/kaybolmuşsa: yeni oluştur, çökme
-    gameLibrary[idx] = buildGameRecordFromResult(result, gameLibrary[idx]);
+    var rec = buildGameRecordFromResult(result, gameLibrary[idx]);
+    if (isGameLibraryRemote()) {
+      var updated = await remoteUpdateGame(gameLibrary[idx].id, recordToPayload(rec));
+      gameLibrary[idx] = updated;
+      return updated;
+    }
+    gameLibrary[idx] = rec;
     persistGameLibrary();
     return gameLibrary[idx];
   }
@@ -3807,27 +4024,44 @@
   //    (currentGameId varsa) — yeni bir kopya OLUŞTURMAZ.
   // İkisi de SADECE validation.valid === true olduğunda kaydeder/günceller
   // (md.3: "Invalid generated output Game Library'ye kaydedilmemeli").
-  function saveGeneratedGameAsNew() {
-    if (!lastResult || !lastResult.validation || lastResult.validation.valid !== true) return;
-    var rec = createGameFromResult(lastResult);
-    currentGameId = rec.id;
-    updateSidebarMyGamesCount();
-    if (isMyGamesModalOpen()) renderMyGamesLibrary();
+  // PERSISTENT MY GAMES round: her ikisi de artık async (remote path bir
+  // ağ isteği gerektirdiği için) VE bir { ok, error? } sonucu DÖNER —
+  // çağıran (generate()/handleFixWithAi()/improve submit) bunu KENDİ
+  // durum mesajına yansıtabilsin diye (görev ERROR HANDLING: "Do not
+  // silently report success when the database operation failed" —
+  // generation'ın KENDİSİ başarılı olsa bile, My Games'e kaydetme
+  // başarısız olduysa bu AYRI ve dürüst şekilde bildirilmeli).
+  async function saveGeneratedGameAsNew() {
+    if (!lastResult || !lastResult.validation || lastResult.validation.valid !== true) return { ok: true };
+    try {
+      var rec = await createGameFromResult(lastResult);
+      currentGameId = rec.id;
+      updateSidebarMyGamesCount();
+      if (isMyGamesModalOpen()) renderMyGamesLibrary();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message || "Could not save this game to your account." };
+    }
   }
 
-  function syncCurrentGameAfterFixOrImprove() {
-    if (!lastResult || !lastResult.validation || lastResult.validation.valid !== true) return;
-    if (currentGameId && findGameIndexById(currentGameId) !== -1) {
-      updateGameFromResult(currentGameId, lastResult);
-    } else {
-      // Bu oyun daha önce hiç kaydedilmemiş (ör. ilk Generate invalid'di,
-      // Fix/Improve onu şimdi ilk kez geçerli hâle getirdi) — ilk kez
-      // geçerli olduğu bu anda kaydedilir.
-      var rec = createGameFromResult(lastResult);
-      currentGameId = rec.id;
+  async function syncCurrentGameAfterFixOrImprove() {
+    if (!lastResult || !lastResult.validation || lastResult.validation.valid !== true) return { ok: true };
+    try {
+      if (currentGameId && findGameIndexById(currentGameId) !== -1) {
+        await updateGameFromResult(currentGameId, lastResult);
+      } else {
+        // Bu oyun daha önce hiç kaydedilmemiş (ör. ilk Generate invalid'di,
+        // Fix/Improve onu şimdi ilk kez geçerli hâle getirdi) — ilk kez
+        // geçerli olduğu bu anda kaydedilir.
+        var rec = await createGameFromResult(lastResult);
+        currentGameId = rec.id;
+      }
+      updateSidebarMyGamesCount();
+      if (isMyGamesModalOpen()) renderMyGamesLibrary();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message || "Could not update this game in your account." };
     }
-    updateSidebarMyGamesCount();
-    if (isMyGamesModalOpen()) renderMyGamesLibrary();
   }
 
   // md.13: current game silindiğinde preview boş kalmamalı / crash olmamalı
@@ -3890,18 +4124,35 @@
     setStatus("Opened \"" + (game.title || "Untitled Game") + "\".", "success");
   }
 
-  function duplicateGame(id) {
+  // PERSISTENT MY GAMES round: signed-in iken bir /api/games/:id/duplicate
+  // POST'u -- server, ownership'i (RLS + .eq("user_id", userId)) DOĞRULADIKTAN
+  // sonra GERÇEK satırı kopyalar ve YENİ bir UUID'yle döner (client id
+  // UYDURMAZ). async, ama çağrı yeri (click delegasyonu) mevcut kod
+  // konvansiyonuyla AYNI şekilde await'siz (fire-and-forget) çağırıyor —
+  // fonksiyonun kendisi hatayı yakalayıp setStatus ile bildiriyor.
+  async function duplicateGame(id) {
     var game = findGameById(id);
     if (!game) return;
+    if (isGameLibraryRemote()) {
+      try {
+        var copy = await remoteDuplicateGame(id);
+        gameLibrary.push(copy);
+        renderMyGamesLibrary();
+        updateSidebarMyGamesCount();
+      } catch (err) {
+        setStatus("Could not duplicate this game: " + (err.message || "please try again."), "error");
+      }
+      return;
+    }
     var now = new Date().toISOString();
-    var copy = Object.assign({}, game, {
+    var localCopy = Object.assign({}, game, {
       id: makeGameId(),
       title: (game.title || "Untitled Game") + " Copy",
       titleIsCustom: true, // md.11: kopyanın adı sabit kalsın, sonraki bir Improve onu geri almasın
       createdAt: now,
       updatedAt: now,
     });
-    gameLibrary.push(copy);
+    gameLibrary.push(localCopy);
     persistGameLibrary();
     renderMyGamesLibrary();
     updateSidebarMyGamesCount();
@@ -3923,7 +4174,14 @@
     myGamesRenameTargetId = null;
   }
 
-  function saveRename() {
+  // PERSISTENT MY GAMES round: signed-in iken bir /api/games/:id PUT'u --
+  // BİLEREK KISMİ bir payload ({title, titleIsCustom}) gönderiyor, server
+  // tarafı (gamePersistence.updateGame) SADECE bu iki alanı uygular,
+  // meta/validation/html gibi diğer her şey MEVCUT satırdan KORUNUR (görev:
+  // "Preserve existing metadata unless intentionally updated"). Hata
+  // durumunda modal AÇIK kalır ve dürüst bir mesaj gösterilir -- sessizce
+  // kapatıp başarılıymış gibi davranmaz.
+  async function saveRename() {
     if (!myGamesRenameTargetId || !myGamesRenameInput) return;
     var value = myGamesRenameInput.value.trim();
     if (!value) {
@@ -3932,12 +4190,32 @@
     }
     if (value.length > 80) value = value.slice(0, 80).trim();
     var idx = findGameIndexById(myGamesRenameTargetId);
-    if (idx !== -1) {
-      gameLibrary[idx].title = value;
-      gameLibrary[idx].titleIsCustom = true;
-      persistGameLibrary();
-      renderMyGamesLibrary();
+    if (idx === -1) {
+      closeRenameModal();
+      return;
     }
+
+    if (isGameLibraryRemote()) {
+      var targetId = myGamesRenameTargetId;
+      if (myGamesRenameSaveBtn) myGamesRenameSaveBtn.disabled = true;
+      try {
+        var updated = await remoteUpdateGame(targetId, { title: value, titleIsCustom: true });
+        var freshIdx = findGameIndexById(targetId);
+        if (freshIdx !== -1) gameLibrary[freshIdx] = updated;
+        renderMyGamesLibrary();
+        closeRenameModal();
+      } catch (err) {
+        if (myGamesRenameStatusEl) myGamesRenameStatusEl.textContent = err.message || "Could not rename this game.";
+      } finally {
+        if (myGamesRenameSaveBtn) myGamesRenameSaveBtn.disabled = false;
+      }
+      return;
+    }
+
+    gameLibrary[idx].title = value;
+    gameLibrary[idx].titleIsCustom = true;
+    persistGameLibrary();
+    renderMyGamesLibrary();
     closeRenameModal();
   }
 
@@ -3957,9 +4235,35 @@
     myGamesDeleteTargetId = null;
   }
 
-  function confirmDelete() {
+  // PERSISTENT MY GAMES round: signed-in iken bir /api/games/:id DELETE'i --
+  // server'ın GERÇEKTEN silindiğini onaylamasını (RLS + .eq("user_id",
+  // userId) ile ownership doğrulanmış) BEKLER, sonra local `gameLibrary`
+  // cache'inden çıkarır. Başarısız olursa kayıt LİSTEDE KALIR (silinmemiş
+  // gibi görünmeye devam eder, ki ZATEN silinmedi) ve dürüst bir hata
+  // gösterilir.
+  async function confirmDelete() {
     var id = myGamesDeleteTargetId;
     if (!id) return;
+    if (isGameLibraryRemote()) {
+      if (myGamesDeleteConfirmBtn) myGamesDeleteConfirmBtn.disabled = true;
+      try {
+        await remoteDeleteGame(id);
+        gameLibrary = gameLibrary.filter(function (g) { return g.id !== id; });
+        if (currentGameId === id) {
+          currentGameId = null;
+          resetGeneratorToEmptyState();
+        }
+        renderMyGamesLibrary();
+        updateSidebarMyGamesCount();
+        closeDeleteModal();
+      } catch (err) {
+        setStatus("Could not delete this game: " + (err.message || "please try again."), "error");
+        closeDeleteModal();
+      } finally {
+        if (myGamesDeleteConfirmBtn) myGamesDeleteConfirmBtn.disabled = false;
+      }
+      return;
+    }
     gameLibrary = gameLibrary.filter(function (g) { return g.id !== id; });
     persistGameLibrary();
     if (currentGameId === id) {
@@ -4047,6 +4351,33 @@
     var noticeHtml = gameLibraryPersistFailed
       ? '<p class="my-games-empty" style="grid-column:1/-1;padding:10px 4px;color:var(--danger);text-align:left;">⚠ Your browser storage is full — recent changes may not be saved permanently. Consider deleting some games.</p>'
       : "";
+
+    // PERSISTENT MY GAMES round — GET /api/games başarısız olduysa (ör.
+    // Supabase geçici erişilemez): "Do not silently report success" ->
+    // eski liste (varsa) korunur ama dürüst bir hata gösterilir.
+    if (gameLibraryLoadError) {
+      noticeHtml +=
+        '<p class="my-games-empty" style="grid-column:1/-1;padding:10px 4px;color:var(--danger);text-align:left;">⚠ Could not load your saved games: ' +
+        escapeHtml(gameLibraryLoadError) +
+        "</p>";
+    }
+
+    // MIGRATION (deferred, görev: "If migration would introduce
+    // unnecessary complexity or risk, preserve them locally and clearly
+    // report that migration is deferred") — signed-in iken, sign-in
+    // ÖNCESİNDEN kalma local oyunlar SESSİZCE kaybolmaz: localStorage'a
+    // hiç dokunulmuyor, sadece bunların şu an GÖRÜNMEDİĞİ (Library artık
+    // hesabındaki oyunları gösteriyor) açıkça bildiriliyor.
+    if (isGameLibraryRemote()) {
+      var localCount = loadGameLibraryLocal().length;
+      if (localCount > 0) {
+        noticeHtml +=
+          '<p class="my-games-empty" style="grid-column:1/-1;padding:10px 4px;color:var(--text-faint);text-align:left;">ℹ You have ' +
+          localCount +
+          (localCount === 1 ? " game" : " games") +
+          " saved locally from before signing in. They're kept safe in this browser but aren't synced to your account yet — sign out to access them.</p>";
+      }
+    }
 
     if (gameLibrary.length === 0) {
       myGamesGridEl.innerHTML =

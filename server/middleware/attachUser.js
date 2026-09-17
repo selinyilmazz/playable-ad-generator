@@ -13,6 +13,16 @@
  *  - Supabase yapılandırılmamışsa (server/config/supabase.js ->
  *    isConfigured=false) HİÇBİR ağ çağrısı yapılmaz — istek doğrudan
  *    anonim olarak geçer (local dev/test/CI'da yavaşlama veya çökme yok).
+ *
+ * PERSISTENT MY GAMES round — EK OLARAK, token GERÇEKTEN doğrulandığında
+ * (req.user/req.userId ile AYNI anda) req.accessToken'a da atanır. Bu,
+ * services/gamePersistence.js'in Postgres RLS'in auth.uid()'i DOĞRU
+ * değerlendirmesi için İSTEK-BAZLI (çağıranın KENDİ token'ıyla kurulan)
+ * bir Supabase client'ı oluşturabilmesi İÇİNDİR (bkz. o dosyadaki
+ * createRequestScopedClient) — service role/anon key'le kurulan TEK bir
+ * paylaşılan client BUNU YAPAMAZ (auth.uid() o zaman null/anonim kalırdı).
+ * req.accessToken hiçbir yerde loglanmaz/response'a yazılmaz — SADECE
+ * aynı istek içindeki route handler'lara aktarılan geçici bir referans.
  */
 const supabaseConfig = require("../config/supabase");
 
@@ -35,6 +45,7 @@ async function attachUser(req, res, next) {
   // dönüş / hata) istek zaten anonim kalır.
   req.user = null;
   req.userId = null;
+  req.accessToken = null;
 
   // Supabase yapılandırılmamış -> HİÇBİR ağ çağrısı yapma, doğrudan devam
   // et. (Bu dal, gerçek Supabase env değişkenleri olmayan local dev/test
@@ -62,6 +73,10 @@ async function attachUser(req, res, next) {
 
     req.user = { id: user.id, email: user.email || null };
     req.userId = user.id;
+    // GÜVENLİK: SADECE burada, kimlik BAŞARIYLA doğrulandıktan SONRA atanır
+    // — req.user/req.userId ile AYNI anda set edilir/temizlenir, asla tek
+    // başına (ör. doğrulanmamış bir token'la) set edilmez.
+    req.accessToken = token;
     return next();
   } catch (err) {
     // Gerçekten beklenmeyen bir hata (ör. ağ hatası) — token'ı VEYA

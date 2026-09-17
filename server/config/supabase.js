@@ -55,4 +55,13 @@ module.exports = {
     supabaseAnonKey: isConfigured ? SUPABASE_ANON_KEY : null,
     configured: isConfigured,
   },
+  // PERSISTENT MY GAMES round — SADECE server-içi kullanım için (ör.
+  // services/gamePersistence.js'in, çağıranın KENDİ doğrulanmış access
+  // token'ıyla İSTEK-BAZLI bir client kurması gerektiğinde). BUNLAR
+  // publicConfig İLE AYNI (zaten public-safe) değerler — service role key
+  // burada da YOK, bu obje frontend'e HİÇ gönderilmiyor, sadece diğer
+  // server modüllerinin process.env'e doğrudan erişmesini önlemek için
+  // (bu dosyanın "TEK yerden okunur" sözleşmesi).
+  url: SUPABASE_URL,
+  anonKey: SUPABASE_ANON_KEY,
 };
