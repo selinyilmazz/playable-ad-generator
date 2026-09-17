@@ -64,6 +64,9 @@ function createRequestScopedClient(accessToken) {
   return createClient(supabaseConfig.url, supabaseConfig.anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
     global: { headers: { Authorization: "Bearer " + accessToken } },
+    // NODE 18 CRASH FIX: bkz. server/config/supabase.js'in REALTIME_DISABLED
+    // notu -- gamePersistence.createRequestScopedClient İLE AYNI gerekçe/desen.
+    realtime: supabaseConfig.REALTIME_DISABLED,
   });
 }
 

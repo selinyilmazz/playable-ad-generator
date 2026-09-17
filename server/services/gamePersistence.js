@@ -57,6 +57,13 @@ function createRequestScopedClient(accessToken) {
   return createClient(supabaseConfig.url, supabaseConfig.anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
     global: { headers: { Authorization: "Bearer " + accessToken } },
+    // NODE 18 CRASH FIX: bkz. server/config/supabase.js'in REALTIME_DISABLED
+    // notu -- bu createClient() çağrısı da (server/config/supabase.js'teki
+    // İLE AYNI şekilde) createClient() anında bir RealtimeClient inşa
+    // ediyor; `realtime.transport` verilmezse Node 18'de native WebSocket
+    // arayışı hemen fırlatır. Bu servis Realtime'ı hiç kullanmadığı için
+    // aynı, paylaşılan devre dışı bırakma seçeneği kullanılıyor.
+    realtime: supabaseConfig.REALTIME_DISABLED,
   });
 }
 
