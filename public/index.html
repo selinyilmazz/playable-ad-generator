@@ -316,6 +316,22 @@
             <button type="button" class="byok-btn byok-btn-primary" id="byok-use-btn">Use API Key</button>
           </div>
           <button type="button" class="byok-clear-link hidden" id="byok-clear-btn">Clear key</button>
+
+          <!-- PERSISTENT USER OPENROUTER API KEYS (Phase 3) round — SADECE
+               signed-in kullanıcılar için (bkz. app.js updateByokAccountRow):
+               anonim kullanıcıda bu blok TAMAMEN hidden kalır, mevcut
+               anonim BYOK davranışı (yukarısı) HİÇ değişmez. "Save key to
+               my account" HER ZAMAN input'taki HAM key'i (doğrulandıktan
+               sonra) POST /api/keys/openrouter'a gönderir -- key BİR DAHA
+               ASLA geri okunmaz/gösterilmez, SADECE "saved"/"not saved"
+               durumu (GET .../status) gösterilir. -->
+          <div class="byok-account-row hidden" id="byok-account-row">
+            <div class="byok-account-status" id="byok-account-status" aria-live="polite"></div>
+            <div class="byok-account-actions">
+              <button type="button" class="byok-btn byok-btn-secondary" id="byok-save-account-btn">Save key to my account</button>
+              <button type="button" class="byok-clear-link hidden" id="byok-delete-account-btn">Delete saved key</button>
+            </div>
+          </div>
         </div>
       </div>
 

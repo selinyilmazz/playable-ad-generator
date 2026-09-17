@@ -124,71 +124,252 @@ test.beforeEach(function () {
 // 1) resolveEffectiveApiKey() — saf fonksiyon, network yok
 // =========================================================================
 
-test("resolveEffectiveApiKey: apiKeyOverride varsa, ALLOW_SERVER_API_KEY/env key durumundan BAĞIMSIZ olarak HER ZAMAN o kullanılır", function () {
+// PERSISTENT USER OPENROUTER API KEYS round — resolveEffectiveApiKey artık
+// ASYNC (üç tier'lı: override -> stored user key -> server env key). Bu
+// testler bu round'dan ÖNCE yazılmıştı ve fonksiyonu SENKRON çağırıyordu;
+// SADECE async/await eklendi -- her testin kendi assertion'ı/senaryosu
+// BİREBİR AYNI kaldı (hiçbir davranış/beklenti değişmedi). authContext
+// (2. parametre) HİÇ verilmiyor -- bu, YENİ orta tier'ın hiç devreye
+// girmediği, ÖNCEKİ (2-tier) davranışın test edildiği durum.
+test("resolveEffectiveApiKey: apiKeyOverride varsa, ALLOW_SERVER_API_KEY/env key durumundan BAĞIMSIZ olarak HER ZAMAN o kullanılır", async function () {
   var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
   var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
   try {
-    assert.equal(resolveEffectiveApiKey(FAKE_USER_KEY), FAKE_USER_KEY);
+    assert.equal(await resolveEffectiveApiKey(FAKE_USER_KEY), FAKE_USER_KEY);
   } finally {
     restoreFlag();
     restoreEnv();
   }
 });
 
-test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY tanımsız (production varsayılanı) -> null, env key GÖRMEZDEN gelinir", function () {
+test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY tanımsız (production varsayılanı) -> null, env key GÖRMEZDEN gelinir", async function () {
   var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
   var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
   try {
-    assert.equal(resolveEffectiveApiKey(null), null);
-    assert.equal(resolveEffectiveApiKey(undefined), null);
+    assert.equal(await resolveEffectiveApiKey(null), null);
+    assert.equal(await resolveEffectiveApiKey(undefined), null);
   } finally {
     restoreFlag();
     restoreEnv();
   }
 });
 
-test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY='false' -> null, env key GÖRMEZDEN gelinir", function () {
+test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY='false' -> null, env key GÖRMEZDEN gelinir", async function () {
   var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", "false");
   var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
   try {
-    assert.equal(resolveEffectiveApiKey(null), null);
+    assert.equal(await resolveEffectiveApiKey(null), null);
   } finally {
     restoreFlag();
     restoreEnv();
   }
 });
 
-test("resolveEffectiveApiKey: override boş string (\"\") -> yok sayılır (falsy), flag true olmadıkça server key kullanılmaz", function () {
+test("resolveEffectiveApiKey: override boş string (\"\") -> yok sayılır (falsy), flag true olmadıkça server key kullanılmaz", async function () {
   var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
   var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
   try {
-    assert.equal(resolveEffectiveApiKey(""), null);
+    assert.equal(await resolveEffectiveApiKey(""), null);
   } finally {
     restoreFlag();
     restoreEnv();
   }
 });
 
-test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY='true' + env key VAR -> env key döner (bilinçli local-dev opt-in)", function () {
+test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY='true' + env key VAR -> env key döner (bilinçli local-dev opt-in)", async function () {
   var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", "true");
   var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
   try {
-    assert.equal(resolveEffectiveApiKey(null), FAKE_ENV_KEY);
-    assert.equal(resolveEffectiveApiKey(""), FAKE_ENV_KEY);
+    assert.equal(await resolveEffectiveApiKey(null), FAKE_ENV_KEY);
+    assert.equal(await resolveEffectiveApiKey(""), FAKE_ENV_KEY);
   } finally {
     restoreFlag();
     restoreEnv();
   }
 });
 
-test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY='true' + env key YOK -> falsy (undefined) döner, uydurma bir key İCAT edilmez", function () {
+test("resolveEffectiveApiKey: override yok + ALLOW_SERVER_API_KEY='true' + env key YOK -> falsy (undefined) döner, uydurma bir key İCAT edilmez", async function () {
   var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", "true");
   var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
   try {
-    assert.ok(!resolveEffectiveApiKey(null));
+    assert.ok(!(await resolveEffectiveApiKey(null)));
   } finally {
     restoreFlag();
     restoreEnv();
+  }
+});
+
+// =========================================================================
+// 1b) resolveEffectiveApiKey() — YENİ orta tier (stored user key), saf
+// fonksiyon testleri. Gerçek apiKeyCrypto (AES-256-GCM) + userApiKeyPersistence
+// kullanılıyor, SADECE Supabase client'ı (test seam ile) sahte -- bu yüzden
+// bu testler hem çözümleme SIRASINI hem GERÇEK encrypt/decrypt round-trip'ini
+// aynı anda doğruluyor.
+// =========================================================================
+
+test("resolveEffectiveApiKey (stored key tier): authContext + kayıtlı bir key varsa VE override/ALLOW_SERVER_API_KEY yoksa, stored key döner", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  var apiKeyCrypto = require("../services/apiKeyCrypto");
+  var STORED_KEY = "sk-or-stored-key-never-logged";
+  var enc = apiKeyCrypto.encryptApiKey(STORED_KEY);
+  var db = { api_keys: [{ user_id: "userA", provider: "openrouter", ciphertext: enc.ciphertext, nonce: enc.nonce, auth_tag: enc.authTag, key_version: enc.keyVersion }] };
+  userApiKeyPersistence._internal.setClientFactoryForTests(function (accessToken) {
+    if (!accessToken) return null;
+    return {
+      from: function () {
+        return {
+          select: function () { return this; },
+          eq: function () { return this; },
+          maybeSingle: function () {
+            return Promise.resolve({ data: db.api_keys[0], error: null });
+          },
+        };
+      },
+    };
+  });
+  try {
+    var result = await resolveEffectiveApiKey(null, { userId: "userA", accessToken: "token-for-userA" });
+    assert.equal(result, STORED_KEY);
+  } finally {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
+  }
+});
+
+test("resolveEffectiveApiKey (stored key tier): explicit apiKeyOverride, kayıtlı bir key olsa BİLE HER ZAMAN kazanır", async function () {
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  var storedLookupCalled = false;
+  userApiKeyPersistence._internal.setClientFactoryForTests(function () {
+    storedLookupCalled = true;
+    throw new Error("stored key lookup should never be attempted when apiKeyOverride is present");
+  });
+  try {
+    var result = await resolveEffectiveApiKey(FAKE_USER_KEY, { userId: "userA", accessToken: "token-for-userA" });
+    assert.equal(result, FAKE_USER_KEY);
+    assert.equal(storedLookupCalled, false, "apiKeyOverride varken stored-key lookup'a HİÇ girilmemeli");
+  } finally {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+  }
+});
+
+test("resolveEffectiveApiKey (stored key tier): kayıtlı key ALLOW_SERVER_API_KEY=false iken BİLE kullanılabilir (server key gate'inden bağımsız)", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", "false");
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  var apiKeyCrypto = require("../services/apiKeyCrypto");
+  var STORED_KEY = "sk-or-stored-key-beats-disabled-server-key";
+  var enc = apiKeyCrypto.encryptApiKey(STORED_KEY);
+  userApiKeyPersistence._internal.setClientFactoryForTests(function (accessToken) {
+    if (!accessToken) return null;
+    return {
+      from: function () {
+        return {
+          select: function () { return this; },
+          eq: function () { return this; },
+          maybeSingle: function () {
+            return Promise.resolve({ data: { ciphertext: enc.ciphertext, nonce: enc.nonce, auth_tag: enc.authTag, key_version: enc.keyVersion }, error: null });
+          },
+        };
+      },
+    };
+  });
+  try {
+    var result = await resolveEffectiveApiKey(null, { userId: "userA", accessToken: "token-for-userA" });
+    assert.equal(result, STORED_KEY);
+  } finally {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
+  }
+});
+
+test("resolveEffectiveApiKey (stored key tier): kayıtlı key YOKSA (satır bulunamadı) ALLOW_SERVER_API_KEY='true' + env key VAR -> env key'e düşülür", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", "true");
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  userApiKeyPersistence._internal.setClientFactoryForTests(function (accessToken) {
+    if (!accessToken) return null;
+    return {
+      from: function () {
+        return {
+          select: function () { return this; },
+          eq: function () { return this; },
+          maybeSingle: function () { return Promise.resolve({ data: null, error: null }); },
+        };
+      },
+    };
+  });
+  try {
+    var result = await resolveEffectiveApiKey(null, { userId: "userA", accessToken: "token-for-userA" });
+    assert.equal(result, FAKE_ENV_KEY);
+  } finally {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+    restoreFlag();
+    restoreEnv();
+  }
+});
+
+test("resolveEffectiveApiKey (stored key tier): anonim istek (authContext yok/userId+accessToken eksik) stored-key lookup'ı HİÇ DENEMEZ", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  var lookupAttempted = false;
+  userApiKeyPersistence._internal.setClientFactoryForTests(function () {
+    lookupAttempted = true;
+    return null;
+  });
+  try {
+    assert.equal(await resolveEffectiveApiKey(null), null);
+    assert.equal(await resolveEffectiveApiKey(null, null), null);
+    assert.equal(await resolveEffectiveApiKey(null, { userId: null, accessToken: null }), null);
+    assert.equal(lookupAttempted, false, "anonim istek (userId/accessToken eksik) stored-key client factory'sini HİÇ ÇAĞIRMAMALI");
+  } finally {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+    restoreFlag();
+    restoreEnv();
+  }
+});
+
+test("resolveEffectiveApiKey (stored key tier): decrypt/DB hatası isteği ÇÖKERTMEZ -- güvenli şekilde bir sonraki tier'a düşer", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", "true");
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", FAKE_ENV_KEY);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  // Bozuk/tamper edilmiş bir kayıt -- decrypt BAŞARISIZ olacak.
+  userApiKeyPersistence._internal.setClientFactoryForTests(function (accessToken) {
+    if (!accessToken) return null;
+    return {
+      from: function () {
+        return {
+          select: function () { return this; },
+          eq: function () { return this; },
+          maybeSingle: function () {
+            return Promise.resolve({
+              data: { ciphertext: Buffer.from("not-real-ciphertext"), nonce: Buffer.alloc(12, 1), auth_tag: Buffer.alloc(16, 2), key_version: 1 },
+              error: null,
+            });
+          },
+        };
+      },
+    };
+  });
+  try {
+    var result = await resolveEffectiveApiKey(null, { userId: "userA", accessToken: "token-for-userA" });
+    // decrypt başarısız -> stored tier sessizce atlanır -> ALLOW_SERVER_API_KEY
+    // gate'inden geçer -> env key. İstek hiçbir zaman throw/500 ile çökmedi.
+    assert.equal(result, FAKE_ENV_KEY);
+  } finally {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
   }
 });
 
@@ -437,6 +618,199 @@ test("generate/improve/autofix: BYOK key GERÇEK bir çağrıda kullanılsa bile
   } finally {
     ctx.server.close();
     restoreFetch();
+    restoreFlag();
+    restoreEnv();
+  }
+});
+
+// =========================================================================
+// 6) PERSISTENT USER OPENROUTER API KEYS round — /api/generate, /api/autofix,
+//    /api/improve, kullanıcının HESABINA KAYITLI bir key varsa (ve request
+//    body'sinde apiKey YOKSA) bunu kullanır -- attachUser'ın gerçek doğrulama
+//    mantığı BURADA test edilmiyor (bkz. attachUser.test.js), SADECE onun
+//    SONUCUNU (req.userId/req.accessToken) simüle eden minimal bir sahte
+//    middleware + userApiKeyPersistence'in gerçek client-factory test seam'i
+//    kullanılıyor (gamesRoute.test.js İLE AYNI desen).
+// =========================================================================
+
+function startServerWithAuth(userId) {
+  var app = express();
+  app.use(express.json({ limit: "2mb" }));
+  app.use(function (req, res, next) {
+    req.user = userId ? { id: userId, email: userId + "@example.com" } : null;
+    req.userId = userId || null;
+    req.accessToken = userId ? "token-for-" + userId : null;
+    next();
+  });
+  app.use("/api", generateRouter);
+  app.use("/api", improveRouter);
+  app.use("/api", autofixRouter);
+  return new Promise(function (resolve) {
+    var server = app.listen(0, function () {
+      resolve({ server: server, port: server.address().port });
+    });
+  });
+}
+
+function stubStoredKeyFor(userId, plaintextKey) {
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  var apiKeyCrypto = require("../services/apiKeyCrypto");
+  var enc = apiKeyCrypto.encryptApiKey(plaintextKey);
+  userApiKeyPersistence._internal.setClientFactoryForTests(function (accessToken) {
+    if (!accessToken || accessToken !== "token-for-" + userId) return null;
+    return {
+      from: function () {
+        return {
+          select: function () { return this; },
+          eq: function () { return this; },
+          maybeSingle: function () {
+            return Promise.resolve({
+              data: { ciphertext: enc.ciphertext, nonce: enc.nonce, auth_tag: enc.authTag, key_version: enc.keyVersion },
+              error: null,
+            });
+          },
+        };
+      },
+    };
+  });
+  return function restore() {
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
+  };
+}
+
+var FAKE_STORED_KEY = "sk-or-fake-stored-key-never-sent-over-network";
+
+test("/api/generate: signed-in kullanıcı, req.body.apiKey YOKKEN, hesabına KAYITLI key'i kullanır", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var restoreStored = stubStoredKeyFor("userA", FAKE_STORED_KEY);
+  var calls = [];
+  var restoreFetch = stubChatCompletions(calls);
+  var ctx = await startServerWithAuth("userA");
+  try {
+    var res = await postJson(ctx.port, "/api/generate", {
+      prompt: "Create a 5-second space shooter game with asteroids.",
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.meta.mock, false);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].opts.headers.Authorization, "Bearer " + FAKE_STORED_KEY);
+    assert.equal(JSON.stringify(res.body).indexOf(FAKE_STORED_KEY), -1, "stored key HİÇBİR response body'sinde yer almamalı");
+  } finally {
+    ctx.server.close();
+    restoreFetch();
+    restoreStored();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
+  }
+});
+
+test("/api/generate: signed-in kullanıcı, explicit BYOK (req.body.apiKey) verirse, kayıtlı key'inden ÖNCELİKLİDİR", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var restoreStored = stubStoredKeyFor("userA", FAKE_STORED_KEY);
+  var calls = [];
+  var restoreFetch = stubChatCompletions(calls);
+  var ctx = await startServerWithAuth("userA");
+  try {
+    var res = await postJson(ctx.port, "/api/generate", {
+      prompt: "Create a 5-second space shooter game with asteroids.",
+      apiKey: FAKE_USER_KEY,
+    });
+    assert.equal(res.status, 200);
+    assert.equal(calls[0].opts.headers.Authorization, "Bearer " + FAKE_USER_KEY);
+  } finally {
+    ctx.server.close();
+    restoreFetch();
+    restoreStored();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
+  }
+});
+
+test("/api/autofix: signed-in kullanıcı, req.body.apiKey YOKKEN, hesabına KAYITLI key'i kullanır", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var restoreStored = stubStoredKeyFor("userA", FAKE_STORED_KEY);
+  var calls = [];
+  var restoreFetch = stubChatCompletions(calls);
+  var ctx = await startServerWithAuth("userA");
+  try {
+    var res = await postJson(ctx.port, "/api/autofix", {
+      html: SAMPLE_HTML,
+      prompt: "Fruit tapping game",
+      checks: [{ key: "has-js", name: "Has JS", status: "fail", detail: "eksik" }],
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.applied, true);
+    assert.equal(calls[0].opts.headers.Authorization, "Bearer " + FAKE_STORED_KEY);
+    assert.equal(JSON.stringify(res.body).indexOf(FAKE_STORED_KEY), -1);
+  } finally {
+    ctx.server.close();
+    restoreFetch();
+    restoreStored();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
+  }
+});
+
+test("/api/improve: signed-in kullanıcı, req.body.apiKey YOKKEN, hesabına KAYITLI key'i kullanır", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var restoreMasterKey = withEnvVar("API_KEY_ENCRYPTION_KEY", require("crypto").randomBytes(32).toString("base64"));
+  var restoreStored = stubStoredKeyFor("userA", FAKE_STORED_KEY);
+  var calls = [];
+  var restoreFetch = stubChatCompletions(calls);
+  var ctx = await startServerWithAuth("userA");
+  try {
+    var res = await postJson(ctx.port, "/api/improve", {
+      html: SAMPLE_HTML,
+      prompt: "Fruit tapping game",
+      improvements: ["visual"],
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.applied, true);
+    assert.equal(calls[0].opts.headers.Authorization, "Bearer " + FAKE_STORED_KEY);
+    assert.equal(JSON.stringify(res.body).indexOf(FAKE_STORED_KEY), -1);
+  } finally {
+    ctx.server.close();
+    restoreFetch();
+    restoreStored();
+    restoreFlag();
+    restoreEnv();
+    restoreMasterKey();
+  }
+});
+
+test("/api/generate: anonim istek (signed-in DEĞİL), hesap-bazlı stored-key lookup'ı HİÇ DENEMEZ (regression guard)", async function () {
+  var restoreFlag = withEnvVar("ALLOW_SERVER_API_KEY", undefined);
+  var restoreEnv = withEnvVar("OPENROUTER_API_KEY", undefined);
+  var userApiKeyPersistence = require("../services/userApiKeyPersistence");
+  var lookupAttempted = false;
+  userApiKeyPersistence._internal.setClientFactoryForTests(function () {
+    lookupAttempted = true;
+    return null;
+  });
+  var calls = [];
+  var restoreFetch = stubChatCompletions(calls);
+  var ctx = await startServerWithAuth(null); // anonim -- req.userId=null
+  try {
+    var res = await postJson(ctx.port, "/api/generate", {
+      prompt: "Create a 5-second space shooter game with asteroids.",
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.body.meta.mock, true, "anonim + BYOK yok -> mock (ÖNCEKİ davranışla BİREBİR aynı)");
+    assert.equal(lookupAttempted, false, "anonim istek stored-key client factory'sini HİÇ ÇAĞIRMAMALI");
+  } finally {
+    ctx.server.close();
+    restoreFetch();
+    userApiKeyPersistence._internal.resetClientFactoryForTests();
     restoreFlag();
     restoreEnv();
   }

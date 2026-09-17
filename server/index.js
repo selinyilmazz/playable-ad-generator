@@ -25,6 +25,11 @@ const authConfigRouter = require("./routes/authConfig");
 // "hiçbir isteği reddetme" kuralı DEĞİŞMEDİ — bu router KENDİ İÇİNDE 401
 // döner, diğer HİÇBİR route'u etkilemez.
 const gamesRouter = require("./routes/games");
+// PERSISTENT USER OPENROUTER API KEYS (Phase 3) round — /api/keys CRUD,
+// SADECE signed-in kullanıcılar için (bkz. routes/apiKeys.js'in kendi
+// requireAuth'u) -- games.js İLE AYNI desen, attachUser'ın GENEL "hiçbir
+// isteği reddetme" kuralı DEĞİŞMEDİ.
+const apiKeysRouter = require("./routes/apiKeys");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -46,6 +51,7 @@ app.use("/api", assetsRouter);
 app.use("/api", modelsRouter);
 app.use("/api", assetLibrariesRouter);
 app.use("/api", gamesRouter);
+app.use("/api", apiKeysRouter);
 
 // Statik frontend (public/)
 app.use(express.static(path.join(__dirname, "..", "public")));

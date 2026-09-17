@@ -111,9 +111,15 @@ function extractContent(message) {
  * iken — bkz. PRODUCTION BYOK SECURITY FIX notu, o dosyada) ya da null
  * (production varsayılanı — bu durumda generateTopDownSpec() ZATEN
  * mevcut, DEĞİŞMEMİŞ mock spec fallback'ine düşer). Loglanmaz/saklanmaz.
+ *
+ * authContext (PERSISTENT USER OPENROUTER API KEYS round, OPSİYONEL 4.
+ * parametre): { userId, accessToken } — aynen resolveEffectiveApiKey'e
+ * iletilir, o fonksiyonun YENİ orta tier'ı (kullanıcının kaydettiği key)
+ * için. GERİYE DÖNÜK UYUMLU — verilmezse davranış BİREBİR ÖNCEKİ round'la
+ * aynı. resolveEffectiveApiKey artık ASYNC olduğu için burada await ediliyor.
  */
-async function callLlmForSpec(prompt, modelOverride, apiKeyOverride) {
-  var apiKey = resolveEffectiveApiKey(apiKeyOverride);
+async function callLlmForSpec(prompt, modelOverride, apiKeyOverride, authContext) {
+  var apiKey = await resolveEffectiveApiKey(apiKeyOverride, authContext);
   if (!apiKey) return null;
 
   var effectiveModel = modelOverride || modelConfig.model;
@@ -186,15 +192,18 @@ function mockResult(prompt, model, finishReason) {
  * DÖNÜK UYUMLU — verilmezse davranış BİREBİR ÖNCEKİ round'la aynı.
  * apiKeyOverride (OPENROUTER MODEL CATALOG + BYOK round, OPSİYONEL 3.
  * parametre): callLlmForSpec'e AYNEN iletilir, bkz. o fonksiyonun yorumu.
+ * authContext (PERSISTENT USER OPENROUTER API KEYS round, OPSİYONEL 4.
+ * parametre): { userId, accessToken } — callLlmForSpec'e AYNEN iletilir.
+ * GERİYE DÖNÜK UYUMLU — verilmezse davranış BİREBİR ÖNCEKİ round'la aynı.
  * Dönüş: { spec, collectibles, obstacles, mock, model, finishReason }.
  * `spec`, HENÜZ normalize EDİLMEMİŞ (adapt edilmiş) bir objedir —
  * routes/generate.js bunu specSchemaBridge.normalizeSpec()'e verir.
  * ASLA throw etmez — LLM/parse hatası her zaman güvenli mock'a düşer.
  */
-async function generateTopDownSpec(prompt, modelOverride, apiKeyOverride) {
+async function generateTopDownSpec(prompt, modelOverride, apiKeyOverride, authContext) {
   var llmResult = null;
   try {
-    llmResult = await callLlmForSpec(prompt, modelOverride, apiKeyOverride);
+    llmResult = await callLlmForSpec(prompt, modelOverride, apiKeyOverride, authContext);
   } catch (err) {
     console.error("[topdown specGenerator] LLM hatası, mock spec'e düşülüyor:", err.message);
     llmResult = null;

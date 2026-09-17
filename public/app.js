@@ -36,6 +36,12 @@
   var byokUseBtnEl = document.getElementById("byok-use-btn");
   var byokCancelBtnEl = document.getElementById("byok-cancel-btn");
   var byokClearBtnEl = document.getElementById("byok-clear-btn");
+  // PERSISTENT USER OPENROUTER API KEYS (Phase 3) round — signed-in-only
+  // "save to account" satırı (bkz. index.html #byok-account-row).
+  var byokAccountRowEl = document.getElementById("byok-account-row");
+  var byokAccountStatusEl = document.getElementById("byok-account-status");
+  var byokSaveAccountBtnEl = document.getElementById("byok-save-account-btn");
+  var byokDeleteAccountBtnEl = document.getElementById("byok-delete-account-btn");
 
   // SUPABASE AUTHENTICATION FOUNDATION round — hesap UI referansları.
   // Mevcut model-selector/BYOK elementlerinin HİÇBİRİ değişmedi, bunlar
@@ -828,6 +834,128 @@
     byokModalBackdropEl.classList.remove("hidden");
     if (byokKeyInputEl) byokKeyInputEl.focus();
     document.addEventListener("keydown", handleByokModalKeydown);
+    // PERSISTENT USER OPENROUTER API KEYS round (görev md.7): "When opening
+    // the BYOK modal for an authenticated user: call GET
+    // /api/keys/openrouter/status, show only whether a key is configured."
+    // Anonim kullanıcı için bu satır sadece #byok-account-row'u hidden
+    // tutar (aşağıdaki fonksiyonun kendi getCurrentUser() kontrolü) --
+    // mevcut anonim BYOK davranışı HİÇ etkilenmez.
+    refreshByokAccountRow();
+  }
+
+  // ---------------------------------------------------------------------
+  // PERSISTENT USER OPENROUTER API KEYS (Phase 3) round — signed-in
+  // kullanıcının hesabına KAYITLI OpenRouter key'i için minimal, ek UI.
+  //
+  // GÜVENLİK (görev md.7, KESİN):
+  //  - Key, kaydedildikten SONRA bir daha ASLA sunucudan GERİ OKUNMAZ/
+  //    gösterilmez -- SADECE GET .../status'un {hasKey, updatedAt}
+  //    (secret İÇERMEYEN) sonucu gösterilir.
+  //  - "Save key to my account" mevcut #byok-key-input'taki HAM değeri
+  //    kullanır (AYRI bir input EKLENMEDİ, görev md.7: "büyük bir UI
+  //    değişikliği gerektiriyorsa basit bir authenticated 'Save key'
+  //    action'ı yeterli").
+  //  - Saved key'i SİLMEK, bellek-içi session key'ini (userApiKey) ASLA
+  //    otomatik temizlemez -- kullanıcı isterse AYRICA "Clear key"'e
+  //    basmalı (görev md.7, KESİN).
+  //  - Anonim kullanıcı için #byok-account-row HER ZAMAN hidden kalır,
+  //    hiçbir /api/keys isteği ASLA atılmaz.
+  // ---------------------------------------------------------------------
+  function setByokAccountStatus(text, kind) {
+    if (!byokAccountStatusEl) return;
+    byokAccountStatusEl.textContent = text || "";
+    byokAccountStatusEl.className = "byok-account-status" + (kind ? " " + kind : "");
+  }
+
+  function refreshByokAccountRow() {
+    if (!byokAccountRowEl) return;
+    var user = getCurrentUser();
+    byokAccountRowEl.classList.toggle("hidden", !user);
+    if (!user) return;
+
+    setByokAccountStatus("Checking your saved key…", "");
+    if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.classList.add("hidden");
+    if (typeof fetch !== "function") return;
+
+    buildAuthHeaders()
+      .then(function (authHeaders) {
+        return fetch("/api/keys/openrouter/status", { headers: authHeaders });
+      })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (data) {
+        if (data && data.hasKey) {
+          setByokAccountStatus("A key is saved to your account.", "success");
+          if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.classList.remove("hidden");
+        } else {
+          setByokAccountStatus("No key saved to your account yet.", "");
+        }
+      })
+      .catch(function () {
+        setByokAccountStatus("Could not check your saved key right now.", "error");
+      });
+  }
+
+  async function handleSaveKeyToAccount() {
+    var rawKey = byokKeyInputEl ? byokKeyInputEl.value : "";
+    if (!rawKey || !rawKey.trim()) {
+      setByokAccountStatus("Enter your OpenRouter API key above first.", "error");
+      return;
+    }
+    if (typeof fetch !== "function") {
+      setByokAccountStatus("Saving is unavailable right now.", "error");
+      return;
+    }
+    if (byokSaveAccountBtnEl) byokSaveAccountBtnEl.disabled = true;
+    setByokAccountStatus("Saving…", "");
+    try {
+      var authHeaders = await buildAuthHeaders();
+      var res = await fetch("/api/keys/openrouter", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, authHeaders),
+        body: JSON.stringify({ apiKey: rawKey.trim() }),
+      });
+      var data = null;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        data = null;
+      }
+      if (res.ok && data && data.hasKey) {
+        // GÜVENLİK: kaydedilen key BİR DAHA hiçbir yerde gösterilmiyor --
+        // SADECE sabit, secret-free bir onay metni.
+        setByokAccountStatus("OpenRouter key saved securely.", "success");
+        if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.classList.remove("hidden");
+      } else {
+        setByokAccountStatus((data && data.error) || "Could not save your key.", "error");
+      }
+    } catch (err) {
+      setByokAccountStatus("Could not reach the server to save your key.", "error");
+    } finally {
+      if (byokSaveAccountBtnEl) byokSaveAccountBtnEl.disabled = false;
+    }
+  }
+
+  async function handleDeleteKeyFromAccount() {
+    if (typeof fetch !== "function") return;
+    if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.disabled = true;
+    setByokAccountStatus("Deleting…", "");
+    try {
+      var authHeaders = await buildAuthHeaders();
+      var res = await fetch("/api/keys/openrouter", { method: "DELETE", headers: authHeaders });
+      if (res.ok) {
+        setByokAccountStatus("Saved key deleted.", "");
+        if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.classList.add("hidden");
+        // GÜVENLİK (görev md.7, KESİN): userApiKey (bellek-içi SESSION key)
+        // BURADA BİLEREK dokunulmuyor -- saved key'i silmek session key'ini
+        // OTOMATİK temizlemez, kullanıcı isterse AYRICA "Clear key"'e basar.
+      } else {
+        setByokAccountStatus("Could not delete your saved key.", "error");
+      }
+    } catch (err) {
+      setByokAccountStatus("Could not reach the server to delete your key.", "error");
+    } finally {
+      if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.disabled = false;
+    }
   }
 
   function closeByokModal() {
@@ -919,6 +1047,8 @@
     if (byokUseBtnEl) byokUseBtnEl.addEventListener("click", handleByokUse);
     if (byokCancelBtnEl) byokCancelBtnEl.addEventListener("click", closeByokModal);
     if (byokClearBtnEl) byokClearBtnEl.addEventListener("click", handleByokClear);
+    if (byokSaveAccountBtnEl) byokSaveAccountBtnEl.addEventListener("click", handleSaveKeyToAccount);
+    if (byokDeleteAccountBtnEl) byokDeleteAccountBtnEl.addEventListener("click", handleDeleteKeyFromAccount);
     if (byokModalBackdropEl) {
       byokModalBackdropEl.addEventListener("click", function (e) {
         if (e.target === byokModalBackdropEl) closeByokModal();
@@ -2483,9 +2613,18 @@
       // null döner ve `apiKey` hiç gönderilmez — backend zaten böyle bir
       // isteği MEVCUT .env ENV key fallback'ine düşürür (görev md.9,
       // regresyon YOK).
+      // PERSISTENT USER OPENROUTER API KEYS round — signed-in kullanıcının
+      // hesabına kayıtlı bir key'i sunucunun kullanabilmesi için (bkz.
+      // resolveEffectiveApiKey'in YENİ orta tier'ı), bu istek de ARTIK
+      // (My Games istekleriyle AYNI desen) buildAuthHeaders() ile
+      // Authorization: Bearer <token> ekliyor -- SADECE geçerli bir
+      // Supabase oturumu VARSA (anonim kullanıcıda authHeaders {} olur,
+      // davranış HİÇ değişmez). Bu header, İÇİNDE hiçbir API key
+      // TAŞIMAZ -- sadece kullanıcının KİMLİĞİNİ doğrulamak için.
+      var generateAuthHeaders = await buildAuthHeaders();
       var res = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: Object.assign({ "Content-Type": "application/json" }, generateAuthHeaders),
         body: JSON.stringify({
           prompt: finalPrompt,
           model: getSelectedModelId() || undefined,
@@ -3094,9 +3233,12 @@
       // döner ve `apiKey` hiç gönderilmez (backend bu durumda mevcut mock
       // fallback davranışına düşer). Key SADECE bellekte tutulan
       // getUserApiKey()'den okunur — hiçbir yeni saklama eklenmedi.
+      // PERSISTENT USER OPENROUTER API KEYS round — generate() İLE AYNI
+      // gerekçe/desen (bkz. o fetch çağrısındaki yorum).
+      var autofixAuthHeaders = await buildAuthHeaders();
       var res = await fetch("/api/autofix", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: Object.assign({ "Content-Type": "application/json" }, autofixAuthHeaders),
         body: JSON.stringify({
           html: lastResult.html,
           prompt: lastResult.prompt,
@@ -3266,9 +3408,12 @@
         // md.5: Generate ile AYNI model-selection sistemi — ayrı bir model
         // state YOK, getSelectedModelId()/getUserApiKey() Generate'in
         // KULLANDIĞI AYNI fonksiyonlar (bkz. yukarıdaki generate()).
+        // PERSISTENT USER OPENROUTER API KEYS round — generate() İLE AYNI
+        // gerekçe/desen (bkz. o fetch çağrısındaki yorum).
+        var improveAuthHeaders = await buildAuthHeaders();
         var res = await fetch("/api/improve", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: Object.assign({ "Content-Type": "application/json" }, improveAuthHeaders),
           body: JSON.stringify({
             html: lastResult.html,
             prompt: lastResult.prompt,

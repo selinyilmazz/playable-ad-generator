@@ -11,6 +11,11 @@
  */
 const modelConfig = require("../config/models");
 const { normalizeGeneratedHtml } = require("./htmlNormalizer");
+// PERSISTENT USER OPENROUTER API KEYS (Phase 3) — resolveEffectiveApiKey()'in
+// YENİ, orta tier'ı (bkz. o fonksiyonun güncellenmiş yorumu) için. Bu
+// require, HİÇBİR döngüsel bağımlılık oluşturmaz: userApiKeyPersistence.js
+// openrouterClient.js'i hiç import etmiyor.
+const userApiKeyPersistence = require("./userApiKeyPersistence");
 
 /**
  * ROUND 19 (Part C) — OpenRouter/sağlayıcıya göre değişen message.content
@@ -74,11 +79,56 @@ function extractRawContent(message) {
  * kopyasında sessizce hayatta kalmasını önler).
  *
  * apiKey hiçbir şekilde loglanmaz/response'a yazılmaz/saklanmaz — bu
- * fonksiyon SADECE hangi string'in (override/env/null) kullanılacağına
+ * fonksiyon SADECE hangi string'in (override/stored/env/null) kullanılacağına
  * karar verir, değeri hiçbir yere yazmaz.
+ *
+ * PERSISTENT USER OPENROUTER API KEYS (Phase 3) — bu fonksiyon artık ÜÇ
+ * tier'lı (önceden İKİ tier'lıydı) ve ASYNC (önceden senkrondu, çünkü YENİ
+ * orta tier bir DB sorgusu gerektiriyor):
+ *   1) apiKeyOverride (explicit per-request BYOK) — HİÇ DEĞİŞMEDİ, her
+ *      zaman en yüksek öncelik, authContext'ten TAMAMEN bağımsız.
+ *   2) YENİ: authContext={userId, accessToken} verilmişse (kullanıcı
+ *      signed-in VE attachUser bunu doğrulamışsa) VE apiKeyOverride YOKSA,
+ *      kullanıcının hesabına kaydettiği OpenRouter key'i (varsa) kullanılır
+ *      (bkz. userApiKeyPersistence.getUserApiKey). authContext yoksa (ör.
+ *      anonim kullanıcı) bu tier'a HİÇ GİRİLMEZ — anonim kullanıcılar için
+ *      davranış ÖNCEKİ round'la BİREBİR AYNI kalır (regresyon yok).
+ *   3) process.env.OPENROUTER_API_KEY — SADECE ALLOW_SERVER_API_KEY==="true"
+ *      iken (HİÇ DEĞİŞMEDİ, hâlâ en düşük öncelik/son çare).
+ *
+ * getUserApiKey() KENDİSİ hiçbir zaman throw etmez (bkz. o fonksiyonun
+ * yorumu — DB hatası/decrypt hatası HEPSİ "null" sonucuna düşer), ama bu
+ * fonksiyon YİNE DE bir try/catch ile sarıyor (defense in depth — bu
+ * fonksiyonun tek görevi "hangi key kullanılacak" kararını vermek, bu
+ * karar ASLA bir exception'la sonuçlanıp generate/autofix/improve
+ * isteğini çökertmemeli; çökme yerine mevcut, güvenli tier 3/null
+ * davranışına düşülür — görev md: "decrypt failure -> do not crash the
+ * request, do not expose reason to client, fall through safely").
+ *
+ * authContext OPSİYONEL (2. parametre) — GERİYE DÖNÜK UYUMLU: verilmezse
+ * (ör. bu fonksiyonu doğrudan çağıran eski/basit testler)
+ * resolveEffectiveApiKey(apiKeyOverride) davranışı ÖNCEKİ round'la
+ * BİREBİR AYNI kalır (tier 2 hiç devreye girmez), SADECE artık bir
+ * Promise döner (await edilmesi gerekir).
  */
-function resolveEffectiveApiKey(apiKeyOverride) {
+async function resolveEffectiveApiKey(apiKeyOverride, authContext) {
   if (apiKeyOverride) return apiKeyOverride;
+
+  var userId = authContext && authContext.userId;
+  var accessToken = authContext && authContext.accessToken;
+  if (userId && accessToken) {
+    try {
+      var stored = await userApiKeyPersistence.getUserApiKey(accessToken, userId, "openrouter");
+      if (stored) return stored;
+    } catch (err) {
+      // bkz. yukarıdaki fonksiyon yorumu — getUserApiKey ASLA throw
+      // etmemeli, ama bu catch YİNE DE burada, ekstra bir güvenlik ağı
+      // olarak duruyor. err hiçbir secret İÇERMEZ (Supabase/crypto hata
+      // objeleri), ama yine de mesajı DEĞİL sadece sabit bir metni logluyoruz.
+      console.error("[openrouterClient] stored API key lookup failed unexpectedly, falling back.");
+    }
+  }
+
   return process.env.ALLOW_SERVER_API_KEY === "true" ? process.env.OPENROUTER_API_KEY : null;
 }
 
@@ -100,10 +150,17 @@ function resolveEffectiveApiKey(apiKeyOverride) {
  * kullanılır. Bu key ASLA loglanmaz/response'a yazılmaz/saklanmaz — sadece
  * bu fonksiyonun yaşam süresi boyunca, tek bir Authorization başlığı
  * oluşturmak için bellekte tutulur (görev md.16).
+ * authContext (PERSISTENT USER OPENROUTER API KEYS round, OPSİYONEL 4.
+ * parametre): { userId, accessToken } — GERİYE DÖNÜK UYUMLU, verilmezse
+ * (mevcut TÜM çağıranlar bu round'dan ÖNCEKİ haliyle) davranış BİREBİR
+ * AYNI kalır (resolveEffectiveApiKey'in YENİ orta tier'ı hiç devreye
+ * girmez). Verilirse, apiKeyOverride yoksa VE bu kullanıcının kaydettiği
+ * bir key varsa O kullanılır (bkz. resolveEffectiveApiKey'in güncellenmiş
+ * yorumu).
  * Dönüş: { html, model, finishReason } ya da (hiçbir key yoksa) null.
  */
-async function callOpenRouterForHtml(messages, modelOverride, apiKeyOverride) {
-  var apiKey = resolveEffectiveApiKey(apiKeyOverride);
+async function callOpenRouterForHtml(messages, modelOverride, apiKeyOverride, authContext) {
+  var apiKey = await resolveEffectiveApiKey(apiKeyOverride, authContext);
   if (!apiKey) {
     return null;
   }

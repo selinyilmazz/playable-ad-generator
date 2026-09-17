@@ -128,8 +128,12 @@ function getMockResponse(userPrompt, gameType) {
  * process.env.OPENROUTER_API_KEY'e düşer (ÖNCEKİ round'la birebir aynı).
  * Verilirse aynen callOpenRouterForHtml'e iletilir — bu fonksiyon key
  * üzerinde HİÇBİR işlem/log/saklama yapmaz, sadece taşır.
+ * authContext (PERSISTENT USER OPENROUTER API KEYS round, OPSİYONEL 5.
+ * parametre): { userId, accessToken } — aynen callOpenRouterForHtml'e
+ * iletilir (bkz. o dosyanın resolveEffectiveApiKey yorumu). GERİYE DÖNÜK
+ * UYUMLU — verilmezse davranış BİREBİR ÖNCEKİ round'la aynı.
  */
-async function generatePlayableAd(userPrompt, gameType, modelOverride, apiKeyOverride) {
+async function generatePlayableAd(userPrompt, gameType, modelOverride, apiKeyOverride, authContext) {
   var messages = [{ role: "system", content: SYSTEM_PROMPT }];
 
   // Asset context varsa (manifest boş değilse) ikinci bir system mesajı
@@ -145,7 +149,7 @@ async function generatePlayableAd(userPrompt, gameType, modelOverride, apiKeyOve
 
   messages.push({ role: "user", content: userPrompt });
 
-  var result = await callOpenRouterForHtml(messages, modelOverride, apiKeyOverride);
+  var result = await callOpenRouterForHtml(messages, modelOverride, apiKeyOverride, authContext);
 
   if (!result) {
     return getMockResponse(userPrompt, gameType);

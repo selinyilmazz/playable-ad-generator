@@ -46,11 +46,16 @@ router.post("/autofix", async function (req, res) {
   var selectedApiKey =
     req.body && typeof req.body.apiKey === "string" && req.body.apiKey.trim() ? req.body.apiKey.trim() : null;
 
+  // PERSISTENT USER OPENROUTER API KEYS round — generate.js İLE AYNI
+  // desen: req.userId/req.accessToken SADECE attachUser'ın doğruladığı
+  // değerlerdir, req.body'den ASLA okunmaz.
+  var authContext = { userId: req.userId, accessToken: req.accessToken };
+
   try {
     var instruction = buildFixInstruction(checks);
 
     // GENERATE(fix) -> VALIDATE AGAIN
-    var result = await refinePlayableAd(html, instruction, null, selectedApiKey);
+    var result = await refinePlayableAd(html, instruction, null, selectedApiKey, authContext);
     var validation = validatePlayable(result.html, prompt);
 
     return res.json({

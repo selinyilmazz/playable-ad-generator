@@ -19,14 +19,20 @@ const { buildRefineSystemPrompt, buildRefineUserMessage } = require("../prompts/
 // bu iki parametreyi GERÇEK, doğrulanmış model id'si + (varsa) kullanıcının
 // BYOK key'i ile geçirir — callOpenRouterForHtml zaten bunları destekliyor,
 // burada YENİ bir doğrulama/İstemci mantığı YAZILMIYOR.
-async function refinePlayableAd(html, instruction, modelOverride, apiKeyOverride) {
+// authContext (PERSISTENT USER OPENROUTER API KEYS round, OPSİYONEL 5.
+// parametre): { userId, accessToken } — aynen callOpenRouterForHtml'e
+// iletilir. GERİYE DÖNÜK UYUMLU — verilmezse davranış BİREBİR ÖNCEKİ
+// round'la aynı (resolveEffectiveApiKey'in stored-key tier'ı devreye
+// girmez).
+async function refinePlayableAd(html, instruction, modelOverride, apiKeyOverride, authContext) {
   var result = await callOpenRouterForHtml(
     [
       { role: "system", content: buildRefineSystemPrompt() },
       { role: "user", content: buildRefineUserMessage(html, instruction) },
     ],
     modelOverride,
-    apiKeyOverride
+    apiKeyOverride,
+    authContext
   );
 
   if (!result) {

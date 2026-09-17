@@ -80,6 +80,16 @@ router.post("/generate", async function (req, res) {
   var selectedApiKey =
     req.body && typeof req.body.apiKey === "string" && req.body.apiKey.trim() ? req.body.apiKey.trim() : null;
 
+  // PERSISTENT USER OPENROUTER API KEYS round — attachUser'ın (varsa)
+  // doğruladığı kimlik, key-çözümleme katmanına (resolveEffectiveApiKey'in
+  // YENİ orta tier'ı) taşınıyor. GÜVENLİK: req.userId/req.accessToken
+  // SADECE attachUser middleware'inin doğruladığı değerlerdir — burada
+  // req.body'den bir userId ASLA okunmuyor. Anonim istekte (req.userId
+  // null) bu obje {userId: null, accessToken: null} olur ve
+  // resolveEffectiveApiKey bu durumda YENİ tier'a hiç girmez (davranış
+  // ÖNCEKİ round'la BİREBİR AYNI kalır).
+  var authContext = { userId: req.userId, accessToken: req.accessToken };
+
   try {
     var trimmedPrompt = prompt.trim();
 
@@ -91,7 +101,7 @@ router.post("/generate", async function (req, res) {
     // (0, 1, 2, 2.5, 2.75, 3) BİREBİR ESKİSİ GİBİ devam eder.
     var topDownEligibility = detectTopDownEligibility(trimmedPrompt);
     if (topDownEligibility.eligible) {
-      var specResult = await generateTopDownSpec(trimmedPrompt, selectedModel, selectedApiKey);
+      var specResult = await generateTopDownSpec(trimmedPrompt, selectedModel, selectedApiKey, authContext);
       // COLLECTIBLES+OBSTACLES round — collectibles/obstacles artık
       // normalizeSpec()'TEN ÖNCE ham spec'e eklenir (eskiden SONRA
       // ekleniyordu ve specSchema.js'in yeni sanitizeCollectibles/
@@ -172,7 +182,7 @@ router.post("/generate", async function (req, res) {
     var gameTypeResult = detectGameType(trimmedPrompt);
 
     // 1) GENERATE
-    var result = await generatePlayableAd(trimmedPrompt, gameTypeResult.gameType, selectedModel, selectedApiKey);
+    var result = await generatePlayableAd(trimmedPrompt, gameTypeResult.gameType, selectedModel, selectedApiKey, authContext);
 
     // 2) VALIDATE (AI Validation Pipeline — skor + check listesi)
     var validation = validatePlayable(result.html, trimmedPrompt);
@@ -194,7 +204,7 @@ router.post("/generate", async function (req, res) {
       // callOpenRouterForHtml, OPENROUTER_API_KEY yoksa null döner — bu
       // durumda hiçbir ek LLM çağrısı yapılmaz (mock modda retry devreye
       // girmez, madde 5).
-      var retryResult = await callOpenRouterForHtml(fixMessages, selectedModel, selectedApiKey);
+      var retryResult = await callOpenRouterForHtml(fixMessages, selectedModel, selectedApiKey, authContext);
 
       if (retryResult) {
         // callOpenRouterForHtml zaten dönen html'i normalizeGeneratedHtml
