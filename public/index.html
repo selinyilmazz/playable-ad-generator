@@ -264,9 +264,21 @@
                .icon-btn benzeri kontrol. Signed-out iken #account-signin-btn
                görünür/#account-control gizli; signed-in iken tam tersi (bkz.
                app.js renderAccountUI — hiçbiri model selector/help-btn
-               davranışına dokunmaz). -->
+               davranışına dokunmaz).
+
+               AUTH UI VISUAL POLISH round: SADECE görsel — TÜM id'ler/class'lar
+               (account-signin-btn, account-control, account-btn, account-btn-label,
+               account-dropdown, account-dropdown-email, account-signout-btn) ve
+               app.js'in bunlara bağladığı event listener'lar/classList.toggle/
+               textContent çağrıları BİREBİR AYNI kaldı — SADECE emoji ikonlar
+               küçük inline SVG'lerle değiştirildi ve dropdown içine SADECE
+               dekoratif bir başlık satırı (avatar + "Signed in as" etiketi)
+               eklendi; #account-dropdown-email GENE textContent hedefi olarak
+               tek başına duruyor (bkz. app.js renderAccountUI). -->
           <button type="button" class="badge" id="account-signin-btn">
-            <span class="model-badge-icon" aria-hidden="true">👤</span>
+            <span class="model-badge-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"></path></svg>
+            </span>
             <span>Sign In</span>
           </button>
           <div class="account-control hidden" id="account-control">
@@ -278,13 +290,26 @@
               aria-expanded="false"
               aria-controls="account-dropdown"
             >
-              <span class="model-badge-icon" aria-hidden="true">👤</span>
+              <span class="model-badge-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"></path></svg>
+              </span>
               <span id="account-btn-label">Account</span>
               <span class="model-selector-caret" aria-hidden="true">▾</span>
             </button>
             <div class="model-dropdown account-dropdown hidden" id="account-dropdown" role="listbox" aria-label="Account">
-              <div class="account-dropdown-email" id="account-dropdown-email"></div>
-              <button type="button" class="byok-btn byok-btn-secondary account-signout-btn" id="account-signout-btn">Sign Out</button>
+              <div class="account-dropdown-header">
+                <span class="account-dropdown-avatar" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="12" cy="8" r="3.4"></circle><path d="M5.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2"></path></svg>
+                </span>
+                <div class="account-dropdown-info">
+                  <div class="account-dropdown-kicker">Signed in as</div>
+                  <div class="account-dropdown-email" id="account-dropdown-email"></div>
+                </div>
+              </div>
+              <button type="button" class="byok-btn byok-btn-secondary account-signout-btn" id="account-signout-btn">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"></path><path d="M16 16l4-4-4-4"></path><path d="M20 12H9"></path></svg>
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
         </div>
@@ -342,33 +367,57 @@
            TEKRAR KULLANIR — yeni bir modal stili eklenmedi, sadece yeni
            id'lerle aynı iskelet (bu, improve-modal'ın da AYNI şekilde
            .byok-btn'i tekrar kullandığı, style.css'te belgelenen konvansiyonla
-           tutarlı). -->
+           tutarlı).
+
+           AUTH UI VISUAL POLISH round: hâlâ AYNI .byok-modal-backdrop/.byok-modal/
+           .byok-key-input/.byok-btn* iskeletini paylaşıyor (BYOK/Improve modal'ları
+           ETKİLENMEZ) — sadece ek, BU MODALE ÖZGÜ modifier class'lar eklendi
+           (.auth-modal/.auth-input/.auth-modal-actions) ve dekoratif bir ikon
+           başlığı + input ikonları eklendi. #auth-modal-title/#auth-modal-note/
+           #auth-modal-status HÂLÂ app.js'in .textContent/.className atadığı
+           TEK, düz elemanlar (dekorasyon bunların DIŞINA/yanına eklendi, İÇİNE
+           değil) — app.js'in hiçbir satırı değişmedi. -->
       <div class="byok-modal-backdrop hidden" id="auth-modal-backdrop">
-        <div class="byok-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
-          <div class="byok-modal-title" id="auth-modal-title">Sign In</div>
+        <div class="byok-modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+          <div class="auth-modal-header">
+            <span class="auth-modal-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="5.5" y="10.5" width="13" height="9" rx="2"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
+            </span>
+            <div class="byok-modal-title" id="auth-modal-title">Sign In</div>
+          </div>
           <div class="auth-modal-tabs" role="tablist">
             <button type="button" class="auth-tab-btn active" id="auth-tab-signin" role="tab" aria-selected="true">Sign In</button>
             <button type="button" class="auth-tab-btn" id="auth-tab-signup" role="tab" aria-selected="false">Sign Up</button>
           </div>
-          <input
-            type="email"
-            id="auth-email-input"
-            class="byok-key-input"
-            placeholder="you@example.com"
-            autocomplete="email"
-            spellcheck="false"
-          />
-          <input
-            type="password"
-            id="auth-password-input"
-            class="byok-key-input"
-            placeholder="Password"
-            autocomplete="current-password"
-            spellcheck="false"
-          />
+          <div class="auth-input-group">
+            <span class="auth-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3.5" y="5.5" width="17" height="13" rx="2"></rect><path d="M4.5 7l7.5 6 7.5-6"></path></svg>
+            </span>
+            <input
+              type="email"
+              id="auth-email-input"
+              class="byok-key-input auth-input"
+              placeholder="you@example.com"
+              autocomplete="email"
+              spellcheck="false"
+            />
+          </div>
+          <div class="auth-input-group">
+            <span class="auth-input-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="5.5" y="10.5" width="13" height="8.5" rx="2"></rect><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"></path></svg>
+            </span>
+            <input
+              type="password"
+              id="auth-password-input"
+              class="byok-key-input auth-input"
+              placeholder="Password"
+              autocomplete="current-password"
+              spellcheck="false"
+            />
+          </div>
           <div class="byok-modal-note" id="auth-modal-note">Sign in to sync your account across devices.</div>
           <div class="byok-modal-status" id="auth-modal-status" aria-live="polite"></div>
-          <div class="byok-modal-actions">
+          <div class="byok-modal-actions auth-modal-actions">
             <button type="button" class="byok-btn byok-btn-secondary" id="auth-cancel-btn">Cancel</button>
             <button type="button" class="byok-btn byok-btn-primary" id="auth-submit-btn">Sign In</button>
           </div>

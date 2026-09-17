@@ -950,6 +950,187 @@ button { font-family: inherit; }
 }
 .icon-btn:disabled:hover { color: var(--text-dim); border-color: var(--border); box-shadow: none; }
 
+/* ================== AUTH UI VISUAL POLISH round ==================
+   Purely visual refinement of the Sign In/Sign Up modal and the account
+   control (signed-out button, signed-in badge, account popover). Layered
+   ON TOP of the shared rules above (.badge/.model-dropdown/.byok-modal/
+   .byok-key-input/.byok-btn*, all untouched) via selectors that are either
+   #id-scoped or use class names exclusive to auth/account markup (.account-*,
+   .auth-*) — verified none of these class names are used by the model
+   selector, BYOK popover, Improve modal, Game Library, or anywhere else in
+   the app, so nothing outside this feature can be affected. No id was
+   renamed or removed; app.js's DOM lookups/classList calls/event listeners
+   all still target the exact same elements. */
+
+.model-badge-icon svg { display: block; }
+
+#account-signin-btn,
+#account-btn {
+  transition: color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#account-signin-btn:hover,
+#account-btn:hover {
+  color: var(--gold-soft);
+  box-shadow: 0 0 14px rgba(232, 185, 77, 0.14);
+}
+/* Open state mirrors the model selector's own "open" treatment (satır ~560)
+   so the two controls read as the same family of component. */
+#account-btn[aria-expanded="true"] {
+  border-color: var(--gold-deep);
+  box-shadow: 0 0 0 1px rgba(232, 185, 77, 0.28), 0 0 14px rgba(232, 185, 77, 0.16);
+}
+
+/* Long emails can no longer stretch the header or collide with the model
+   selector/help button — same ellipsis treatment already used for
+   #mode-badge-text (satır ~760). */
+#account-btn-label {
+  display: inline-block;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+@media (max-width: 640px) {
+  #account-btn-label { max-width: 90px; }
+}
+
+/* Popover: dark glass panel, thin gold-tinted border, soft shadow, rounded
+   corners — background/border override .model-dropdown's shared values
+   (safe: same selector specificity, this rule is declared later, and
+   #account-dropdown/.model-dropdown's OWN positioning/scroll/z-index rules
+   are left completely alone). */
+.account-dropdown {
+  padding: 10px;
+  gap: 4px;
+  min-width: 232px;
+  max-width: min(280px, calc(100vw - 24px));
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-color: var(--border);
+}
+
+.account-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.account-dropdown-avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-soft);
+  background: rgba(232, 185, 77, 0.12);
+  border: 1px solid var(--border);
+}
+.account-dropdown-info { min-width: 0; flex: 1; }
+.account-dropdown-kicker {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+.account-dropdown-email {
+  font-size: 12.5px;
+  color: var(--text);
+  word-break: break-all;
+  padding-bottom: 0;
+  border-bottom: none;
+  line-height: 1.35;
+}
+
+.account-signout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.account-signout-btn:hover { background: var(--ink-soft); border-color: var(--border-strong); color: var(--text); }
+.account-signout-btn:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+
+/* Sign In / Sign Up modal — decorative icon header (sits BESIDE
+   #auth-modal-title, never inside it, since app.js sets that element's
+   textContent directly — bkz. setAuthMode). */
+.auth-modal { max-width: min(378px, calc(100vw - 32px)); padding: 22px 22px 20px; }
+.auth-modal-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.auth-modal .byok-modal-title { margin-bottom: 0; }
+.auth-modal-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  color: var(--gold-soft);
+  background: rgba(232, 185, 77, 0.12);
+  border: 1px solid var(--border);
+}
+
+/* Tabs become a compact segmented control (same active/hover states as
+   before, just given a track to sit in). */
+.auth-modal-tabs {
+  padding: 3px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
+}
+.auth-tab-btn { border: none; }
+.auth-tab-btn:not(.active):hover { border-color: transparent; background: var(--ink-soft); color: var(--text); }
+.auth-tab-btn:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 1px; }
+
+/* Inputs gain a leading icon; .byok-key-input's own rules (satır ~807) are
+   untouched (the BYOK API-key field keeps its exact current look), this
+   just adds left padding to the two auth inputs specifically. */
+.auth-input-group { position: relative; margin-bottom: 10px; }
+.auth-input-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.auth-input-group:focus-within .auth-input-icon { color: var(--gold-soft); }
+.auth-input.byok-key-input { padding-left: 34px; margin-bottom: 0; }
+
+/* Error/success states get a subtle filled chip instead of plain colored
+   text — collapses to no padding when empty (:empty) so there's no awkward
+   dead space while the form is idle. */
+#auth-modal-status:not(:empty) { padding: 7px 10px; border-radius: var(--radius-sm); }
+#auth-modal-status.error { background: var(--danger-soft); }
+#auth-modal-status.success { background: var(--success-soft); }
+
+/* Primary CTA becomes a full-width, prominent button; Cancel steps back
+   into a quiet text-style secondary action underneath it. */
+.auth-modal-actions { flex-direction: column-reverse; gap: 8px; margin-top: 2px; }
+.auth-modal-actions #auth-submit-btn { width: 100%; padding: 10px 14px; font-size: 13px; }
+.auth-modal-actions #auth-cancel-btn {
+  width: 100%;
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-faint);
+  padding: 6px 14px;
+}
+.auth-modal-actions #auth-cancel-btn:hover { color: var(--text-dim); text-decoration: underline; border-color: transparent; }
+.auth-modal-actions #auth-submit-btn:focus-visible,
+.auth-modal-actions #auth-cancel-btn:focus-visible { outline: 2px solid var(--gold-soft); outline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .auth-modal { padding: 18px 16px 16px; }
+}
+
 /* ---------- Workflow stepper ---------- */
 
 /* ROUND 4: the 1→2→3 stepper gets a faint connecting "pipeline track"
